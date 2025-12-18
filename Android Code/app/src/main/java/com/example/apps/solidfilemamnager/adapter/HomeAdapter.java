@@ -359,7 +359,7 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
             }
         }
     }
-
+// hello 
     public class GalleryViewHolder extends ViewHolder {
         private final RecyclerView recyclerview;
         private TextView recents;
