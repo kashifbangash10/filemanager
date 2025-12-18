@@ -124,13 +124,7 @@ public class ListDocumentHolder extends DocumentHolder {
             }
 
             if (summary != null) {
-                if (mDoc.summary != null ) {
-                    summary.setText(mDoc.summary);
-                    summary.setVisibility(View.VISIBLE);
-                    hasLine2 = true;
-                } else {
-                    summary.setVisibility(View.GONE);
-                }
+                 summary.setVisibility(View.GONE);
             }
         }
 
@@ -165,7 +159,14 @@ public class ListDocumentHolder extends DocumentHolder {
             size.setVisibility(View.VISIBLE);
             if (Utils.isDir(mDoc.mimeType) || mDoc.size == -1) {
                 ArrayMap<Integer, Long> sizes = DocumentsApplication.getFolderSizes();
-                size.setText(null);
+                
+                // Use summary for folder info (item count) if available
+                if (Utils.isDir(mDoc.mimeType) && mDoc.summary != null) {
+                    size.setText(mDoc.summary);
+                } else {
+                    size.setText(null);
+                }
+                
                 if (state.showFolderSize) {
                     long sizeInBytes = sizes.containsKey(position) ? sizes.get(position) : -1;
                     if (sizeInBytes != -1) {

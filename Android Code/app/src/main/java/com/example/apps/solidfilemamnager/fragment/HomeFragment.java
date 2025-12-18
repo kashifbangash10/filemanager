@@ -507,10 +507,12 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
 
             try {
                 // 1. Analysis (Internal Storage)
+                // 1. Analysis (Internal Storage)
                 RootInfo internalRoot = roots.getPrimaryRoot();
                 if (internalRoot != null) {
-                    internalRoot.title = "Analysis";
-                    calculatedShortcuts.add(CommonInfo.from(internalRoot, TYPE_SHORTCUT));
+                    RootInfo analysisRoot = copyRootInfo(internalRoot);
+                    analysisRoot.title = "Analysis";
+                    calculatedShortcuts.add(CommonInfo.from(analysisRoot, TYPE_SHORTCUT));
                 }
 
                 // 2. Downloads
@@ -793,5 +795,13 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
 
         // Background task shuru karein jo sizes calculate karega
         new LoadCategorySizesTask(getActivity()).execute();
+    }
+    private static RootInfo copyRootInfo(RootInfo root) {
+        android.os.Parcel parcel = android.os.Parcel.obtain();
+        root.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        RootInfo copy = RootInfo.CREATOR.createFromParcel(parcel);
+        parcel.recycle();
+        return copy;
     }
 }
