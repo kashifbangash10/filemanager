@@ -1,0 +1,77 @@
+{
+  "project_info": {
+    "project_number": "1023770654204",
+    "firebase_url": "https://filemanager-e7c20.firebaseio.com",
+    "project_id": "filemanager-e7c20",
+    "storage_bucket": "filemanager-e7c20.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1023770654204:android:71c636184a2f74eb4b2e79",
+        "android_client_info": {
+          "package_name": "com.example.apps.solidfilemamnager"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1023770654204-2q80pbjloh09ruv8iq9452297uupu7h5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3-yp4Tqi0AzU-uywhZqbdJmu4yDIPSF0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1023770654204-2q80pbjloh09ruv8iq9452297uupu7h5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1023770654204:android:c94f4d3100f904614b2e79",
+        "android_client_info": {
+          "package_name": "com.example.apps.solidfilemamnager"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1023770654204-3qdetf9e90vh64p42cs0qesddf5gk8jt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.apps.solidfilemamnager",
+            "certificate_hash": "e8ff19ff400df1c5786c43184db5434f994b3939"
+          }
+        },
+        {
+          "client_id": "1023770654204-2q80pbjloh09ruv8iq9452297uupu7h5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3-yp4Tqi0AzU-uywhZqbdJmu4yDIPSF0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1023770654204-2q80pbjloh09ruv8iq9452297uupu7h5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
