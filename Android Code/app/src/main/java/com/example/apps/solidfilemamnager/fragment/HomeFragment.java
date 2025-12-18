@@ -88,7 +88,7 @@ import com.example.apps.solidfilemamnager.provider.ExtraDocumentsProvider;
 import com.example.apps.solidfilemamnager.provider.ExternalStorageProvider;
 import com.example.apps.solidfilemamnager.provider.NonMediaDocumentsProvider;
 
-import vocsy.ads.GoogleAds;
+
 
 /**
  * Display home.
@@ -136,7 +136,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        GoogleAds.getInstance().admobBanner(requireActivity(), (LinearLayout) view.findViewById(R.id.nativeLay));
+
 
         RecyclerView recyclerView = getListView();
         recyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 3));
@@ -161,7 +161,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
             mAdapter = new HomeAdapter(getActivity(), data, mIconHelper);
             mAdapter.setOnItemClickListener(this);
         }
-        setListShown(false);
+        setListShown(true);
 
         // Click Listeners for Storage Cards
         internalStorageCard.setOnClickListener(new View.OnClickListener() {
@@ -518,6 +518,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                 // 2. Downloads
                 RootInfo downloadsRoot = roots.getDownloadRoot();
                 if (downloadsRoot != null) {
+                    downloadsRoot = copyRootInfo(downloadsRoot);
                     downloadsRoot.title = "Downloads";
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         long size = getCategorySize(MediaStore.Downloads.EXTERNAL_CONTENT_URI);
@@ -535,6 +536,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                 // 3. Videos
                 RootInfo videosRoot = roots.getRootInfo("videos_root", MediaDocumentsProvider.AUTHORITY);
                 if (videosRoot != null) {
+                    videosRoot = copyRootInfo(videosRoot);
                     videosRoot.title = "Video"; // Force Singular
                     long size = getCategorySize(MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
                     videosRoot.totalBytes = size;
@@ -544,6 +546,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                 // 4. Audio
                 RootInfo audioRoot = roots.getRootInfo("audio_root", MediaDocumentsProvider.AUTHORITY);
                 if (audioRoot != null) {
+                    audioRoot = copyRootInfo(audioRoot);
                     audioRoot.title = "Audio";
                     long size = getCategorySize(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
                     audioRoot.totalBytes = size;
@@ -553,6 +556,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                 // 5. Images
                 RootInfo imagesRoot = roots.getRootInfo("images_root", MediaDocumentsProvider.AUTHORITY);
                 if (imagesRoot != null) {
+                    imagesRoot = copyRootInfo(imagesRoot);
                     imagesRoot.title = "Images";
                     long size = getCategorySize(MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                     imagesRoot.totalBytes = size;
@@ -562,6 +566,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                 // 6. Apps
                 RootInfo appsRoot = roots.getAppRoot();
                 if (appsRoot != null) {
+                    appsRoot = copyRootInfo(appsRoot);
                     appsRoot.title = "Apps";
                     long size = getAppsSize();
                     appsRoot.totalBytes = size;
@@ -571,6 +576,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                 // 7. Documents
                 RootInfo documentsRoot = roots.getRootInfo("document_root", NonMediaDocumentsProvider.AUTHORITY);
                 if (documentsRoot != null) {
+                    documentsRoot = copyRootInfo(documentsRoot);
                     documentsRoot.title = "Documents";
                     long size = getDocumentsSize();
                     documentsRoot.totalBytes = size;

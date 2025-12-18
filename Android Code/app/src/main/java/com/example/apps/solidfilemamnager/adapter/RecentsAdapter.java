@@ -17,8 +17,7 @@ import com.example.apps.solidfilemamnager.model.DocumentInfo;
 import com.example.apps.solidfilemamnager.model.DocumentsContract;
 import com.example.apps.solidfilemamnager.setting.SettingsActivity;
 
-import vocsy.ads.CustomAdsListener;
-import vocsy.ads.GoogleAds;
+
 
 public class RecentsAdapter extends CursorRecyclerViewAdapter<RecentsAdapter.ViewHolder> {
 

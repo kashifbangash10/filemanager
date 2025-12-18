@@ -60,7 +60,7 @@ import com.example.apps.solidfilemamnager.ui.CircleImage;
 
 import java.io.File;
 
-import vocsy.ads.GoogleAds;
+
 
 /**
  * Display document title editor and save button.
@@ -133,7 +133,7 @@ public class DetailFragment extends DialogFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_detail, container, false);
 
-        GoogleAds.getInstance().addNativeView(requireActivity(), (LinearLayout) view.findViewById(R.id.nativeLay));
+
 
         name = (TextView) view.findViewById(R.id.name);
         type = (TextView) view.findViewById(R.id.type);

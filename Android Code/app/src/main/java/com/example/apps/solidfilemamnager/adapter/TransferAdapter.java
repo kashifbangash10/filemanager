@@ -32,8 +32,7 @@ import com.example.apps.solidfilemamnager.transfer.model.TransferStatus;
 import com.example.apps.solidfilemamnager.ui.CircleImage;
 import com.example.apps.solidfilemamnager.ui.NumberProgressBar;
 
-import vocsy.ads.CustomAdsListener;
-import vocsy.ads.GoogleAds;
+
 
 public class TransferAdapter extends ArrayRecyclerAdapter<TransferStatus, ViewHolder> {
 
@@ -136,14 +135,9 @@ public class TransferAdapter extends ArrayRecyclerAdapter<TransferStatus, ViewHo
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    GoogleAds.getInstance().showCounterInterstitialAd(mContext, new CustomAdsListener() {
-                        @Override
-                        public void onFinish() {
-                            if (null != onItemClickListener) {
-                                onItemClickListener.onItemClick(ViewHolder.this, v, getLayoutPosition());
-                            }
-                        }
-                    });
+                    if (null != onItemClickListener) {
+                        onItemClickListener.onItemClick(ViewHolder.this, v, getLayoutPosition());
+                    }
                 }
             });
             iconMime = (ImageView) itemView.findViewById(R.id.icon_mime);

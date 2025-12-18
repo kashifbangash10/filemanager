@@ -69,8 +69,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import vocsy.ads.CustomAdsListener;
-import vocsy.ads.GoogleAds;
+
 
 /**
  * Display directories where recent creates took place.
@@ -154,13 +153,8 @@ public class RecentsCreateFragment extends ListFragment {
     private OnItemClickListener mItemListener = new OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            GoogleAds.getInstance().showCounterInterstitialAd(requireActivity(), new CustomAdsListener() {
-                @Override
-                public void onFinish() {
-                    final DocumentStack stack = mAdapter.getItem(position);
-                    ((BaseActivity) getActivity()).onStackPicked(stack);
-                }
-            });
+            final DocumentStack stack = mAdapter.getItem(position);
+            ((BaseActivity) getActivity()).onStackPicked(stack);
         }
     };
 

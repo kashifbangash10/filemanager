@@ -45,9 +45,9 @@ import com.example.apps.solidfilemamnager.misc.ThumbnailCache;
 import com.example.apps.solidfilemamnager.misc.Utils;
 import com.example.apps.solidfilemamnager.server.SimpleWebServer;
 
-import vocsy.ads.AdsApplication;
+import android.app.Application;
 
-public class DocumentsApplication extends AdsApplication {
+public class DocumentsApplication extends Application {
     private static final long PROVIDER_ANR_TIMEOUT = 20 * DateUtils.SECOND_IN_MILLIS;
     private static DocumentsApplication sInstance;
 

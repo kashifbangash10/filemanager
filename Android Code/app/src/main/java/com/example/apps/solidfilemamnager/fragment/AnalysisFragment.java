@@ -230,6 +230,9 @@ public class AnalysisFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        if (getActivity() instanceof com.example.apps.solidfilemamnager.DocumentsActivity) {
+            ((com.example.apps.solidfilemamnager.DocumentsActivity) getActivity()).setAnalysisMode(true);
+        }
         updateToolbarTitle();
 
         // ✅ Check if we need to refresh data when coming back to fragment
@@ -249,6 +252,9 @@ public class AnalysisFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        if (getActivity() instanceof com.example.apps.solidfilemamnager.DocumentsActivity) {
+            ((com.example.apps.solidfilemamnager.DocumentsActivity) getActivity()).setAnalysisMode(false);
+        }
         shouldStopScanning.set(true);
         if (executor != null && !executor.isShutdown()) {
             executor.shutdownNow();

@@ -29,8 +29,7 @@ import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import vocsy.ads.CustomAdsListener;
-import vocsy.ads.GoogleAds;
+
 
 public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
     public static final int TYPE_MAIN = 1;
@@ -143,14 +142,9 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
             v.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    GoogleAds.getInstance().showCounterInterstitialAd(mContext, new CustomAdsListener() {
-                        @Override
-                        public void onFinish() {
-                            if (null != onItemClickListener) {
-                                onItemClickListener.onItemClick(ViewHolder.this, v, getLayoutPosition());
-                            }
-                        }
-                    });
+                    if (null != onItemClickListener) {
+                        onItemClickListener.onItemClick(ViewHolder.this, v, getLayoutPosition());
+                    }
                 }
             });
             v.setOnLongClickListener(new View.OnLongClickListener() {
@@ -189,14 +183,9 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
             action.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    GoogleAds.getInstance().showCounterInterstitialAd(mContext, new CustomAdsListener() {
-                        @Override
-                        public void onFinish() {
-                            if (null != onItemClickListener) {
-                                onItemClickListener.onItemViewClick(MainViewHolder.this, action, getLayoutPosition());
-                            }
-                        }
-                    });
+                    if (null != onItemClickListener) {
+                        onItemClickListener.onItemViewClick(MainViewHolder.this, action, getLayoutPosition());
+                    }
                 }
             });
             accentColor = SettingsActivity.getAccentColor();
@@ -263,23 +252,18 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
 
             // Click listener
             itemView.setOnClickListener(v -> {
-                GoogleAds.getInstance().showCounterInterstitialAd(mContext, new CustomAdsListener() {
-                    @Override
-                    public void onFinish() {
-                        if (rootTitle.equals("analysis")) {
-                            // Analysis Activity open karein
-                            if (mContext instanceof androidx.fragment.app.FragmentActivity) {
-                                com.example.apps.solidfilemamnager.fragment.AnalysisFragment.show(
-                                        ((androidx.fragment.app.FragmentActivity) mContext).getSupportFragmentManager());
-                            }
-                        } else {
-                            // Baaki items ke liye normal flow
-                            if (null != onItemClickListener) {
-                                onItemClickListener.onItemClick(ShortcutViewHolder.this, v, getLayoutPosition());
-                            }
-                        }
+                if (rootTitle.equals("analysis")) {
+                    // Analysis Activity open karein
+                    if (mContext instanceof androidx.fragment.app.FragmentActivity) {
+                        com.example.apps.solidfilemamnager.fragment.AnalysisFragment.show(
+                                ((androidx.fragment.app.FragmentActivity) mContext).getSupportFragmentManager());
                     }
-                });
+                } else {
+                    // Baaki items ke liye normal flow
+                    if (null != onItemClickListener) {
+                        onItemClickListener.onItemClick(ShortcutViewHolder.this, v, getLayoutPosition());
+                    }
+                }
             });
 
             // Icons aur data set karein
@@ -373,14 +357,9 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
             recents.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    GoogleAds.getInstance().showCounterInterstitialAd(mContext, new CustomAdsListener() {
-                        @Override
-                        public void onFinish() {
-                            if (null != onItemClickListener) {
-                                onItemClickListener.onItemViewClick(GalleryViewHolder.this, recents, getLayoutPosition());
-                            }
-                        }
-                    });
+                    if (null != onItemClickListener) {
+                        onItemClickListener.onItemViewClick(GalleryViewHolder.this, recents, getLayoutPosition());
+                    }
                 }
             });
         }
@@ -392,14 +371,9 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
             adapter.setOnItemClickListener(new RecentsAdapter.OnItemClickListener() {
                 @Override
                 public void onItemClick(RecentsAdapter.ViewHolder item, int position) {
-                    GoogleAds.getInstance().showCounterInterstitialAd(mContext, new CustomAdsListener() {
-                        @Override
-                        public void onFinish() {
-                            if (null != onItemClickListener) {
-                                onItemClickListener.onItemClick(GalleryViewHolder.this, recyclerview, position);
-                            }
-                        }
-                    });
+                    if (null != onItemClickListener) {
+                        onItemClickListener.onItemClick(GalleryViewHolder.this, recyclerview, position);
+                    }
                 }
             });
             recyclerview.setAdapter(adapter);

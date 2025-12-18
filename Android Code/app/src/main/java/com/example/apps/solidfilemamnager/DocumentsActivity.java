@@ -133,10 +133,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Executor;
 
-import vocsy.ads.AdsHandler;
-import vocsy.ads.CustomAdsListener;
-import vocsy.ads.GetSmartAdmob;
-import vocsy.ads.GoogleAds;
+
 
 public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuItemClickListener {
     private static final String EXTRA_STATE = "state";
@@ -149,6 +146,7 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     private static final int CODE_FORWARD = 42;
     private static final int CODE_SETTINGS = 92;
 
+    private boolean mInAnalysis = false;
     private static final boolean SHOW_NATIVE_ADS = false;
 
     private boolean mShowAsDialog;
@@ -200,19 +198,7 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         setResult(Activity.RESULT_CANCELED);
         setContentView(R.layout.activity);
 
-        String[] adsCommand = new String[]{
-                getString(R.string.bnr_admob)
-                , getString(R.string.native_admob)
-                , getString(R.string.int_admob)
-                , getString(R.string.app_open_admob)
-                , getString(R.string.video_admob)
-        };
 
-        new GetSmartAdmob(this, adsCommand, (success) -> {
-
-        }).execute();
-
-        AdsHandler.setAdsOn(true);
 
         final Context context = this;
         final Resources res = getResources();
@@ -454,12 +440,7 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     @Override
     public boolean onMenuItemClick(MenuItem item) {
         if (menuAction(item)) {
-            GoogleAds.getInstance().showCounterInterstitialAd(this, new CustomAdsListener() {
-                @Override
-                public void onFinish() {
-                    closeDrawer();
-                }
-            });
+            closeDrawer();
             return true;
         }
         return false;
@@ -642,7 +623,29 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         }
     }
 
+    public void setAnalysisMode(boolean active) {
+        mInAnalysis = active;
+        if (mInAnalysis && getSupportActionBar() != null) {
+             getSupportActionBar().setTitle(R.string.root_analysis);
+        }
+        updateActionBar();
+    }
+
     public void updateActionBar() {
+        if (mInAnalysis) {
+            if (mDrawerToggle != null) {
+                mDrawerToggle.setDrawerIndicatorEnabled(false);
+                mDrawerToggle.setHomeAsUpIndicator(R.drawable.ic_arrow_back);
+            }
+            mToolbar.setNavigationOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    onBackPressed();
+                }
+            });
+            mToolbarStack.setVisibility(View.GONE);
+            return;
+        }
 
         final RootInfo root = getCurrentRoot();
 
@@ -653,13 +656,6 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             getSupportActionBar().setDisplayShowHomeEnabled(true);
         }
         mToolbar.setNavigationContentDescription(R.string.drawer_open);
-        mToolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                setRootsDrawerOpen(!isRootsDrawerOpen());
-            }
-        });
 
         if (mSearchExpanded) {
             setTitle(null);
@@ -668,17 +664,50 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         } else {
             if (mState.stack.size() <= 1) {
                 if (null != root) {
-                    setTitle(root.title);
+                    if (root.isHome()) {
+                        setTitle("Home");
+                        if (mDrawerToggle != null) {
+                            mDrawerToggle.setDrawerIndicatorEnabled(true);
+                        }
+                        mToolbar.setNavigationOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                setRootsDrawerOpen(!isRootsDrawerOpen());
+                            }
+                        });
+                    } else {
+                        setTitle(root.title);
+                        if (mDrawerToggle != null) {
+                            mDrawerToggle.setDrawerIndicatorEnabled(false);
+                            mDrawerToggle.setHomeAsUpIndicator(R.drawable.ic_arrow_back);
+                        }
+                        mToolbar.setNavigationOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                onBackPressed();
+                            }
+                        });
+                    }
                     AnalyticsManager.setCurrentScreen(this, root.derivedTag);
                 }
                 mToolbarStack.setVisibility(View.GONE);
                 mToolbarStack.setAdapter(null);
             } else {
                 setTitle(null);
+                if (mDrawerToggle != null) {
+                    mDrawerToggle.setDrawerIndicatorEnabled(false);
+                    mDrawerToggle.setHomeAsUpIndicator(R.drawable.ic_arrow_back);
+                }
                 mToolbarStack.setVisibility(View.VISIBLE);
                 mToolbarStack.setAdapter(mStackAdapter);
                 mIgnoreNextNavigation = true;
                 mToolbarStack.setSelection(mStackAdapter.getCount() - 1);
+                mToolbar.setNavigationOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        onBackPressed();
+                    }
+                });
             }
         }
     }
@@ -790,8 +819,13 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         }
 
         sort.setVisible(cwd != null);
+        if (root != null && root.isHome()) {
+        grid.setVisible(false);
+        list.setVisible(false);
+    } else {
         grid.setVisible(!RootInfo.isOtherRoot(getCurrentRoot()) && mState.derivedMode != MODE_GRID);
         list.setVisible(mState.derivedMode != MODE_LIST);
+    }
 
         if (mState.currentSearch != null) {
 
@@ -868,106 +902,56 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             onBackPressed();
             return true;
         } else if (id == R.id.menu_create_dir) {
-            GoogleAds.getInstance().showCounterInterstitialAd(this, new CustomAdsListener() {
-                @Override
-                public void onFinish() {
-                    createFolder();
-                }
-            });
+            createFolder();
             return true;
         } else if (id == R.id.menu_create_file) {
-            GoogleAds.getInstance().showCounterInterstitialAd(this, new CustomAdsListener() {
-                @Override
-                public void onFinish() {
-                    onStateChanged();
-                    createFile();
-                }
-            });
+            onStateChanged();
+            createFile();
             return true;
         } else if (id == R.id.menu_search) {
             return false;
         } else if (id == R.id.menu_sort_name) {
-            GoogleAds.getInstance().showCounterInterstitialAd(this, new CustomAdsListener() {
-                @Override
-                public void onFinish() {
-                    setUserSortOrder(State.SORT_ORDER_DISPLAY_NAME);
-                    Bundle params = new Bundle();
-                    params.putString("type", "name");
-                    AnalyticsManager.logEvent("sort_name", params);
-                }
-            });
+            setUserSortOrder(State.SORT_ORDER_DISPLAY_NAME);
+            Bundle params = new Bundle();
+            params.putString("type", "name");
+            AnalyticsManager.logEvent("sort_name", params);
             return true;
         } else if (id == R.id.menu_sort_date) {
-            GoogleAds.getInstance().showCounterInterstitialAd(this, new CustomAdsListener() {
-                @Override
-                public void onFinish() {
-                    setUserSortOrder(State.SORT_ORDER_LAST_MODIFIED);
-                    Bundle params = new Bundle();
-                    params.putString("type", "modified");
-                    AnalyticsManager.logEvent("sort_modified", params);
-                }
-            });
+            setUserSortOrder(State.SORT_ORDER_LAST_MODIFIED);
+            Bundle params = new Bundle();
+            params.putString("type", "modified");
+            AnalyticsManager.logEvent("sort_modified", params);
             return true;
         } else if (id == R.id.menu_sort_size) {
-            GoogleAds.getInstance().showCounterInterstitialAd(this, new CustomAdsListener() {
-                @Override
-                public void onFinish() {
-                    setUserSortOrder(State.SORT_ORDER_SIZE);
-                    Bundle params = new Bundle();
-                    params.putString("type", "size");
-                    AnalyticsManager.logEvent("sort_size", params);
-                }
-            });
+            setUserSortOrder(State.SORT_ORDER_SIZE);
+            Bundle params = new Bundle();
+            params.putString("type", "size");
+            AnalyticsManager.logEvent("sort_size", params);
             return true;
         } else if (id == R.id.menu_grid) {
-            GoogleAds.getInstance().showCounterInterstitialAd(this, new CustomAdsListener() {
-                @Override
-                public void onFinish() {
-                    setUserMode(State.MODE_GRID);
-                    Bundle params = new Bundle();
-                    params.putString("type", "grid");
-                    AnalyticsManager.logEvent("display_grid", params);
-                }
-            });
+            setUserMode(State.MODE_GRID);
+            Bundle params = new Bundle();
+            params.putString("type", "grid");
+            AnalyticsManager.logEvent("display_grid", params);
             return true;
         } else if (id == R.id.menu_list) {
-            GoogleAds.getInstance().showCounterInterstitialAd(this, new CustomAdsListener() {
-                @Override
-                public void onFinish() {
-                    setUserMode(State.MODE_LIST);
-                    Bundle params = new Bundle();
-                    params.putString("type", "list");
-                    AnalyticsManager.logEvent("display_list", params);
-                }
-            });
+            setUserMode(State.MODE_LIST);
+            Bundle params = new Bundle();
+            params.putString("type", "list");
+            AnalyticsManager.logEvent("display_list", params);
             return true;
         } else if (id == R.id.menu_settings) {
-            GoogleAds.getInstance().showCounterInterstitialAd(this, new CustomAdsListener() {
-                @Override
-                public void onFinish() {
-                    startActivityForResult(new Intent(DocumentsActivity.this, SettingsActivity.class), CODE_SETTINGS);
-                    AnalyticsManager.logEvent("setting_open");
-                }
-            });
+            startActivityForResult(new Intent(DocumentsActivity.this, SettingsActivity.class), CODE_SETTINGS);
+            AnalyticsManager.logEvent("setting_open");
             return true;
         } else if (id == R.id.menu_about) {
-            GoogleAds.getInstance().showCounterInterstitialAd(this, new CustomAdsListener() {
-                @Override
-                public void onFinish() {
-                    startActivity(new Intent(DocumentsActivity.this, AboutActivity.class));
-                    AnalyticsManager.logEvent("about_open");
-                }
-            });
+            startActivity(new Intent(DocumentsActivity.this, AboutActivity.class));
+            AnalyticsManager.logEvent("about_open");
             return true;
         } else if (id == R.id.menu_exit) {
-            GoogleAds.getInstance().showCounterInterstitialAd(this, new CustomAdsListener() {
-                @Override
-                public void onFinish() {
-                    Bundle params = new Bundle();
-                    AnalyticsManager.logEvent("app_exit");
-                    android.os.Process.killProcess(android.os.Process.myPid());
-                }
-            });
+            Bundle params = new Bundle();
+            AnalyticsManager.logEvent("app_exit");
+            android.os.Process.killProcess(android.os.Process.myPid());
             return true;
         }
         return false;
@@ -1085,6 +1069,12 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             if (null != mParentRoot) {
                 onRootPicked(mParentRoot, true);
                 mParentRoot = null;
+                return;
+            }
+
+            final RootInfo current = getCurrentRoot();
+            if (current != null && !current.isHome()) {
+                onRootPicked(mRoots.getHomeRoot(), true);
                 return;
             }
 

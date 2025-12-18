@@ -44,7 +44,7 @@ import com.example.apps.solidfilemamnager.provider.CloudStorageProvider;
 import com.example.apps.solidfilemamnager.provider.NetworkStorageProvider;
 import com.example.apps.solidfilemamnager.setting.SettingsActivity;
 
-import vocsy.ads.GoogleAds;
+
 
 public class ServerFragment extends BaseFragment implements View.OnClickListener {
 
@@ -89,7 +89,7 @@ public class ServerFragment extends BaseFragment implements View.OnClickListener
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
 
-        GoogleAds.getInstance().addNativeView(requireActivity(), (LinearLayout) view.findViewById(R.id.nativeLay));
+
 
         status = (TextView) view.findViewById(R.id.status);
         username = (TextView) view.findViewById(R.id.username);
