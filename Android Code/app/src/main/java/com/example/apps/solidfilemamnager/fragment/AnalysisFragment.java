@@ -319,13 +319,59 @@ public class AnalysisFragment extends Fragment {
         // ✅ Set analysis state
         isAnalysisRunning = true;
         shouldStopScanning.set(false);
-
-        loadingView.setVisibility(View.VISIBLE);
-        containerLayout.removeAllViews();
+        isDataLoaded = false;
 
         if (cachedData == null) {
             cachedData = new AnalysisCache();
         }
+        cachedData.clear();
+
+        // ✅ Show scanning placeholders immediately
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (!Utils.isActivityAlive(getActivity())) return;
+                
+                loadingView.setVisibility(View.GONE);
+                containerLayout.removeAllViews();
+                
+                // 1. Storage Placeholder
+                AnalysisItem storagePlaceholder = new AnalysisItem();
+                storagePlaceholder.type = AnalysisItem.TYPE_STORAGE;
+                storagePlaceholder.icon = R.drawable.ic_root_internal;
+                storagePlaceholder.title = "Internal storage";
+                storagePlaceholder.summary = "Calculating...";
+                storagePlaceholder.isLoading = true;
+                addItemToView(storagePlaceholder);
+                
+                // 2. Duplicates Placeholder
+                AnalysisItem duplicatePlaceholder = new AnalysisItem();
+                duplicatePlaceholder.type = AnalysisItem.TYPE_DUPLICATE;
+                duplicatePlaceholder.icon = R.drawable.ic_root_document;
+                duplicatePlaceholder.title = "Duplicate files";
+                duplicatePlaceholder.summary = "Scanning...";
+                duplicatePlaceholder.isLoading = true;
+                addItemToView(duplicatePlaceholder);
+                
+                // 3. Large Files Placeholder
+                AnalysisItem largePlaceholder = new AnalysisItem();
+                largePlaceholder.type = AnalysisItem.TYPE_LARGE_FILES;
+                largePlaceholder.icon = R.drawable.ic_root_folder;
+                largePlaceholder.title = "Large files";
+                largePlaceholder.summary = "Scanning...";
+                largePlaceholder.isLoading = true;
+                addItemToView(largePlaceholder);
+                
+                // 4. Apps Placeholder
+                AnalysisItem appsPlaceholder = new AnalysisItem();
+                appsPlaceholder.type = AnalysisItem.TYPE_APP_MANAGER;
+                appsPlaceholder.icon = R.drawable.ic_root_apps;
+                appsPlaceholder.title = "App manager";
+                appsPlaceholder.summary = "Loading...";
+                appsPlaceholder.isLoading = true;
+                addItemToView(appsPlaceholder);
+            }
+        });
 
         // ✅ Run on SEPARATE THREAD, not AsyncTask
         executor.execute(new Runnable() {
@@ -361,6 +407,7 @@ public class AnalysisFragment extends Fragment {
                         });
                         Thread.sleep(100);
                     }
+
 
                     // Large Files Analysis
                     if (!shouldStopScanning.get()) {
@@ -762,6 +809,7 @@ public class AnalysisFragment extends Fragment {
         item.subItems = new ArrayList<>();
         cachedData.apps.clear();
 
+
         try {
             updateLoadingStatusThrottled("Analyzing apps...");
             PackageManager pm = getContext().getPackageManager();
@@ -830,8 +878,8 @@ public class AnalysisFragment extends Fragment {
             }
 
             item.summary = cachedData.apps.size() + " apps • " +
-                    Formatter.formatFileSize(getContext(), totalAppSize) +
-                    " (User: " + userAppCount + ", System: " + systemAppCount + ")";
+                    Formatter.formatFileSize(getContext(), totalAppSize);
+
 
         } catch (Exception e) {
             android.util.Log.e(TAG, "❌ Error analyzing apps: " + e.getMessage());
@@ -1041,14 +1089,30 @@ subItem.size = Formatter.formatFileSize(getContext(), fileItem.size);
         if (getActivity() == null || !isAdded()) return;
 
         try {
-            View itemView;
+            // Check if item already exists in view to update it
+            View existingView = null;
+            for (int i = 0; i < containerLayout.getChildCount(); i++) {
+                View child = containerLayout.getChildAt(i);
+                Object tag = child.getTag();
+                if (tag instanceof Integer && (Integer) tag == item.type) {
+                    existingView = child;
+                    break;
+                }
+            }
 
+            if (existingView != null) {
+                updateItemView(existingView, item);
+                return;
+            }
+
+            View itemView;
             if (item.type == AnalysisItem.TYPE_STORAGE) {
                 itemView = createStorageView(item);
             } else {
                 itemView = createCategoryView(item);
             }
 
+            itemView.setTag(item.type);
             final int itemType = item.type;
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -1062,6 +1126,93 @@ subItem.size = Formatter.formatFileSize(getContext(), fileItem.size);
             android.util.Log.e(TAG, "Error adding item to view: " + e.getMessage());
         }
     }
+
+    private void updateItemView(View view, AnalysisItem item) {
+        if (item.type == AnalysisItem.TYPE_STORAGE) {
+            updateStorageView(view, item);
+        } else {
+            updateCategoryView(view, item);
+        }
+    }
+
+    private void updateStorageView(View view, AnalysisItem item) {
+        ImageView icon = view.findViewById(R.id.icon);
+        TextView title = view.findViewById(R.id.title);
+        TextView summary = view.findViewById(R.id.summary);
+        ProgressBar progressBar = view.findViewById(R.id.progress_bar);
+        LinearLayout subItemsContainer = view.findViewById(R.id.sub_items_container);
+        TextView moreButton = view.findViewById(R.id.btn_more);
+
+        icon.setImageResource(item.icon);
+        icon.setColorFilter(getResources().getColor(R.color.primaryColor), android.graphics.PorterDuff.Mode.SRC_IN);
+
+
+        title.setText(item.title);
+        summary.setText(item.summary);
+        progressBar.setProgress(item.percentage);
+        progressBar.setIndeterminate(item.isLoading);
+        
+        int progressColor = (item.percentage > 85) ? 0xFFFF5252 : getResources().getColor(R.color.primaryColor);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            progressBar.setProgressTintList(android.content.res.ColorStateList.valueOf(progressColor));
+        } else {
+            progressBar.getProgressDrawable().setColorFilter(progressColor, android.graphics.PorterDuff.Mode.SRC_IN);
+        }
+
+
+        if (!item.isLoading && item.subItems != null && !item.subItems.isEmpty()) {
+            subItemsContainer.removeAllViews();
+            subItemsContainer.setVisibility(View.VISIBLE);
+            for (SubItem subItem : item.subItems) {
+                View subItemView = createSubItemView(subItem);
+                subItemsContainer.addView(subItemView);
+            }
+        } else {
+            subItemsContainer.setVisibility(View.GONE);
+        }
+    }
+
+    private void updateCategoryView(View view, AnalysisItem item) {
+        ImageView icon = view.findViewById(R.id.icon);
+        TextView title = view.findViewById(R.id.title);
+        TextView summary = view.findViewById(R.id.summary);
+        ProgressBar loadingBar = view.findViewById(R.id.loading);
+        LinearLayout subItemsContainer = view.findViewById(R.id.sub_items_container);
+        TextView moreButton = view.findViewById(R.id.btn_more);
+
+        icon.setImageResource(item.icon);
+        icon.setColorFilter(getResources().getColor(R.color.primaryColor), android.graphics.PorterDuff.Mode.SRC_IN);
+
+
+        title.setText(item.title);
+        summary.setText(item.summary);
+        loadingBar.setVisibility(item.isLoading ? View.VISIBLE : View.GONE);
+
+        if (!item.isLoading && item.subItems != null && !item.subItems.isEmpty()) {
+            subItemsContainer.removeAllViews();
+            subItemsContainer.setVisibility(View.VISIBLE);
+            for (SubItem subItem : item.subItems) {
+                View subItemView = createSubItemView(subItem);
+                subItemsContainer.addView(subItemView);
+            }
+
+            int totalItems = 0;
+            if (item.type == AnalysisItem.TYPE_DUPLICATE) totalItems = cachedData.duplicateGroups.size();
+            else if (item.type == AnalysisItem.TYPE_LARGE_FILES) totalItems = cachedData.largeFiles.size();
+            else if (item.type == AnalysisItem.TYPE_APP_MANAGER) totalItems = cachedData.apps.size();
+
+            if (totalItems > 3) {
+                moreButton.setVisibility(View.VISIBLE);
+                moreButton.setText("+" + (totalItems - 3) + " more");
+            } else {
+                moreButton.setVisibility(View.GONE);
+            }
+        } else {
+            subItemsContainer.setVisibility(View.GONE);
+            moreButton.setVisibility(View.GONE);
+        }
+    }
+
 
     private void handleCardClick(int type) {
         switch (type) {
@@ -1132,15 +1283,24 @@ subItem.size = Formatter.formatFileSize(getContext(), fileItem.size);
         TextView summary = view.findViewById(R.id.summary);
         ProgressBar progressBar = view.findViewById(R.id.progress_bar);
         LinearLayout subItemsContainer = view.findViewById(R.id.sub_items_container);
-        Button moreButton = view.findViewById(R.id.btn_more);
+        TextView moreButton = view.findViewById(R.id.btn_more);
 
         progressBar.setSaveEnabled(false);
         progressBar.setSaveFromParentEnabled(false);
 
         icon.setImageResource(item.icon);
+        icon.setColorFilter(getResources().getColor(R.color.primaryColor), android.graphics.PorterDuff.Mode.SRC_IN);
         title.setText(item.title);
         summary.setText(item.summary);
         progressBar.setProgress(item.percentage);
+        
+        int progressColor = (item.percentage > 85) ? 0xFFFF5252 : getResources().getColor(R.color.primaryColor);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            progressBar.setProgressTintList(android.content.res.ColorStateList.valueOf(progressColor));
+        } else {
+            progressBar.getProgressDrawable().setColorFilter(progressColor, android.graphics.PorterDuff.Mode.SRC_IN);
+        }
+
 
         if (item.subItems != null && !item.subItems.isEmpty()) {
             subItemsContainer.setVisibility(View.VISIBLE);
@@ -1168,6 +1328,7 @@ subItem.size = Formatter.formatFileSize(getContext(), fileItem.size);
         return view;
     }
 
+
     private View createCategoryView(AnalysisItem item) {
         View view = LayoutInflater.from(getContext()).inflate(R.layout.item_analysis_categry, containerLayout, false);
 
@@ -1176,12 +1337,13 @@ subItem.size = Formatter.formatFileSize(getContext(), fileItem.size);
         TextView summary = view.findViewById(R.id.summary);
         ProgressBar loadingBar = view.findViewById(R.id.loading);
         LinearLayout subItemsContainer = view.findViewById(R.id.sub_items_container);
-        Button moreButton = view.findViewById(R.id.btn_more);
+        TextView moreButton = view.findViewById(R.id.btn_more);
 
         loadingBar.setSaveEnabled(false);
         loadingBar.setSaveFromParentEnabled(false);
 
         icon.setImageResource(item.icon);
+        icon.setColorFilter(getResources().getColor(R.color.primaryColor), android.graphics.PorterDuff.Mode.SRC_IN);
         title.setText(item.title);
         summary.setText(item.summary);
         loadingBar.setVisibility(item.isLoading ? View.VISIBLE : View.GONE);
@@ -1229,6 +1391,7 @@ subItem.size = Formatter.formatFileSize(getContext(), fileItem.size);
 
         return view;
     }
+
 
     private View createSubItemView(SubItem subItem) {
         View view = LayoutInflater.from(getContext()).inflate(R.layout.item_analysis_sub_item, containerLayout, false);

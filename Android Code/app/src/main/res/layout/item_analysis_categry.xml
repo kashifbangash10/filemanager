@@ -48,7 +48,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:textColor="?android:attr/textColorSecondary" />
+                    android:textColor="@color/primaryColor"
+                    android:textStyle="bold" />
 
             </LinearLayout>
 
@@ -71,14 +72,18 @@
             android:visibility="gone" />
 
         <!-- More Button -->
-        <Button
+        <TextView
             android:id="@+id/btn_more"
-            style="@style/Widget.AppCompat.Button.Borderless"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
+            android:padding="8dp"
             android:text="+15 MORE"
-            android:textColor="@color/colorAccent"
+            android:textStyle="bold"
+            android:textAllCaps="true"
+            android:textColor="@color/primaryColor"
+            android:background="?android:attr/selectableItemBackground"
             android:visibility="gone" />
 
     </LinearLayout>
