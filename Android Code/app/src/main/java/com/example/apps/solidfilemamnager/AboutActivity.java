@@ -74,7 +74,7 @@ public class AboutActivity extends AboutVariantFlavour implements View.OnClickLi
     private void initControls() {
 
         int accentColor = ColorUtils.getTextColorForBackground(SettingsActivity.getPrimaryColor());
-        TextView logo = (TextView) findViewById(R.id.logo);
+        TextView logo = (TextView) findViewById(R.id.logo_text);
         logo.setTextColor(accentColor);
         String header = String.valueOf(logo.getText());
         logo.setText(header);
