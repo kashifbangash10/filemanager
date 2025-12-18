@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.example.apps.solidfilemamnager.ui.DirectoryView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.DirectoryView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?android:attr/windowBackground">
@@ -40,4 +40,4 @@
         <include layout="@layout/pro_layout" />
     </LinearLayout>
 
-</com.example.apps.solidfilemamnager.ui.DirectoryView>
+</com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.DirectoryView>

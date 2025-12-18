@@ -23,7 +23,7 @@
             android:contentDescription="@null"
             android:scaleType="centerCrop" />
 
-        <com.example.apps.solidfilemamnager.ui.CircleImage
+        <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CircleImage
             android:id="@+id/icon_mime_background"
             android:layout_width="@dimen/grid_icon_size"
             android:layout_height="@dimen/grid_icon_size"

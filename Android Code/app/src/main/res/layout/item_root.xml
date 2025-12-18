@@ -48,7 +48,7 @@
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             android:textColor="?android:attr/textColorPrimary" />
 
-        <com.example.apps.solidfilemamnager.ui.NumberProgressBar
+        <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.NumberProgressBar
             android:id="@android:id/progress"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

@@ -38,7 +38,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="File Manager"
+                android:text="@string/app_name"
                 android:textSize="24sp"
                 android:textColor="@android:color/white"
                 android:textStyle="bold"
@@ -73,7 +73,7 @@
                 app:divider="@drawable/line_divider"
                 app:showDividers="middle|end">
 
-                <com.example.apps.solidfilemamnager.ui.CompatTextView
+                <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CompatTextView
                     android:id="@+id/action_rate"
                     style="@style/ButtonAppTheme"
                     android:layout_width="match_parent"
@@ -92,7 +92,7 @@
                     android:visibility="visible"
                     app:drawableStart="@drawable/ic_star" />
 
-                <com.example.apps.solidfilemamnager.ui.CompatTextView
+                <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CompatTextView
                     android:id="@+id/action_support"
                     style="@style/ButtonAppTheme"
                     android:layout_width="match_parent"
@@ -111,7 +111,7 @@
                     android:visibility="visible"
                     app:drawableStart="@drawable/ic_support" />
 
-                <com.example.apps.solidfilemamnager.ui.CompatTextView
+                <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CompatTextView
                     android:id="@+id/action_sponsor"
                     style="@style/ButtonAppTheme"
                     android:layout_width="match_parent"
@@ -130,7 +130,7 @@
                     android:visibility="gone"
                     app:drawableStart="@drawable/ic_sponsor" />
 
-                <com.example.apps.solidfilemamnager.ui.CompatTextView
+                <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CompatTextView
                     android:id="@+id/action_share"
                     style="@style/ButtonAppTheme"
                     android:layout_width="match_parent"
@@ -149,7 +149,7 @@
                     android:visibility="visible"
                     app:drawableStart="@drawable/ic_share" />
 
-                <com.example.apps.solidfilemamnager.ui.CompatTextView
+                <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CompatTextView
                     android:id="@+id/action_feedback"
                     style="@style/ButtonAppTheme"
                     android:layout_width="match_parent"

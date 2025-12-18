@@ -7,8 +7,8 @@ import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
-import com.example.apps.solidfilemamnager.model.DocumentsContract;
-import com.example.apps.solidfilemamnager.provider.UsbStorageProvider;
+import com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.model.DocumentsContract;
+import com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.provider.UsbStorageProvider;
 
 
 /**

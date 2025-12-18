@@ -80,8 +80,8 @@
 
     <!-- Representation of download progress percentage when running. [CHAR LIMIT=24] -->
     <string name="download_running_percent">In progress, <xliff:g id="number">%d</xliff:g><xliff:g id="percent">%%</xliff:g></string>
-    <string name="name">File Manager</string>
-    <string name="app_name">File Manager</string>
+    <string name="name">My File Manager</string>
+    <string name="app_name">My File Manager</string>
     <string name="app_ver">Another Explorer</string>
     <string name="pref_folder_size">Display folder size</string>
     <string name="pref_thumbnail">Display file thumbnails</string>

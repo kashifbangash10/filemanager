@@ -31,7 +31,7 @@ import com.google.android.material.snackbar.Snackbar;
 
 import java.util.List;
 
-import com.example.apps.solidfilemamnager.ui.fabs.FabSpeedDial;
+import com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.fabs.FabSpeedDial;
 
 import static android.view.View.VISIBLE;
 

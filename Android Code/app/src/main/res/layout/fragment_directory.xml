@@ -14,7 +14,7 @@
      limitations under the License.
 -->
 
-<com.example.apps.solidfilemamnager.ui.DirectoryView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.DirectoryView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -28,7 +28,7 @@
         android:orientation="vertical"
         android:visibility="gone">
 
-        <com.example.apps.solidfilemamnager.ui.MaterialProgressBar
+        <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.MaterialProgressBar
             android:id="@+id/progressBar"
             style="@style/ListProgress"
             android:layout_width="@dimen/progress_bar_size"
@@ -57,7 +57,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-            <com.example.apps.solidfilemamnager.ui.RecyclerViewPlus
+            <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.RecyclerViewPlus
                 android:id="@id/recyclerview"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -71,7 +71,7 @@
 
         </FrameLayout>
 
-        <com.example.apps.solidfilemamnager.ui.CompatTextView
+        <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CompatTextView
             android:id="@android:id/empty"
             style="@style/TextAppearance.AppCompat.Subhead"
             android:layout_width="wrap_content"
@@ -84,4 +84,4 @@
             app:drawableTop="@drawable/ic_empty_file" />
     </FrameLayout>
 
-</com.example.apps.solidfilemamnager.ui.DirectoryView>
+</com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.DirectoryView>

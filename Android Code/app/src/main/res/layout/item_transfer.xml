@@ -25,7 +25,7 @@
             android:layout_marginEnd="16dp"
             android:layout_marginRight="16dp">
 
-            <com.example.apps.solidfilemamnager.ui.CircleImage
+            <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CircleImage
                 android:id="@+id/icon_mime_background"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -87,7 +87,7 @@
             </LinearLayout>
 
 
-            <com.example.apps.solidfilemamnager.ui.NumberProgressBar
+            <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.NumberProgressBar
                 android:id="@android:id/progress"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

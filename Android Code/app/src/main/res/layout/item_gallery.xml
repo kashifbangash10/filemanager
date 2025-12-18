@@ -35,7 +35,7 @@
             android:textColor="@color/accentColor" />
     </FrameLayout>
 
-    <com.example.apps.solidfilemamnager.ui.RecyclerViewPlus
+    <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.RecyclerViewPlus
         android:id="@+id/recyclerview"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
