@@ -128,18 +128,18 @@ public class RootsExpandableAdapter extends BaseExpandableListAdapter {
             groupRoots.add(new GroupInfo("Apps", apps));
         }
 
-        if (!libraryMedia.isEmpty() || !libraryNonMedia.isEmpty()) {
+        /*if (!libraryMedia.isEmpty() || !libraryNonMedia.isEmpty()) {
             recent.addAll(libraryMedia);
             recent.addAll(libraryNonMedia);
             groupRoots.add(new GroupInfo("Library", recent));
         } else if (!recent.isEmpty()) {
             groupRoots.add(new GroupInfo("Library", recent));
-        }
+        }*/
 
-        if (!folders.isEmpty()) {
+        /*if (!folders.isEmpty()) {
             folders.addAll(bookmarks);
             groupRoots.add(new GroupInfo("Folders", folders));
-        }
+        }*/
 
         group.clear();
         group.addAll(groupRoots);

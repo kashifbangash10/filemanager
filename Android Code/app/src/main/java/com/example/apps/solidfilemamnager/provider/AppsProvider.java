@@ -160,6 +160,7 @@ public class AppsProvider extends DocumentsProvider {
 		row1.add(Root.COLUMN_AVAILABLE_BYTES, storageUtils.getPartionSize(StorageUtils.PARTITION_DATA, false));
 		row1.add(Root.COLUMN_CAPACITY_BYTES, storageUtils.getPartionSize(StorageUtils.PARTITION_DATA, true));
 
+/*
 		final RowBuilder row2 = result.newRow();
 		row2.add(Root.COLUMN_ROOT_ID, ROOT_ID_PROCESS);
 		row2.add(Root.COLUMN_FLAGS, Root.FLAG_LOCAL_ONLY | Root.FLAG_ADVANCED | Root.FLAG_SUPER_ADVANCED | Root.FLAG_SUPPORTS_SEARCH);
@@ -169,6 +170,7 @@ public class AppsProvider extends DocumentsProvider {
 		row2.add(Root.COLUMN_DOCUMENT_ID, ROOT_ID_PROCESS);
 		row2.add(Root.COLUMN_AVAILABLE_BYTES, storageUtils.getPartionSize(StorageUtils.PARTITION_RAM, false));
 		row2.add(Root.COLUMN_CAPACITY_BYTES, storageUtils.getPartionSize(StorageUtils.PARTITION_RAM, true));
+*/
 
         return result;
     }
