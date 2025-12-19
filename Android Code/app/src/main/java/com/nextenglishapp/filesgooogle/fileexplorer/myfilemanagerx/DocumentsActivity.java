@@ -147,6 +147,7 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     private static final int CODE_SETTINGS = 92;
 
     private boolean mInAnalysis = false;
+    private String mAnalysisTitle = "Analysis";
     private static final boolean SHOW_NATIVE_ADS = false;
 
     private boolean mShowAsDialog;
@@ -624,15 +625,20 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     }
 
     public void setAnalysisMode(boolean active) {
+        setAnalysisMode(active, "Analysis");
+    }
+
+    public void setAnalysisMode(boolean active, String title) {
         mInAnalysis = active;
-        if (mInAnalysis && getSupportActionBar() != null) {
-             getSupportActionBar().setTitle(R.string.root_analysis);
+        if (active && title != null) {
+            mAnalysisTitle = title;
         }
         updateActionBar();
     }
 
     public void updateActionBar() {
         if (mInAnalysis) {
+            setTitle(mAnalysisTitle);
             if (mDrawerToggle != null) {
                 mDrawerToggle.setDrawerIndicatorEnabled(false);
                 mDrawerToggle.setHomeAsUpIndicator(R.drawable.ic_arrow_back);
@@ -714,6 +720,9 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
 
     public void setTitle(String title) {
         mToolbar.setTitle(title);
+        if(getSupportActionBar() != null){
+            getSupportActionBar().setTitle(title);
+        }
     }
 
     @Override
@@ -1048,6 +1057,10 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
 
     @Override
     public void onBackPressed() {
+        if (mInAnalysis) {
+            super.onBackPressed();
+            return;
+        }
         if (isRootsDrawerOpen() && !mShowAsDialog) {
             mDrawerLayoutHelper.closeDrawer(mRootsContainer);
             return;

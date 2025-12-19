@@ -194,6 +194,9 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
         registerReceiver();
         if (getActivity() != null) {
             getActivity().setTitle("Home");
+            if (getActivity() instanceof DocumentsActivity) {
+                ((DocumentsActivity) getActivity()).setAnalysisMode(false);
+            }
         }
     }
 
@@ -506,8 +509,46 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
             if (mContext == null || roots == null) return calculatedShortcuts;
 
             try {
-                // 1. Analysis (Internal Storage)
-                // 1. Analysis (Internal Storage)
+                // Optimized single query for all media categories
+                long downloadsSize = 0, videoSize = 0, audioSize = 0, imageSize = 0, documentsSize = 0;
+                
+                Uri externalUri = MediaStore.Files.getContentUri("external");
+                String[] projection = {
+                    MediaStore.Files.FileColumns.SIZE,
+                    MediaStore.Files.FileColumns.MIME_TYPE,
+                    MediaStore.Files.FileColumns.DATA
+                };
+                
+                Cursor cursor = mContext.getContentResolver().query(externalUri, projection, null, null, null);
+                if (cursor != null) {
+                    int sizeIdx = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.SIZE);
+                    int mimeIdx = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MIME_TYPE);
+                    int dataIdx = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATA);
+                    
+                    String downloadPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath();
+                    
+                    while (cursor.moveToNext()) {
+                        long size = cursor.getLong(sizeIdx);
+                        String mime = cursor.getString(mimeIdx);
+                        String path = cursor.getString(dataIdx);
+                        
+                        if (size <= 0) continue;
+                        
+                        if (path != null && path.startsWith(downloadPath)) {
+                            downloadsSize += size;
+                        }
+                        
+                        if (mime != null) {
+                            if (mime.startsWith("video/")) videoSize += size;
+                            else if (mime.startsWith("audio/")) audioSize += size;
+                            else if (mime.startsWith("image/")) imageSize += size;
+                            else if (isDocumentMimeType(mime)) documentsSize += size;
+                        }
+                    }
+                    cursor.close();
+                }
+
+                // 1. Analysis
                 RootInfo internalRoot = roots.getPrimaryRoot();
                 if (internalRoot != null) {
                     RootInfo analysisRoot = copyRootInfo(internalRoot);
@@ -520,16 +561,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                 if (downloadsRoot != null) {
                     downloadsRoot = copyRootInfo(downloadsRoot);
                     downloadsRoot.title = "Downloads";
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        long size = getCategorySize(MediaStore.Downloads.EXTERNAL_CONTENT_URI);
-                        downloadsRoot.totalBytes = size;
-                    } else {
-                        File downloadsDir = Environment.getExternalStoragePublicDirectory(
-                                Environment.DIRECTORY_DOWNLOADS);
-                        if (downloadsDir.exists()) {
-                            downloadsRoot.totalBytes = getFolderSize(downloadsDir);
-                        }
-                    }
+                    downloadsRoot.totalBytes = downloadsSize;
                     calculatedShortcuts.add(CommonInfo.from(downloadsRoot, TYPE_SHORTCUT));
                 }
 
@@ -537,9 +569,8 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                 RootInfo videosRoot = roots.getRootInfo("videos_root", MediaDocumentsProvider.AUTHORITY);
                 if (videosRoot != null) {
                     videosRoot = copyRootInfo(videosRoot);
-                    videosRoot.title = "Video"; // Force Singular
-                    long size = getCategorySize(MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
-                    videosRoot.totalBytes = size;
+                    videosRoot.title = "Video";
+                    videosRoot.totalBytes = videoSize;
                     calculatedShortcuts.add(CommonInfo.from(videosRoot, TYPE_SHORTCUT));
                 }
 
@@ -548,8 +579,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                 if (audioRoot != null) {
                     audioRoot = copyRootInfo(audioRoot);
                     audioRoot.title = "Audio";
-                    long size = getCategorySize(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
-                    audioRoot.totalBytes = size;
+                    audioRoot.totalBytes = audioSize;
                     calculatedShortcuts.add(CommonInfo.from(audioRoot, TYPE_SHORTCUT));
                 }
 
@@ -558,8 +588,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                 if (imagesRoot != null) {
                     imagesRoot = copyRootInfo(imagesRoot);
                     imagesRoot.title = "Images";
-                    long size = getCategorySize(MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                    imagesRoot.totalBytes = size;
+                    imagesRoot.totalBytes = imageSize;
                     calculatedShortcuts.add(CommonInfo.from(imagesRoot, TYPE_SHORTCUT));
                 }
 
@@ -568,8 +597,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                 if (appsRoot != null) {
                     appsRoot = copyRootInfo(appsRoot);
                     appsRoot.title = "Apps";
-                    long size = getAppsSize();
-                    appsRoot.totalBytes = size;
+                    appsRoot.totalBytes = getAppsSize();
                     calculatedShortcuts.add(CommonInfo.from(appsRoot, TYPE_SHORTCUT));
                 }
 
@@ -578,8 +606,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                 if (documentsRoot != null) {
                     documentsRoot = copyRootInfo(documentsRoot);
                     documentsRoot.title = "Documents";
-                    long size = getDocumentsSize();
-                    documentsRoot.totalBytes = size;
+                    documentsRoot.totalBytes = documentsSize;
                     calculatedShortcuts.add(CommonInfo.from(documentsRoot, TYPE_SHORTCUT));
                 }
 
@@ -588,6 +615,13 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
             }
 
             return calculatedShortcuts;
+        }
+
+        private boolean isDocumentMimeType(String mime) {
+            if (mime == null) return false;
+            return mime.contains("pdf") || mime.contains("word") || mime.contains("excel") || 
+                   mime.contains("powerpoint") || mime.contains("text/plain") || 
+                   mime.contains("rtf") || mime.contains("opendocument");
         }
 
         @Override
