@@ -155,98 +155,107 @@ class AnalysisDetailFragment : Fragment() {
 
     @Suppress("UNCHECKED_CAST")
     private fun loadData() {
-        val args = arguments ?: return
-        isInFolderNavigation = false
-        folderStack.clear()
+        try {
+            val args = arguments ?: return
+            isInFolderNavigation = false
+            folderStack.clear()
 
-        val items = mutableListOf<DetailAdapter.DetailItem>()
-        var isDuplicateView = false
+            val items = mutableListOf<DetailAdapter.DetailItem>()
+            var isDuplicateView = false
 
-        when {
-            args.containsKey(ARG_FOLDERS) -> {
-                val folders = args.getSerializable(ARG_FOLDERS) as? List<AnalysisFragment.FolderItem>
-                folders?.forEach { folder ->
-                    items.add(DetailAdapter.DetailItem().apply {
-                        name = folder.name
-                        path = getShortPath(folder.path)
-                        subtitle = "${folder.itemCount} items"
-                        size = Formatter.formatFileSize(context, folder.size)
-                        file = File(folder.path)
-                        isFolder = true
-                        icon = R.drawable.ic_root_folder
-                        iconColor = getFolderIconColor(folder.name)
-                    })
-                }
-            }
-            args.containsKey(ARG_DUPLICATES) -> {
-                isDuplicateView = true
-                val duplicates = args.getSerializable(ARG_DUPLICATES) as? List<AnalysisFragment.DuplicateGroup>
-                duplicates?.let {
-                    var totalDuplicates = 0
-                    var totalSize = 0L
-                    it.forEach { group ->
-                        totalDuplicates += group.filePaths.size
-                        totalSize += group.size * group.filePaths.size
-                        group.filePaths.forEach { filePath ->
-                            val f = File(filePath)
-                            items.add(DetailAdapter.DetailItem().apply {
-                                name = group.fileName
-                                path = getShortPath(filePath)
-                                size = Formatter.formatFileSize(context, group.size)
-                                subtitle = getFileDate(f)
-                                file = f
-                                isFolder = false
-                                isSelectable = true
-                                icon = getFileIcon(group.fileName)
-                                iconColor = -0x3ef9 // 0xFFFFC107
-                            })
-                        }
+            when {
+                args.containsKey(ARG_FOLDERS) -> {
+                    val folders = args.getSerializable(ARG_FOLDERS) as? List<AnalysisFragment.FolderItem>
+                    folders?.forEach { folder ->
+                        items.add(DetailAdapter.DetailItem().apply {
+                            name = folder.name
+                            path = getShortPath(folder.path)
+                            subtitle = "${folder.itemCount} items"
+                            size = try { Formatter.formatFileSize(context, folder.size) } catch(e: Exception) { "0 B" }
+                            file = File(folder.path)
+                            isFolder = true
+                            icon = R.drawable.ic_root_folder
+                            iconColor = getFolderIconColor(folder.name)
+                        })
                     }
-                    bottomBar?.visibility = View.VISIBLE
-                    summaryText?.text = "Duplicate files: $totalDuplicates  Size: ${Formatter.formatFileSize(context, totalSize)}"
                 }
-            }
-            args.containsKey(ARG_LARGE_FILES) -> {
-                val largeFiles = args.getSerializable(ARG_LARGE_FILES) as? List<AnalysisFragment.FileItem>
-                largeFiles?.forEach { fileInfo ->
-                    items.add(DetailAdapter.DetailItem().apply {
-                        name = fileInfo.name
-                        val fileName = fileInfo.name.lowercase()
-                        if (fileName.endsWith(".apk")) {
-                            path = null
-                            subtitle = getFileDate(File(fileInfo.fullPath))
-                        } else {
-                            path = getShortPath(fileInfo.fullPath)
-                            subtitle = null
+                args.containsKey(ARG_DUPLICATES) -> {
+                    isDuplicateView = true
+                    val duplicates = args.getSerializable(ARG_DUPLICATES) as? List<AnalysisFragment.DuplicateGroup>
+                    duplicates?.let {
+                        var totalDuplicates = 0
+                        var totalSize = 0L
+                        it.forEach { group ->
+                            totalDuplicates += group.filePaths.size
+                            totalSize += group.size * group.filePaths.size
+                            group.filePaths.forEach { filePath ->
+                                try {
+                                    val f = File(filePath)
+                                    items.add(DetailAdapter.DetailItem().apply {
+                                        name = group.fileName
+                                        path = getShortPath(filePath)
+                                        size = try { Formatter.formatFileSize(context, group.size) } catch(e: Exception) { "0 B" }
+                                        subtitle = getFileDate(f)
+                                        file = f
+                                        isFolder = false
+                                        isSelectable = true
+                                        icon = getFileIcon(group.fileName)
+                                        iconColor = -0x3ef9 // 0xFFFFC107
+                                    })
+                                } catch (e: Exception) {}
+                            }
                         }
-                        size = Formatter.formatFileSize(context, fileInfo.size)
-                        file = File(fileInfo.fullPath)
-                        isFolder = false
-                        icon = getFileIcon(fileInfo.name)
-                        iconColor = -0x6800 // 0xFFFF9800
-                    })
+                        bottomBar?.visibility = View.VISIBLE
+                        summaryText?.text = "Duplicate files: $totalDuplicates  Size: ${try { Formatter.formatFileSize(context, totalSize) } catch(e: Exception) { "" }}"
+                    }
+                }
+                args.containsKey(ARG_LARGE_FILES) -> {
+                    val largeFiles = args.getSerializable(ARG_LARGE_FILES) as? List<AnalysisFragment.FileItem>
+                    largeFiles?.forEach { fileInfo ->
+                        try {
+                            items.add(DetailAdapter.DetailItem().apply {
+                                name = fileInfo.name
+                                val fileName = fileInfo.name.lowercase()
+                                if (fileName.endsWith(".apk")) {
+                                    path = null
+                                    subtitle = getFileDate(File(fileInfo.fullPath))
+                                } else {
+                                    path = getShortPath(fileInfo.fullPath)
+                                    subtitle = null
+                                }
+                                size = try { Formatter.formatFileSize(context, fileInfo.size) } catch(e: Exception) { "0 B" }
+                                file = File(fileInfo.fullPath)
+                                isFolder = false
+                                icon = getFileIcon(fileInfo.name)
+                                iconColor = -0x6800 // 0xFFFF9800
+                            })
+                        } catch (e: Exception) {}
+                    }
+                }
+                args.containsKey(ARG_APPS) -> {
+                    val apps = args.getSerializable(ARG_APPS) as? List<AnalysisFragment.AppItem>
+                    apps?.forEach { app ->
+                        items.add(DetailAdapter.DetailItem().apply {
+                            name = app.name
+                            path = app.packageName
+                            subtitle = getInstallDate()
+                            size = try { Formatter.formatFileSize(context, app.size) } catch(e: Exception) { "0 B" }
+                            packageName = app.packageName
+                            isApp = true
+                            icon = R.drawable.ic_root_apps
+                            iconColor = 0
+                        })
+                    }
                 }
             }
-            args.containsKey(ARG_APPS) -> {
-                val apps = args.getSerializable(ARG_APPS) as? List<AnalysisFragment.AppItem>
-                apps?.forEach { app ->
-                    items.add(DetailAdapter.DetailItem().apply {
-                        name = app.name
-                        path = app.packageName
-                        subtitle = getInstallDate()
-                        size = Formatter.formatFileSize(context, app.size)
-                        packageName = app.packageName
-                        isApp = true
-                        icon = R.drawable.ic_root_apps
-                        iconColor = 0
-                    })
-                }
-            }
-        }
 
-        adapter = DetailAdapter(items, isDuplicateView, lifecycleScope,
-            this::handleItemClick, this::handleSelectionChanged)
-        recyclerView.adapter = adapter
+            adapter = DetailAdapter(items, isDuplicateView, lifecycleScope,
+                this::handleItemClick, this::handleSelectionChanged)
+            recyclerView.adapter = adapter
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Error loading data", e)
+            Toast.makeText(context, "Error displaying items", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun handleItemClick(item: DetailAdapter.DetailItem) {
@@ -316,56 +325,66 @@ class AnalysisDetailFragment : Fragment() {
     }
 
     private fun openFolderInternally(folder: File?) {
-        if (folder == null || !folder.exists() || !folder.isDirectory) {
-            Toast.makeText(context, "Folder not found", Toast.LENGTH_SHORT).show()
-            return
-        }
+        try {
+            if (folder == null || !folder.exists() || !folder.isDirectory) {
+                Toast.makeText(context, "Folder not found", Toast.LENGTH_SHORT).show()
+                return
+            }
 
-        if (!isInFolderNavigation) {
-            isInFolderNavigation = true
-            folderStack.clear()
-        }
+            if (!isInFolderNavigation) {
+                isInFolderNavigation = true
+                folderStack.clear()
+            }
 
-        if (folderStack.isEmpty() || folderStack.peek() != folder) {
-            folderStack.push(folder)
-        }
+            if (folderStack.isEmpty() || folderStack.peek() != folder) {
+                folderStack.push(folder)
+            }
 
-        lifecycleScope.launch(Dispatchers.Main) {
-            val items = withContext(Dispatchers.IO) {
-                val result = mutableListOf<DetailAdapter.DetailItem>()
-                folder.listFiles()?.filter { !it.name.startsWith(".") }?.forEach { file ->
-                    result.add(DetailAdapter.DetailItem().apply {
-                        name = file.name
-                        path = getShortPath(file.absolutePath)
-                        this.file = file
-                        if (file.isDirectory) {
-                            isFolder = true
-                            icon = R.drawable.ic_root_folder
-                            iconColor = getFolderIconColor(file.name)
-                            size = Formatter.formatFileSize(context, getFolderSizeQuick(file))
-                            subtitle = "${countFilesQuick(file)} items"
-                        } else {
-                            isFolder = false
-                            icon = getFileIcon(file.name)
-                            iconColor = -0xde690d // 0xFF2196F3
-                            size = Formatter.formatFileSize(context, file.length())
-                            subtitle = getFileDate(file)
+            lifecycleScope.launch(Dispatchers.Main) {
+                try {
+                    val items = withContext(Dispatchers.IO) {
+                        val result = mutableListOf<DetailAdapter.DetailItem>()
+                        folder.listFiles()?.filter { !it.name.startsWith(".") }?.forEach { file ->
+                            try {
+                                result.add(DetailAdapter.DetailItem().apply {
+                                    name = file.name
+                                    path = getShortPath(file.absolutePath)
+                                    this.file = file
+                                    if (file.isDirectory) {
+                                        isFolder = true
+                                        icon = R.drawable.ic_root_folder
+                                        iconColor = getFolderIconColor(file.name)
+                                        size = Formatter.formatFileSize(context, getFolderSizeQuick(file))
+                                        subtitle = "${countFilesQuick(file)} items"
+                                    } else {
+                                        isFolder = false
+                                        icon = getFileIcon(file.name)
+                                        iconColor = -0xde690d // 0xFF2196F3
+                                        size = Formatter.formatFileSize(context, file.length())
+                                        subtitle = getFileDate(file)
+                                    }
+                                })
+                            } catch (e: Exception) {}
                         }
-                    })
-                }
-                result.sortWith(compareBy({ !it.isFolder }, { it.name?.lowercase() }))
-                result
-            }
+                        result.sortWith(compareBy({ !it.isFolder }, { it.name?.lowercase() }))
+                        result
+                    }
 
-            if (items.isEmpty()) {
-                Toast.makeText(context, "Empty folder", Toast.LENGTH_SHORT).show()
-            } else {
-                title = folder.name
-                updateToolbarTitle()
-                bottomBar?.visibility = View.GONE
-                adapter = DetailAdapter(items, false, lifecycleScope, this@AnalysisDetailFragment::handleItemClick, this@AnalysisDetailFragment::handleSelectionChanged)
-                recyclerView.adapter = adapter
+                    if (items.isEmpty()) {
+                        Toast.makeText(context, "Empty folder", Toast.LENGTH_SHORT).show()
+                    } else {
+                        title = folder.name
+                        updateToolbarTitle()
+                        bottomBar?.visibility = View.GONE
+                        adapter = DetailAdapter(items, false, lifecycleScope, this@AnalysisDetailFragment::handleItemClick, this@AnalysisDetailFragment::handleSelectionChanged)
+                        recyclerView.adapter = adapter
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Cannot open folder", Toast.LENGTH_SHORT).show()
+                }
             }
+        } catch (e: Exception) {
+            Toast.makeText(context, "Cannot access folder", Toast.LENGTH_SHORT).show()
         }
     }
 

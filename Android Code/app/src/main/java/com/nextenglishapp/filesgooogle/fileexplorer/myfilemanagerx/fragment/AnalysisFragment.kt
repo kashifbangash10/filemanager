@@ -30,6 +30,8 @@ import java.util.ArrayList
 
 class AnalysisFragment : Fragment() {
 
+
+
     companion object {
         const val TAG = "AnalysisFragment"
         private const val LARGE_FILE_THRESHOLD = 50 * 1024 * 1024L // 50MB
@@ -218,186 +220,215 @@ class AnalysisFragment : Fragment() {
     private suspend fun analyzeAllData(): CombinedResults? = withContext(Dispatchers.IO) {
         val ctx = context ?: return@withContext null
         
-        // 1. Storage Info
-        val rootPath = Environment.getExternalStorageDirectory().path
-        val stat = StatFs(rootPath)
-        val total = stat.totalBytes
-        val avail = stat.availableBytes
-        val used = total - avail
-        val percentage = if (total > 0) ((used * 100) / total).toInt() else 0
-        
-        val storageItem = AnalysisItem(
-            AnalysisItem.TYPE_STORAGE,
-            R.drawable.ic_root_internal,
-            "Internal storage",
-            "${Formatter.formatFileSize(ctx, used)} / ${Formatter.formatFileSize(ctx, total)}",
-            percentage,
-            false
-        )
-
-        val duplicatesItem = AnalysisItem(AnalysisItem.TYPE_DUPLICATE, R.drawable.ic_root_document, "Duplicate files", "", 0, false)
-        val largeFilesItem = AnalysisItem(AnalysisItem.TYPE_LARGE_FILES, R.drawable.ic_root_folder, "Large files", "", 0, false)
-        val appsItem = AnalysisItem(AnalysisItem.TYPE_APP_MANAGER, R.drawable.ic_root_apps, "App manager", "", 0, false)
-
-        var totalImageSize = 0L
-        var totalVideoSize = 0L
-        var totalAudioSize = 0L
-        var totalDocSize = 0L
-
-        val folderSizeMap = mutableMapOf<String, Long>()
-        val folderCountMap = mutableMapOf<String, Int>()
-        val sizeMap = mutableMapOf<Long, MutableList<String>>()
-        
-        val rootDir = Environment.getExternalStorageDirectory().absolutePath
-        var largeFilesSize = 0L
-        var largeCount = 0
-        
-        cachedData?.largeFiles?.clear()
-        cachedData?.duplicateGroups?.clear()
-
-        // Single pass over MediaStore
-        val projection = arrayOf(
-            MediaStore.Files.FileColumns.DISPLAY_NAME,
-            MediaStore.Files.FileColumns.SIZE,
-            MediaStore.Files.FileColumns.DATA
-        )
-        
-        ctx.contentResolver.query(
-            MediaStore.Files.getContentUri("external"),
-            projection, null, null, null
-        )?.use { cursor ->
-            val nameIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME)
-            val sizeIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.SIZE)
-            val dataIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA)
+        try {
+            // 1. Storage Info
+            val rootPath = Environment.getExternalStorageDirectory().path
+            val stat = try {
+                StatFs(rootPath)
+            } catch (e: Exception) {
+                null
+            }
             
-            val videoExts = setOf("mp4", "avi", "mkv", "mov", "webm", "3gp")
-            val imageExts = setOf("jpg", "jpeg", "png", "gif", "webp")
-            val audioExts = setOf("mp3", "wav", "m4a", "flac")
-            val docExts = setOf("pdf", "doc", "docx", "xls", "xlsx", "txt", "ppt", "pptx")
+            val total = stat?.totalBytes ?: 0L
+            val avail = stat?.availableBytes ?: 0L
+            val used = total - avail
+            val percentage = if (total > 0) ((used * 100) / total).toInt() else 0
+            
+            val storageItem = AnalysisItem(
+                AnalysisItem.TYPE_STORAGE,
+                R.drawable.ic_root_internal,
+                "Internal storage",
+                "${Formatter.formatFileSize(ctx, used)} / ${Formatter.formatFileSize(ctx, total)}",
+                percentage,
+                false
+            )
 
-            var count = 0
-            while (cursor.moveToNext()) {
-                if (++count % 100 == 0) yield() // Allow cancellation
+            val duplicatesItem = AnalysisItem(AnalysisItem.TYPE_DUPLICATE, R.drawable.ic_root_document, "Duplicate files", "", 0, false)
+            val largeFilesItem = AnalysisItem(AnalysisItem.TYPE_LARGE_FILES, R.drawable.ic_root_folder, "Large files", "", 0, false)
+            val appsItem = AnalysisItem(AnalysisItem.TYPE_APP_MANAGER, R.drawable.ic_root_apps, "App manager", "", 0, false)
 
-                val size = cursor.getLong(sizeIdx)
-                val path = cursor.getString(dataIdx) ?: continue
-                val name = cursor.getString(nameIdx) ?: "Unknown"
-                val ext = name.substringAfterLast('.', "").lowercase()
+            var totalImageSize = 0L
+            var totalVideoSize = 0L
+            var totalAudioSize = 0L
+            var totalDocSize = 0L
 
-                // Breakdown
-                when {
-                    videoExts.contains(ext) -> totalVideoSize += size
-                    imageExts.contains(ext) -> totalImageSize += size
-                    audioExts.contains(ext) -> totalAudioSize += size
-                    docExts.contains(ext) -> totalDocSize += size
-                }
+            val folderSizeMap = mutableMapOf<String, Long>()
+            val folderCountMap = mutableMapOf<String, Int>()
+            val sizeMap = mutableMapOf<Long, MutableList<String>>()
+            
+            val rootDir = Environment.getExternalStorageDirectory().absolutePath
+            var largeFilesSize = 0L
+            var largeCount = 0
+            
+            cachedData?.largeFiles?.clear()
+            cachedData?.duplicateGroups?.clear()
 
-                // Storage calculation
-                if (path.startsWith(rootDir)) {
-                    val relativePath = path.substring(rootDir.length).trimStart('/')
-                    val topDir = relativePath.split('/')[0]
-                    if (topDir.isNotEmpty() && !topDir.startsWith(".")) {
-                        folderSizeMap[topDir] = (folderSizeMap[topDir] ?: 0L) + size
-                        folderCountMap[topDir] = (folderCountMap[topDir] ?: 0) + 1
+            // Single pass over MediaStore
+            val projection = arrayOf(
+                MediaStore.Files.FileColumns.DISPLAY_NAME,
+                MediaStore.Files.FileColumns.SIZE,
+                MediaStore.Files.FileColumns.DATA
+            )
+            
+            try {
+                ctx.contentResolver.query(
+                    MediaStore.Files.getContentUri("external"),
+                    projection, null, null, null
+                )?.use { cursor ->
+                    val nameIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME)
+                    val sizeIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.SIZE)
+                    val dataIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA)
+                    
+                    val videoExts = setOf("mp4", "avi", "mkv", "mov", "webm", "3gp")
+                    val imageExts = setOf("jpg", "jpeg", "png", "gif", "webp")
+                    val audioExts = setOf("mp3", "wav", "m4a", "flac")
+                    val docExts = setOf("pdf", "doc", "docx", "xls", "xlsx", "txt", "ppt", "pptx")
+
+                    var count = 0
+                    while (cursor.moveToNext()) {
+                        if (++count % 100 == 0) yield() // Allow cancellation
+
+                        val size = cursor.getLong(sizeIdx)
+                        val path = cursor.getString(dataIdx) ?: continue
+                        val name = cursor.getString(nameIdx) ?: "Unknown"
+                        val ext = name.substringAfterLast('.', "").lowercase()
+
+                        // Breakdown
+                        when {
+                            videoExts.contains(ext) -> totalVideoSize += size
+                            imageExts.contains(ext) -> totalImageSize += size
+                            audioExts.contains(ext) -> totalAudioSize += size
+                            docExts.contains(ext) -> totalDocSize += size
+                        }
+
+                        // Storage calculation
+                        if (path.startsWith(rootDir)) {
+                            val relativePath = path.substring(rootDir.length).trimStart('/')
+                            val topDir = relativePath.split('/')[0]
+                            if (topDir.isNotEmpty() && !topDir.startsWith(".")) {
+                                folderSizeMap[topDir] = (folderSizeMap[topDir] ?: 0L) + size
+                                folderCountMap[topDir] = (folderCountMap[topDir] ?: 0) + 1
+                            }
+                        }
+
+                        // Duplicates (size-based candidate)
+                        if (size > 50 * 1024) {
+                            sizeMap.getOrPut(size) { mutableListOf() }.add(path)
+                        }
+
+                        // Large Files
+                        if (size > LARGE_FILE_THRESHOLD) {
+                            largeCount++
+                            largeFilesSize += size
+                            cachedData?.largeFiles?.add(FileItem().apply {
+                                this.name = name
+                                this.path = try { File(path).parent ?: "" } catch(e: Exception) { "" }
+                                this.size = size
+                                this.fullPath = path
+                            })
+                        }
                     }
                 }
+            } catch (e: Exception) {
+                android.util.Log.e("Analysis", "MediaStore Query Error", e)
+            }
 
-                // Duplicates (size-based candidate)
-                if (size > 50 * 1024) {
-                    sizeMap.getOrPut(size) { mutableListOf() }.add(path)
-                }
+            // Processing Storage Folders
+            val sortedFolders = folderSizeMap.filter { it.value > 0 }.toList().sortedByDescending { it.second }
+            storageItem.moreCount = if (sortedFolders.size > 3) sortedFolders.size - 3 else 0
+            cachedData?.storageFolders?.clear()
+            sortedFolders.forEach { (name, size) ->
+                cachedData?.storageFolders?.add(FolderItem().apply {
+                    this.name = name
+                    this.path = File(rootDir, name).absolutePath
+                    this.size = size
+                    this.itemCount = folderCountMap[name] ?: 0
+                })
+            }
+            sortedFolders.take(3).forEach { (name, size) ->
+                storageItem.subItems.add(SubItem(name, "${folderCountMap[name] ?: 0} items", Formatter.formatFileSize(ctx, size), R.drawable.ic_root_folder, File(rootDir, name).absolutePath))
+            }
 
-                // Large Files
-                if (size > LARGE_FILE_THRESHOLD) {
-                    largeCount++
-                    largeFilesSize += size
-                    cachedData?.largeFiles?.add(FileItem().apply {
-                        this.name = name
-                        this.path = File(path).parent ?: ""
+            // Processing Duplicates
+            var totalWasted = 0L
+            var duplicateCount = 0
+            sizeMap.forEach { (size, paths) ->
+                if (paths.size > 1) {
+                    totalWasted += size * (paths.size - 1)
+                    duplicateCount += (paths.size - 1)
+                    cachedData?.duplicateGroups?.add(DuplicateGroup().apply {
+                        fileName = try { File(paths[0]).name } catch (e: Exception) { "Unknown" }
                         this.size = size
-                        this.fullPath = path
+                        count = paths.size
+                        filePaths.addAll(paths)
                     })
                 }
             }
-        }
-
-        // Processing Storage Folders
-        val sortedFolders = folderSizeMap.filter { it.value > 0 }.toList().sortedByDescending { it.second }
-        storageItem.moreCount = if (sortedFolders.size > 3) sortedFolders.size - 3 else 0
-        cachedData?.storageFolders?.clear()
-        sortedFolders.forEach { (name, size) ->
-            cachedData?.storageFolders?.add(FolderItem().apply {
-                this.name = name
-                this.path = File(rootDir, name).absolutePath
-                this.size = size
-                this.itemCount = folderCountMap[name] ?: 0
-            })
-        }
-        sortedFolders.take(3).forEach { (name, size) ->
-            storageItem.subItems.add(SubItem(name, "${folderCountMap[name] ?: 0} items", Formatter.formatFileSize(ctx, size), R.drawable.ic_root_folder, File(rootDir, name).absolutePath))
-        }
-
-        // Processing Duplicates
-        var totalWasted = 0L
-        var duplicateCount = 0
-        sizeMap.forEach { (size, paths) ->
-            if (paths.size > 1) {
-                totalWasted += size * (paths.size - 1)
-                duplicateCount += (paths.size - 1)
-                cachedData?.duplicateGroups?.add(DuplicateGroup().apply {
-                    fileName = File(paths[0]).name
-                    this.size = size
-                    count = paths.size
-                    filePaths.addAll(paths)
-                })
+            cachedData?.duplicateGroups?.sortByDescending { it.size * (it.count - 1) }
+            duplicatesItem.summary = "$duplicateCount duplicates • ${Formatter.formatFileSize(ctx, totalWasted)} wasted"
+            duplicatesItem.moreCount = if (cachedData!!.duplicateGroups.size > 3) cachedData!!.duplicateGroups.size - 3 else 0
+            cachedData?.duplicateGroups?.take(3)?.forEach { g ->
+                duplicatesItem.subItems.add(SubItem(g.fileName, "${g.count} copies found", Formatter.formatFileSize(ctx, g.size * (g.count - 1)) + " wasted", getFileIcon(g.fileName), g.filePaths[0]))
             }
-        }
-        cachedData?.duplicateGroups?.sortByDescending { it.size * (it.count - 1) }
-        duplicatesItem.summary = "$duplicateCount duplicates • ${Formatter.formatFileSize(ctx, totalWasted)} wasted"
-        duplicatesItem.moreCount = if (cachedData!!.duplicateGroups.size > 3) cachedData!!.duplicateGroups.size - 3 else 0
-        cachedData?.duplicateGroups?.take(3)?.forEach { g ->
-            duplicatesItem.subItems.add(SubItem(g.fileName, "${g.count} copies found", Formatter.formatFileSize(ctx, g.size * (g.count - 1)) + " wasted", getFileIcon(g.fileName), g.filePaths[0]))
-        }
 
-        // Finalizing Large Files
-        cachedData?.largeFiles?.sortByDescending { it.size }
-        largeFilesItem.summary = "$largeCount files • ${Formatter.formatFileSize(ctx, largeFilesSize)}"
-        largeFilesItem.moreCount = if (cachedData!!.largeFiles.size > 3) cachedData!!.largeFiles.size - 3 else 0
-        cachedData?.largeFiles?.take(3)?.forEach { f ->
-            largeFilesItem.subItems.add(SubItem(f.name, f.path, Formatter.formatFileSize(ctx, f.size), getFileIcon(f.name), f.fullPath))
-        }
-
-        // 2. Apps Info
-        val pm = ctx.packageManager
-        val pkgs = pm.getInstalledPackages(0)
-        var totalAppSize = 0L
-        cachedData?.apps?.clear()
-        pkgs.forEach { pkg ->
-            yield()
-            val appItem = AppItem().apply {
-                name = pm.getApplicationLabel(pkg.applicationInfo).toString()
-                packageName = pkg.packageName
-                val apk = File(pkg.applicationInfo.sourceDir)
-                size = if (apk.exists()) apk.length() else 0
+            // Finalizing Large Files
+            cachedData?.largeFiles?.sortByDescending { it.size }
+            largeFilesItem.summary = "$largeCount files • ${Formatter.formatFileSize(ctx, largeFilesSize)}"
+            largeFilesItem.moreCount = if (cachedData!!.largeFiles.size > 3) cachedData!!.largeFiles.size - 3 else 0
+            cachedData?.largeFiles?.take(3)?.forEach { f ->
+                largeFilesItem.subItems.add(SubItem(f.name, f.path, Formatter.formatFileSize(ctx, f.size), getFileIcon(f.name), f.fullPath))
             }
-            totalAppSize += appItem.size
-            cachedData?.apps?.add(appItem)
+
+            // 2. Apps Info
+            try {
+                val pm = ctx.packageManager
+                val pkgs = pm.getInstalledPackages(0)
+                var totalAppSize = 0L
+                cachedData?.apps?.clear()
+                pkgs.forEach { pkg ->
+                    yield()
+                    try {
+                        val appItem = AppItem().apply {
+                            name = pm.getApplicationLabel(pkg.applicationInfo).toString()
+                            packageName = pkg.packageName
+                            val apk = File(pkg.applicationInfo.sourceDir)
+                            size = if (apk.exists()) apk.length() else 0
+                        }
+                        totalAppSize += appItem.size
+                        cachedData?.apps?.add(appItem)
+                    } catch (e: Exception) {
+                        // Skip individual app error
+                    }
+                }
+                cachedData?.apps?.sortByDescending { it.size }
+                storageItem.appsSize = totalAppSize
+                appsItem.summary = "${pkgs.size} apps • ${Formatter.formatFileSize(ctx, totalAppSize)}"
+                appsItem.moreCount = if (pkgs.size > 3) pkgs.size - 3 else 0
+                cachedData?.apps?.take(3)?.forEach { app ->
+                    appsItem.subItems.add(SubItem(app.name, app.packageName, Formatter.formatFileSize(ctx, app.size), R.drawable.ic_root_apps, app.packageName, isApp = true))
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("Analysis", "Apps Query Error", e)
+            }
+
+            // Storage breakdown finalize
+            storageItem.videosSize = totalVideoSize
+            storageItem.imagesSize = totalImageSize
+            storageItem.audioSize = totalAudioSize
+            storageItem.docsSize = totalDocSize
+            storageItem.totalSizeBytes = total
+
+            cachedData?.totalVideoSize = totalVideoSize
+            cachedData?.totalImageSize = totalImageSize
+            cachedData?.totalAudioSize = totalAudioSize
+            cachedData?.totalDocSize = totalDocSize
+            cachedData?.totalStorageBytes = total
+
+            return@withContext CombinedResults(storageItem, duplicatesItem, largeFilesItem, appsItem)
+        } catch (e: Exception) {
+            android.util.Log.e("Analysis", "Fatal Analysis Error", e)
+            return@withContext null
         }
-        cachedData?.apps?.sortByDescending { it.size }
-        storageItem.appsSize = totalAppSize
-        storageItem.videosSize = totalVideoSize
-        storageItem.imagesSize = totalImageSize
-        storageItem.audioSize = totalAudioSize
-        storageItem.docsSize = totalDocSize
-        storageItem.totalSizeBytes = total
-
-        cachedData?.totalVideoSize = totalVideoSize
-        cachedData?.totalImageSize = totalImageSize
-        cachedData?.totalAudioSize = totalAudioSize
-        cachedData?.totalDocSize = totalDocSize
-        cachedData?.totalStorageBytes = total
-
-        return@withContext CombinedResults(storageItem, duplicatesItem, largeFilesItem, appsItem)
     }
 
     // --- UI Helpers ---

@@ -1399,26 +1399,28 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     }
 
     public void onRootPicked(RootInfo root, boolean closeDrawer) {
+        try {
+            if (null == root) {
+                return;
+            }
 
-        if (null == root) {
-            return;
+            mState.stack.root = root;
+            mState.stack.clear();
+            mState.stackTouched = true;
+
+            if (RootInfo.isOtherRoot(root) || mRoots.isRecentsRoot(root)) {
+                onCurrentDirectoryChanged(ANIM_SIDE);
+            } else {
+                new PickRootTask(root).executeOnExecutor(getCurrentExecutor());
+            }
+
+            if (closeDrawer) {
+                setRootsDrawerOpen(false);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onRootPicked", e);
+            Utils.showError(this, R.string.query_error);
         }
-
-        mState.stack.root = root;
-        mState.stack.clear();
-        mState.stackTouched = true;
-
-        if (RootInfo.isOtherRoot(root) || mRoots.isRecentsRoot(root)) {
-            onCurrentDirectoryChanged(ANIM_SIDE);
-        } else {
-            new PickRootTask(root).executeOnExecutor(getCurrentExecutor());
-        }
-
-        if (closeDrawer) {
-            setRootsDrawerOpen(false);
-        }
-
-
     }
 
     private class PickRootTask extends AsyncTask<Void, Void, DocumentInfo> {
@@ -1551,98 +1553,103 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     }
 
     public void onDocumentPicked(DocumentInfo doc) {
-        final FragmentManager fm = getSupportFragmentManager();
-        if (doc.isDirectory() || DocumentArchiveHelper.isSupportedArchiveType(doc.mimeType)) {
-            mState.stack.push(doc);
-            mState.stackTouched = true;
-            onCurrentDirectoryChanged(ANIM_DOWN);
-            final MoveFragment move = MoveFragment.get(fm);
-            if (move != null) {
-                move.setReplaceTarget(doc);
-            }
-        } else if (mState.action == ACTION_OPEN || mState.action == ACTION_GET_CONTENT) {
-
-            new ExistingFinishTask(doc.derivedUri).executeOnExecutor(getCurrentExecutor());
-        } else if (mState.action == ACTION_BROWSE) {
-
-
-            final RootInfo rootInfo = getCurrentRoot();
-            final Intent view = new Intent(Intent.ACTION_VIEW);
-            view.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            view.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            if (RootInfo.isMedia(rootInfo)) {
-                view.setDataAndType(MediaDocumentsProvider.getMediaUriForDocumentId(doc.documentId), doc.mimeType);
-            } else {
-                Uri contentUri = null;
-                if ((rootInfo.isStorage() || doc.isMedia()) && !TextUtils.isEmpty(doc.path)) {
-                    contentUri = FileUtils.getContentUriFromFilePath(this, new File(doc.path).getAbsolutePath());
+        try {
+            final FragmentManager fm = getSupportFragmentManager();
+            if (doc.isDirectory() || DocumentArchiveHelper.isSupportedArchiveType(doc.mimeType)) {
+                mState.stack.push(doc);
+                mState.stackTouched = true;
+                onCurrentDirectoryChanged(ANIM_DOWN);
+                final MoveFragment move = MoveFragment.get(fm);
+                if (move != null) {
+                    move.setReplaceTarget(doc);
                 }
-                if (null == contentUri) {
-                    contentUri = doc.derivedUri;
-                }
-                view.setDataAndType(contentUri, doc.mimeType);
-            }
-            if ((MimePredicate.mimeMatches(MimePredicate.SPECIAL_MIMES, doc.mimeType)
-                    || !Utils.isIntentAvailable(this, view)) && !Utils.hasNougat()) {
-                try {
-                    File file = new File(doc.path);
-                    view.setDataAndType(Uri.fromFile(file), doc.mimeType);
-                } catch (Exception e) {
-                    view.setDataAndType(doc.derivedUri, doc.mimeType);
-                    CrashReportingManager.logException(e);
-                }
-            }
+            } else if (mState.action == ACTION_OPEN || mState.action == ACTION_GET_CONTENT) {
 
-            if (Utils.isIntentAvailable(this, view)) {
+                new ExistingFinishTask(doc.derivedUri).executeOnExecutor(getCurrentExecutor());
+            } else if (mState.action == ACTION_BROWSE) {
 
 
-                try {
-                    Casty casty = DocumentsApplication.getInstance().getCasty();
-                    if (casty.isConnected() && doc.isMedia()) {
-                        CastUtils.addToQueue(casty,
-                                CastUtils.buildMediaInfo(doc, getRoots().getPrimaryRoot()));
-                        invalidateMenu();
-                    } else {
-                        startActivity(view);
+                final RootInfo rootInfo = getCurrentRoot();
+                final Intent view = new Intent(Intent.ACTION_VIEW);
+                view.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                view.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                if (RootInfo.isMedia(rootInfo)) {
+                    view.setDataAndType(MediaDocumentsProvider.getMediaUriForDocumentId(doc.documentId), doc.mimeType);
+                } else {
+                    Uri contentUri = null;
+                    if ((rootInfo.isStorage() || doc.isMedia()) && !TextUtils.isEmpty(doc.path)) {
+                        contentUri = FileUtils.getContentUriFromFilePath(this, new File(doc.path).getAbsolutePath());
                     }
-                } catch (Exception e) {
-                    CrashReportingManager.logException(e);
+                    if (null == contentUri) {
+                        contentUri = doc.derivedUri;
+                    }
+                    view.setDataAndType(contentUri, doc.mimeType);
                 }
-            } else {
-                Utils.showError(this, R.string.toast_no_application);
-            }
-        } else if (mState.action == ACTION_CREATE) {
+                if ((MimePredicate.mimeMatches(MimePredicate.SPECIAL_MIMES, doc.mimeType)
+                        || !Utils.isIntentAvailable(this, view)) && !Utils.hasNougat()) {
+                    try {
+                        File file = new File(doc.path);
+                        view.setDataAndType(Uri.fromFile(file), doc.mimeType);
+                    } catch (Exception e) {
+                        view.setDataAndType(doc.derivedUri, doc.mimeType);
+                        CrashReportingManager.logException(e);
+                    }
+                }
 
+                if (Utils.isIntentAvailable(this, view)) {
 
-            SaveFragment.get(fm).setReplaceTarget(doc);
-        } else if (mState.action == ACTION_MANAGE) {
-
-
-            final Intent manage = new Intent(DocumentsContract.ACTION_MANAGE_DOCUMENT);
-            manage.setData(doc.derivedUri);
-
-            if (Utils.isIntentAvailable(this, manage)) {
-                try {
-                    startActivity(manage);
-                } catch (ActivityNotFoundException ex) {
-
-                    CrashReportingManager.logException(ex);
-                    final Intent view = new Intent(Intent.ACTION_VIEW);
-                    view.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
-                            | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                    view.setData(doc.derivedUri);
 
                     try {
-                        startActivity(view);
-                    } catch (ActivityNotFoundException ex2) {
-                        Utils.showError(this, R.string.toast_no_application);
-                        CrashReportingManager.logException(ex2);
+                        Casty casty = DocumentsApplication.getInstance().getCasty();
+                        if (casty.isConnected() && doc.isMedia()) {
+                            CastUtils.addToQueue(casty,
+                                    CastUtils.buildMediaInfo(doc, getRoots().getPrimaryRoot()));
+                            invalidateMenu();
+                        } else {
+                            startActivity(view);
+                        }
+                    } catch (Exception e) {
+                        CrashReportingManager.logException(e);
                     }
+                } else {
+                    Utils.showError(this, R.string.toast_no_application);
                 }
-            } else {
-                Utils.showError(this, R.string.toast_no_application);
+            } else if (mState.action == ACTION_CREATE) {
+
+
+                SaveFragment.get(fm).setReplaceTarget(doc);
+            } else if (mState.action == ACTION_MANAGE) {
+
+
+                final Intent manage = new Intent(DocumentsContract.ACTION_MANAGE_DOCUMENT);
+                manage.setData(doc.derivedUri);
+
+                if (Utils.isIntentAvailable(this, manage)) {
+                    try {
+                        startActivity(manage);
+                    } catch (ActivityNotFoundException ex) {
+
+                        CrashReportingManager.logException(ex);
+                        final Intent view = new Intent(Intent.ACTION_VIEW);
+                        view.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                        view.setData(doc.derivedUri);
+
+                        try {
+                            startActivity(view);
+                        } catch (ActivityNotFoundException ex2) {
+                            Utils.showError(this, R.string.toast_no_application);
+                            CrashReportingManager.logException(ex2);
+                        }
+                    }
+                } else {
+                    Utils.showError(this, R.string.toast_no_application);
+                }
             }
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onDocumentPicked", e);
+            Utils.showError(this, R.string.query_error);
         }
     }
 

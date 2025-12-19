@@ -298,37 +298,41 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
 
     @Override
     public void onItemClick(HomeAdapter.ViewHolder item, View view, int position) {
-        switch (item.commonInfo.type) {
-            case TYPE_MAIN:
-            case TYPE_SHORTCUT:
-                if (null == item.commonInfo.rootInfo) {
-                    return;
-                }
-                
-                if (item.commonInfo.rootInfo.rootId.equals("clean")) {
-                    cleanRAM();
-                } else {
-                    // Proper root ko open karein
-                    DocumentsActivity activity = ((DocumentsActivity) getActivity());
-                    if (activity != null) {
-                        RootInfo rootToOpen = item.commonInfo.rootInfo;
-                        activity.onRootPicked(rootToOpen, mHomeRoot);
-                        
-                        // Analytics (optional)
-                        Bundle params = new Bundle();
-                        params.putString("root_id", rootToOpen.rootId);
-                        params.putString("root_title", rootToOpen.title);
+        try {
+            switch (item.commonInfo.type) {
+                case TYPE_MAIN:
+                case TYPE_SHORTCUT:
+                    if (null == item.commonInfo.rootInfo) {
+                        return;
                     }
-                }
-                break;
-                
-            case TYPE_RECENT:
-                try {
-                    final DocumentInfo documentInfo = ((HomeAdapter.GalleryViewHolder) item).getItem(position);
-                    openDocument(documentInfo);
-                } catch (Exception ignore) {
-                }
-                break;
+                    
+                    if (item.commonInfo.rootInfo.rootId.equals("clean")) {
+                        cleanRAM();
+                    } else {
+                        // Proper root ko open karein
+                        DocumentsActivity activity = ((DocumentsActivity) getActivity());
+                        if (activity != null) {
+                            RootInfo rootToOpen = item.commonInfo.rootInfo;
+                            activity.onRootPicked(rootToOpen, mHomeRoot);
+                            
+                            // Analytics (optional)
+                            Bundle params = new Bundle();
+                            params.putString("root_id", rootToOpen.rootId);
+                            params.putString("root_title", rootToOpen.title);
+                        }
+                    }
+                    break;
+                    
+                case TYPE_RECENT:
+                    try {
+                        final DocumentInfo documentInfo = ((HomeAdapter.GalleryViewHolder) item).getItem(position);
+                        openDocument(documentInfo);
+                    } catch (Exception ignore) {
+                    }
+                    break;
+            }
+        } catch (Exception e) {
+            android.util.Log.e("HomeFragment", "Item Click Error", e);
         }
     }
 

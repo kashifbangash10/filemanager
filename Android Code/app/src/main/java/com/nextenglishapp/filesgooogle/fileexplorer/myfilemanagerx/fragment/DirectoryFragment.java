@@ -322,19 +322,24 @@ public class DirectoryFragment extends DirectoryFragmentFlavour implements MenuI
 
             @Override
             public void onLoadFinished(Loader<DirectoryResult> loader, DirectoryResult result) {
-                if (!isAdded())
-                    return;
+                try {
+                    if (!isAdded())
+                        return;
 
-                if (null != savedInstanceState) {
-                    saveDisplayState();
-                }
+                    if (null != savedInstanceState) {
+                        saveDisplayState();
+                    }
 
 
-                boolean showData = mType == TYPE_RECENT_OPEN;
-                if (showData) {
-                    showData(result);
-                } else {
-                    loadNativeAds(result);
+                    boolean showData = mType == TYPE_RECENT_OPEN;
+                    if (showData) {
+                        showData(result);
+                    } else {
+                        loadNativeAds(result);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error in onLoadFinished", e);
+                    setListShown(true);
                 }
             }
 
@@ -551,26 +556,31 @@ public class DirectoryFragment extends DirectoryFragmentFlavour implements MenuI
             = new RecyclerFragment.RecyclerItemClickListener.OnItemClickListener() {
         @Override
         public void onItemClick(View view, int position) {
-            final Cursor cursor = mAdapter.getItem(position);
-            if (cursor != null) {
-                final String docId = getCursorString(cursor, Document.COLUMN_DOCUMENT_ID);
-                final String docMimeType = getCursorString(cursor, Document.COLUMN_MIME_TYPE);
-                final int docFlags = getCursorInt(cursor, Document.COLUMN_FLAGS);
-                if (null != root && root.isApp()) {
-/*					startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:"
-							+ AppsProvider.getPackageForDocId(docId))));*/
-                } else if (isDocumentEnabled(docMimeType, docFlags)) {
-                    final DocumentInfo doc = DocumentInfo.fromDirectoryCursor(cursor);
-                    ((BaseActivity) getActivity()).onDocumentPicked(doc);
-                    Bundle params = new Bundle();
-                    String type = IconUtils.getTypeNameFromMimeType(doc.mimeType);
-                    params.putString(FILE_TYPE, type);
-                    if (doc.isDirectory()) {
-                        AnalyticsManager.logEvent("browse", root, params);
-                    } else {
-                        AnalyticsManager.logEvent("open" + "_" + type, params);
+            try {
+                final Cursor cursor = mAdapter.getItem(position);
+                if (cursor != null) {
+                    final String docId = getCursorString(cursor, Document.COLUMN_DOCUMENT_ID);
+                    final String docMimeType = getCursorString(cursor, Document.COLUMN_MIME_TYPE);
+                    final int docFlags = getCursorInt(cursor, Document.COLUMN_FLAGS);
+                    if (null != root && root.isApp()) {
+    /*					startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:"
+                                + AppsProvider.getPackageForDocId(docId))));*/
+                    } else if (isDocumentEnabled(docMimeType, docFlags)) {
+                        final DocumentInfo doc = DocumentInfo.fromDirectoryCursor(cursor);
+                        ((BaseActivity) getActivity()).onDocumentPicked(doc);
+                        Bundle params = new Bundle();
+                        String type = IconUtils.getTypeNameFromMimeType(doc.mimeType);
+                        params.putString(FILE_TYPE, type);
+                        if (doc.isDirectory()) {
+                            AnalyticsManager.logEvent("browse", root, params);
+                        } else {
+                            AnalyticsManager.logEvent("open" + "_" + type, params);
+                        }
                     }
                 }
+            } catch (Exception e) {
+                Log.e(TAG, "Error in onItemClick", e);
+                Utils.showError(getActivity(), R.string.query_error);
             }
         }
 
@@ -689,9 +699,14 @@ public class DirectoryFragment extends DirectoryFragmentFlavour implements MenuI
 
         @Override
         public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-            if (handleMenuAction(item)) {
-                mode.finish();
-                return true;
+            try {
+                if (handleMenuAction(item)) {
+                    mode.finish();
+                    return true;
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error in onActionItemClicked", e);
+                Utils.showError(getActivity(), R.string.query_error);
             }
             return false;
         }
