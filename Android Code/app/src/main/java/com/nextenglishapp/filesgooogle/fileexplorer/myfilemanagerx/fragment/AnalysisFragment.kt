@@ -182,14 +182,21 @@ class AnalysisFragment : Fragment() {
 
         // Apps
         val totalAppSize = cache.apps.sumOf { it.size }
-        val appsItem = AnalysisItem(AnalysisItem.TYPE_APP_MANAGER, R.drawable.ic_root_apps, "App manager", 
+        storageItem.appsSize = totalAppSize
+        storageItem.videosSize = cache.totalVideoSize
+        storageItem.imagesSize = cache.totalImageSize
+        storageItem.audioSize = cache.totalAudioSize
+        storageItem.docsSize = cache.totalDocSize
+        storageItem.totalSizeBytes = cache.totalStorageBytes
+
+        val appsItemReal = AnalysisItem(AnalysisItem.TYPE_APP_MANAGER, R.drawable.ic_root_apps, "App manager", 
             "${cache.apps.size} apps • ${Formatter.formatFileSize(ctx, totalAppSize)}", 0, false)
         cache.apps.take(3).forEach { app ->
-            appsItem.subItems.add(SubItem(app.name, app.packageName, Formatter.formatFileSize(ctx, app.size), R.drawable.ic_root_apps, app.packageName, isApp = true))
+            appsItemReal.subItems.add(SubItem(app.name, app.packageName, Formatter.formatFileSize(ctx, app.size), R.drawable.ic_root_apps, app.packageName, isApp = true))
         }
-        appsItem.moreCount = if (cache.apps.size > 3) cache.apps.size - 3 else 0
+        appsItemReal.moreCount = if (cache.apps.size > 3) cache.apps.size - 3 else 0
 
-        return CombinedResults(storageItem, duplicatesItem, largeFilesItem, appsItem)
+        return CombinedResults(storageItem, duplicatesItem, largeFilesItem, appsItemReal)
     }
 
     override fun onDestroy() {
@@ -232,6 +239,11 @@ class AnalysisFragment : Fragment() {
         val largeFilesItem = AnalysisItem(AnalysisItem.TYPE_LARGE_FILES, R.drawable.ic_root_folder, "Large files", "", 0, false)
         val appsItem = AnalysisItem(AnalysisItem.TYPE_APP_MANAGER, R.drawable.ic_root_apps, "App manager", "", 0, false)
 
+        var totalImageSize = 0L
+        var totalVideoSize = 0L
+        var totalAudioSize = 0L
+        var totalDocSize = 0L
+
         val folderSizeMap = mutableMapOf<String, Long>()
         val folderCountMap = mutableMapOf<String, Int>()
         val sizeMap = mutableMapOf<Long, MutableList<String>>()
@@ -258,6 +270,11 @@ class AnalysisFragment : Fragment() {
             val sizeIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.SIZE)
             val dataIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA)
             
+            val videoExts = setOf("mp4", "avi", "mkv", "mov", "webm", "3gp")
+            val imageExts = setOf("jpg", "jpeg", "png", "gif", "webp")
+            val audioExts = setOf("mp3", "wav", "m4a", "flac")
+            val docExts = setOf("pdf", "doc", "docx", "xls", "xlsx", "txt", "ppt", "pptx")
+
             var count = 0
             while (cursor.moveToNext()) {
                 if (++count % 100 == 0) yield() // Allow cancellation
@@ -265,6 +282,15 @@ class AnalysisFragment : Fragment() {
                 val size = cursor.getLong(sizeIdx)
                 val path = cursor.getString(dataIdx) ?: continue
                 val name = cursor.getString(nameIdx) ?: "Unknown"
+                val ext = name.substringAfterLast('.', "").lowercase()
+
+                // Breakdown
+                when {
+                    videoExts.contains(ext) -> totalVideoSize += size
+                    imageExts.contains(ext) -> totalImageSize += size
+                    audioExts.contains(ext) -> totalAudioSize += size
+                    docExts.contains(ext) -> totalDocSize += size
+                }
 
                 // Storage calculation
                 if (path.startsWith(rootDir)) {
@@ -358,13 +384,20 @@ class AnalysisFragment : Fragment() {
             cachedData?.apps?.add(appItem)
         }
         cachedData?.apps?.sortByDescending { it.size }
-        appsItem.summary = "${pkgs.size} apps • ${Formatter.formatFileSize(ctx, totalAppSize)}"
-        appsItem.moreCount = if (pkgs.size > 3) pkgs.size - 3 else 0
-        cachedData?.apps?.take(3)?.forEach { app ->
-            appsItem.subItems.add(SubItem(app.name, app.packageName, Formatter.formatFileSize(ctx, app.size), R.drawable.ic_root_apps, app.packageName, isApp = true))
-        }
+        storageItem.appsSize = totalAppSize
+        storageItem.videosSize = totalVideoSize
+        storageItem.imagesSize = totalImageSize
+        storageItem.audioSize = totalAudioSize
+        storageItem.docsSize = totalDocSize
+        storageItem.totalSizeBytes = total
 
-        CombinedResults(storageItem, duplicatesItem, largeFilesItem, appsItem)
+        cachedData?.totalVideoSize = totalVideoSize
+        cachedData?.totalImageSize = totalImageSize
+        cachedData?.totalAudioSize = totalAudioSize
+        cachedData?.totalDocSize = totalDocSize
+        cachedData?.totalStorageBytes = total
+
+        return@withContext CombinedResults(storageItem, duplicatesItem, largeFilesItem, appsItem)
     }
 
     // --- UI Helpers ---
@@ -393,15 +426,25 @@ class AnalysisFragment : Fragment() {
     private fun updateItemView(view: View, item: AnalysisItem) {
         view.findViewById<TextView>(R.id.title).text = item.title
         view.findViewById<TextView>(R.id.summary).text = item.summary
-        view.findViewById<ImageView>(R.id.icon).setImageResource(item.icon)
+        val mainIcon = view.findViewById<ImageView>(R.id.icon)
+        mainIcon.setImageResource(item.icon)
+        
+        // Apply category colors to main icons
+        val categoryColor = when(item.type) {
+            AnalysisItem.TYPE_STORAGE -> 0xFF2196F3.toInt() // Blue
+            AnalysisItem.TYPE_DUPLICATE -> 0xFFFFC107.toInt() // Amber
+            AnalysisItem.TYPE_LARGE_FILES -> 0xFFFF9800.toInt() // Orange
+            AnalysisItem.TYPE_APP_MANAGER -> 0xFF4CAF50.toInt() // Green
+            else -> 0xFF757575.toInt() // Grey
+        }
+        mainIcon.setColorFilter(categoryColor, android.graphics.PorterDuff.Mode.SRC_IN)
 
         if (item.type == AnalysisItem.TYPE_STORAGE) {
-            view.findViewById<ProgressBar>(R.id.progress_bar).apply {
-                progress = item.percentage
-                isIndeterminate = item.isLoading
-            }
+            val barContainer = view.findViewById<View>(R.id.storage_bar_container)
+            barContainer?.visibility = if (item.isLoading) View.GONE else View.VISIBLE
+            view.findViewById<ProgressBar>(R.id.loading)?.visibility = if (item.isLoading) View.VISIBLE else View.GONE
         } else {
-            view.findViewById<ProgressBar>(R.id.loading).visibility = if (item.isLoading) View.VISIBLE else View.GONE
+            view.findViewById<ProgressBar>(R.id.loading)?.visibility = if (item.isLoading) View.VISIBLE else View.GONE
         }
 
         val subContainer = view.findViewById<LinearLayout>(R.id.sub_items_container)
@@ -411,9 +454,42 @@ class AnalysisFragment : Fragment() {
             item.subItems.forEach { sub ->
                 val subView = layoutInflater.inflate(R.layout.item_analysis_sub_item, subContainer, false)
                 subView.findViewById<TextView>(R.id.name).text = sub.name
-                subView.findViewById<TextView>(R.id.path).text = sub.path
+                val pathView = subView.findViewById<TextView>(R.id.path)
+                pathView.text = sub.path
+                // Hide path/package name for Large Files and App Manager to match requested UI
+                if (item.type == AnalysisItem.TYPE_LARGE_FILES || item.type == AnalysisItem.TYPE_APP_MANAGER) {
+                    pathView.visibility = View.GONE
+                } else {
+                    pathView.visibility = View.VISIBLE
+                }
                 subView.findViewById<TextView>(R.id.size).text = sub.size
-                subView.findViewById<ImageView>(R.id.icon).setImageResource(sub.icon)
+                val subIcon = subView.findViewById<ImageView>(R.id.icon)
+                if (sub.isApp) {
+                    try {
+                        val pm = context?.packageManager
+                        val appIcon = pm?.getApplicationIcon(sub.extra)
+                        subIcon.setImageDrawable(appIcon)
+                        subIcon.scaleType = ImageView.ScaleType.FIT_CENTER
+                        subIcon.clearColorFilter() // Don't tint actual app icons
+                    } catch (e: Exception) {
+                        subIcon.setImageResource(sub.icon)
+                        subIcon.scaleType = ImageView.ScaleType.CENTER
+                        subIcon.setColorFilter(0xFF4CAF50.toInt(), android.graphics.PorterDuff.Mode.SRC_IN) // Green for app placeholder
+                    }
+                } else {
+                    subIcon.setImageResource(sub.icon)
+                    subIcon.scaleType = ImageView.ScaleType.CENTER
+                    
+                    // Apply sub-item specific colors
+                    val subColor = when(item.type) {
+                        AnalysisItem.TYPE_STORAGE -> 0xFF2196F3.toInt() // Blue for folders
+                        AnalysisItem.TYPE_DUPLICATE -> 0xFFFFC107.toInt() // Amber for duplicates
+                        AnalysisItem.TYPE_LARGE_FILES -> 0xFFFF9800.toInt() // Orange for large files
+                        else -> 0xFF757575.toInt()
+                    }
+                    subIcon.setColorFilter(subColor, android.graphics.PorterDuff.Mode.SRC_IN)
+                }
+
                 subView.setOnClickListener {
                     if (sub.isApp) {
                         handleAppClick(sub.extra)
@@ -424,6 +500,25 @@ class AnalysisFragment : Fragment() {
                     }
                 }
                 subContainer.addView(subView)
+            }
+
+            // Update segmented bar weights
+            if (item.type == AnalysisItem.TYPE_STORAGE) {
+                val totalUsed = item.totalSizeBytes - (item.totalSizeBytes * (100 - item.percentage) / 100) 
+                // Wait, use usedBytes directly if available. For now, use percentage of total.
+                val total = item.totalSizeBytes
+                if (total > 0) {
+                    view.findViewById<View>(R.id.segment_apps).layoutParams = LinearLayout.LayoutParams(0, -1, (item.appsSize * 100f / total))
+                    view.findViewById<View>(R.id.segment_videos).layoutParams = LinearLayout.LayoutParams(0, -1, (item.videosSize * 100f / total))
+                    view.findViewById<View>(R.id.segment_images).layoutParams = LinearLayout.LayoutParams(0, -1, (item.imagesSize * 100f / total))
+                    view.findViewById<View>(R.id.segment_audio).layoutParams = LinearLayout.LayoutParams(0, -1, (item.audioSize * 100f / total))
+                    view.findViewById<View>(R.id.segment_docs).layoutParams = LinearLayout.LayoutParams(0, -1, (item.docsSize * 100f / total))
+                    
+                    val usedPercent = item.percentage.toFloat()
+                    val accountsForPercent = (item.appsSize + item.videosSize + item.imagesSize + item.audioSize + item.docsSize) * 100f / total
+                    val remainingUsedPercent = if (usedPercent > accountsForPercent) usedPercent - accountsForPercent else 0f
+                    view.findViewById<View>(R.id.segment_other).layoutParams = LinearLayout.LayoutParams(0, -1, remainingUsedPercent)
+                }
             }
         } else {
             subContainer.visibility = View.GONE
@@ -493,7 +588,14 @@ class AnalysisFragment : Fragment() {
         var percentage: Int = 0,
         var isLoading: Boolean = false,
         var moreCount: Int = 0,
-        val subItems: MutableList<SubItem> = mutableListOf()
+        val subItems: MutableList<SubItem> = mutableListOf(),
+        var appsSize: Long = 0,
+        var videosSize: Long = 0,
+        var imagesSize: Long = 0,
+        var audioSize: Long = 0,
+        var docsSize: Long = 0,
+        var otherSize: Long = 0,
+        var totalSizeBytes: Long = 0
     ) {
         companion object {
             const val TYPE_STORAGE = 1
@@ -512,6 +614,12 @@ class AnalysisFragment : Fragment() {
         val apps = mutableListOf<AppItem>()
         private var timestamp = 0L
 
+        var totalVideoSize = 0L
+        var totalImageSize = 0L
+        var totalAudioSize = 0L
+        var totalDocSize = 0L
+        var totalStorageBytes = 0L
+
         fun markAnalysisComplete() { timestamp = System.currentTimeMillis() }
         fun isValid() = System.currentTimeMillis() - timestamp < 5 * 60 * 1000
         fun clear() {
@@ -519,6 +627,11 @@ class AnalysisFragment : Fragment() {
             duplicateGroups.clear()
             largeFiles.clear()
             apps.clear()
+            totalVideoSize = 0
+            totalImageSize = 0
+            totalAudioSize = 0
+            totalDocSize = 0
+            totalStorageBytes = 0
             timestamp = 0
         }
 

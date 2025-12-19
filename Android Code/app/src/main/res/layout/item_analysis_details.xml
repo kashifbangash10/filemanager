@@ -1,71 +1,83 @@
-<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="12dp"
-    android:gravity="center_vertical"
+    android:orientation="vertical"
     android:background="?android:attr/selectableItemBackground">
 
-    <CheckBox
-        android:id="@+id/checkbox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="gone" />
-
-    <ImageView
-        android:id="@+id/icon"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:scaleType="centerCrop"
-        android:contentDescription="@null" />
-
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:layout_marginStart="12dp">
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/name"
+        <CheckBox
+            android:id="@+id/checkbox"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:textColor="?android:attr/textColorPrimary"
-            android:maxLines="1"
-            android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/path"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textAppearance="?android:attr/textAppearanceSmall"
-            android:textSize="12sp"
-            android:textColor="?android:attr/textColorSecondary"
-            android:maxLines="1"
-            android:ellipsize="middle" />
-
-        <TextView
-            android:id="@+id/subtitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textAppearance="?android:attr/textAppearanceSmall"
-            android:textSize="11sp"
-            android:textColor="?android:attr/textColorTertiary"
             android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/icon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:scaleType="centerCrop"
+            android:contentDescription="@null" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="12dp">
+
+            <TextView
+                android:id="@+id/name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:textColor="?android:attr/textColorPrimary"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/path"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textSize="12sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:maxLines="1"
+                android:ellipsize="middle" />
+
+            <TextView
+                android:id="@+id/subtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textSize="11sp"
+                android:textColor="?android:attr/textColorTertiary"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/size"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textStyle="bold"
+            android:textColor="?android:attr/textColorPrimary" />
 
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/size"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:textAppearance="?android:attr/textAppearanceSmall"
-        android:textStyle="bold"
-        android:textColor="?android:attr/textColorPrimary" />
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginStart="72dp"
+        android:background="#FFE0E0E0" />
 
 </LinearLayout>

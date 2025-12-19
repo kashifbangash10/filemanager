@@ -622,67 +622,72 @@ class AnalysisDetailFragment : Fragment() {
                     }
                 }
 
-                item.file?.let { file ->
-                    val fileName = file.name.lowercase()
-                    when {
-                        isVideoFile(fileName) -> {
-                            scope.launch(Dispatchers.IO) {
-                                val thumb = ThumbnailUtils.createVideoThumbnail(file.absolutePath, MediaStore.Video.Thumbnails.MINI_KIND)
-                                withContext(Dispatchers.Main) {
-                                    thumb?.let {
-                                        icon.setImageBitmap(it)
-                                        icon.clearColorFilter()
-                                        icon.scaleType = ImageView.ScaleType.CENTER_CROP
+                if (item.isApp && item.packageName != null) {
+                    scope.launch(Dispatchers.IO) {
+                        try {
+                            val pm = itemView.context.packageManager
+                            val appIcon = pm.getApplicationIcon(item.packageName!!)
+                            withContext(Dispatchers.Main) {
+                                icon.setImageDrawable(appIcon)
+                                icon.clearColorFilter()
+                                icon.scaleType = ImageView.ScaleType.FIT_CENTER
+                            }
+                        } catch (e: Exception) {
+                            withContext(Dispatchers.Main) {
+                                icon.setImageResource(R.drawable.ic_root_apps)
+                            }
+                        }
+                    }
+                } else {
+                    item.file?.let { file ->
+                        val fileName = file.name.lowercase()
+                        when {
+                            isVideoFile(fileName) -> {
+                                scope.launch(Dispatchers.IO) {
+                                    val thumb = ThumbnailUtils.createVideoThumbnail(file.absolutePath, MediaStore.Video.Thumbnails.MINI_KIND)
+                                    withContext(Dispatchers.Main) {
+                                        thumb?.let {
+                                            icon.setImageBitmap(it)
+                                            icon.clearColorFilter()
+                                            icon.scaleType = ImageView.ScaleType.CENTER_CROP
+                                        }
                                     }
                                 }
                             }
-                        }
-                        isImageFile(fileName) -> {
-                            scope.launch(Dispatchers.IO) {
-                                val options = BitmapFactory.Options().apply { inSampleSize = 4 }
-                                val bitmap = BitmapFactory.decodeFile(file.absolutePath, options)
-                                bitmap?.let {
-                                    val thumb = ThumbnailUtils.extractThumbnail(it, 120, 120)
-                                    withContext(Dispatchers.Main) {
-                                        icon.setImageBitmap(thumb)
-                                        icon.clearColorFilter()
-                                        icon.scaleType = ImageView.ScaleType.CENTER_CROP
-                                    }
-                                    if (it != thumb) it.recycle()
-                                }
-                            }
-                        }
-                        fileName.endsWith(".apk") -> {
-                            scope.launch(Dispatchers.IO) {
-                                val pm = itemView.context.packageManager
-                                val pkgInfo = pm.getPackageArchiveInfo(file.absolutePath, 0)
-                                pkgInfo?.let {
-                                    it.applicationInfo.sourceDir = file.absolutePath
-                                    it.applicationInfo.publicSourceDir = file.absolutePath
-                                    val apkIcon = it.applicationInfo.loadIcon(pm)
-                                    withContext(Dispatchers.Main) {
-                                        icon.setImageDrawable(apkIcon)
-                                        icon.clearColorFilter()
-                                        icon.scaleType = ImageView.ScaleType.CENTER
+                            isImageFile(fileName) -> {
+                                scope.launch(Dispatchers.IO) {
+                                    val options = BitmapFactory.Options().apply { inSampleSize = 4 }
+                                    val bitmap = BitmapFactory.decodeFile(file.absolutePath, options)
+                                    bitmap?.let {
+                                        val thumb = ThumbnailUtils.extractThumbnail(it, 120, 120)
+                                        withContext(Dispatchers.Main) {
+                                            icon.setImageBitmap(thumb)
+                                            icon.clearColorFilter()
+                                            icon.scaleType = ImageView.ScaleType.CENTER_CROP
+                                        }
+                                        if (it != thumb) it.recycle()
                                     }
                                 }
                             }
-                        }
-                        item.isApp && item.packageName != null -> {
-                            scope.launch(Dispatchers.IO) {
-                                val pm = itemView.context.packageManager
-                                try {
-                                    val appIcon = pm.getApplicationIcon(item.packageName!!)
-                                    withContext(Dispatchers.Main) {
-                                        icon.setImageDrawable(appIcon)
-                                        icon.clearColorFilter()
-                                        icon.scaleType = ImageView.ScaleType.CENTER
+                            fileName.endsWith(".apk") -> {
+                                scope.launch(Dispatchers.IO) {
+                                    val pm = itemView.context.packageManager
+                                    val pkgInfo = pm.getPackageArchiveInfo(file.absolutePath, 0)
+                                    pkgInfo?.let {
+                                        it.applicationInfo.sourceDir = file.absolutePath
+                                        it.applicationInfo.publicSourceDir = file.absolutePath
+                                        val apkIcon = it.applicationInfo.loadIcon(pm)
+                                        withContext(Dispatchers.Main) {
+                                            icon.setImageDrawable(apkIcon)
+                                            icon.clearColorFilter()
+                                            icon.scaleType = ImageView.ScaleType.CENTER
+                                        }
                                     }
-                                } catch (e: Exception) {}
+                                }
                             }
-                        }
-                        else -> {
-                            // No special thumbnail needed
+                            else -> {
+                                // Already set default icon above
+                            }
                         }
                     }
                 }

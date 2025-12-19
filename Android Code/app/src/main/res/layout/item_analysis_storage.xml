@@ -54,15 +54,59 @@
 
         </LinearLayout>
 
-        <!-- Progress Bar -->
-        <ProgressBar
-            android:id="@+id/progress_bar"
-            style="?android:attr/progressBarStyleHorizontal"
+        <!-- Segmented Storage Bar -->
+        <LinearLayout
+            android:id="@+id/storage_bar_container"
             android:layout_width="match_parent"
-            android:layout_height="8dp"
+            android:layout_height="10dp"
             android:layout_marginTop="12dp"
-            android:max="100"
-            android:progress="0" />
+            android:orientation="horizontal"
+            android:background="#FFE0E0E0"
+            android:weightSum="100">
+
+            <View
+                android:id="@+id/segment_apps"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0"
+                android:background="#FF4CAF50" /> <!-- Green -->
+
+            <View
+                android:id="@+id/segment_videos"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0"
+                android:background="#FFF44336" /> <!-- Red -->
+
+            <View
+                android:id="@+id/segment_images"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0"
+                android:background="#FF2196F3" /> <!-- Blue -->
+
+            <View
+                android:id="@+id/segment_audio"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0"
+                android:background="#FFFFC107" /> <!-- Amber -->
+
+            <View
+                android:id="@+id/segment_docs"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0"
+                android:background="#FF9C27B0" /> <!-- Purple -->
+
+            <View
+                android:id="@+id/segment_other"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0"
+                android:background="#FF757575" /> <!-- Other -->
+
+        </LinearLayout>
 
         <!-- Sub Items Container -->
         <LinearLayout
