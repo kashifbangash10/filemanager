@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: 'com.google.gms.google-services'
 apply plugin: 'com.google.firebase.crashlytics'
+apply plugin: 'kotlin-android'
 
 def props = new Properties()
 File keystoreProperties = rootProject.file("keystore.properties")
@@ -76,4 +77,9 @@ dependencies {
     implementation group: 'io.fabric.sdk.android', name: 'fabric', version: '1.4.8'
     debugImplementation 'androidx.multidex:multidex:2.0.1'
     implementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
+
+    // Coroutines for faster file analysis
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.4.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.0"
 }

@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -55,7 +56,7 @@ public class AnalysisFragment extends Fragment {
     public static final String TAG = "AnalysisFragment";
 
     // ✅ OPTIMIZED CONSTANTS - Faster scanning
-    private static final int MAX_SCAN_DEPTH = 8;
+    private static final int MAX_SCAN_DEPTH = 20;
     private static final int UI_UPDATE_INTERVAL = 2000;
     private static final int DUPLICATE_MIN_SIZE = 100 * 1024;
     private static final int LARGE_FILE_THRESHOLD = 50 * 1024 * 1024;
@@ -148,7 +149,8 @@ public class AnalysisFragment extends Fragment {
         }
 
         mainHandler = new Handler(Looper.getMainLooper());
-        executor = Executors.newSingleThreadExecutor();
+        // ✅ Use FixedThreadPool for parallel category scanning
+        executor = Executors.newFixedThreadPool(4);
 
         return view;
     }
@@ -256,7 +258,7 @@ public class AnalysisFragment extends Fragment {
             ((com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.DocumentsActivity) getActivity()).setAnalysisMode(false);
         }
         shouldStopScanning.set(true);
-        if (executor != null && !executor.isShutdown()) {
+        if (executor != null) {
             executor.shutdownNow();
         }
 
@@ -310,158 +312,105 @@ public class AnalysisFragment extends Fragment {
         android.util.Log.d(TAG, "✅ UI loaded from cache");
     }
 
-    // ✅ TRUE BACKGROUND THREADING WITH STATE MANAGEMENT
+    // ✅ SUPER-FAST PARALLEL ANALYSIS
     private void loadAnalysisData() {
-        if (!Utils.isActivityAlive(getActivity())) {
-            return;
-        }
+        if (!Utils.isActivityAlive(getActivity())) return;
 
-        // ✅ Set analysis state
         isAnalysisRunning = true;
         shouldStopScanning.set(false);
         isDataLoaded = false;
 
-        if (cachedData == null) {
-            cachedData = new AnalysisCache();
-        }
+        if (cachedData == null) cachedData = new AnalysisCache();
         cachedData.clear();
 
-        // ✅ Show scanning placeholders immediately
-        mainHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (!Utils.isActivityAlive(getActivity())) return;
-                
-                loadingView.setVisibility(View.GONE);
-                containerLayout.removeAllViews();
-                
-                // 1. Storage Placeholder
-                AnalysisItem storagePlaceholder = new AnalysisItem();
-                storagePlaceholder.type = AnalysisItem.TYPE_STORAGE;
-                storagePlaceholder.icon = R.drawable.ic_root_internal;
-                storagePlaceholder.title = "Internal storage";
-                storagePlaceholder.summary = "Calculating...";
-                storagePlaceholder.isLoading = true;
-                addItemToView(storagePlaceholder);
-                
-                // 2. Duplicates Placeholder
-                AnalysisItem duplicatePlaceholder = new AnalysisItem();
-                duplicatePlaceholder.type = AnalysisItem.TYPE_DUPLICATE;
-                duplicatePlaceholder.icon = R.drawable.ic_root_document;
-                duplicatePlaceholder.title = "Duplicate files";
-                duplicatePlaceholder.summary = "Scanning...";
-                duplicatePlaceholder.isLoading = true;
-                addItemToView(duplicatePlaceholder);
-                
-                // 3. Large Files Placeholder
-                AnalysisItem largePlaceholder = new AnalysisItem();
-                largePlaceholder.type = AnalysisItem.TYPE_LARGE_FILES;
-                largePlaceholder.icon = R.drawable.ic_root_folder;
-                largePlaceholder.title = "Large files";
-                largePlaceholder.summary = "Scanning...";
-                largePlaceholder.isLoading = true;
-                addItemToView(largePlaceholder);
-                
-                // 4. Apps Placeholder
-                AnalysisItem appsPlaceholder = new AnalysisItem();
-                appsPlaceholder.type = AnalysisItem.TYPE_APP_MANAGER;
-                appsPlaceholder.icon = R.drawable.ic_root_apps;
-                appsPlaceholder.title = "App manager";
-                appsPlaceholder.summary = "Loading...";
-                appsPlaceholder.isLoading = true;
-                addItemToView(appsPlaceholder);
-            }
-        });
+        // 1. Show scanning placeholders
+        loadingView.setVisibility(View.GONE);
+        containerLayout.removeAllViews();
+        
+        final AnalysisItem storagePH = createPlaceholder(AnalysisItem.TYPE_STORAGE, "Internal storage", R.drawable.ic_root_internal, "Calculating...");
+        final AnalysisItem duplicatePH = createPlaceholder(AnalysisItem.TYPE_DUPLICATE, "Duplicate files", R.drawable.ic_root_document, "Scanning...");
+        final AnalysisItem largePH = createPlaceholder(AnalysisItem.TYPE_LARGE_FILES, "Large files", R.drawable.ic_root_folder, "Scanning...");
+        final AnalysisItem appsPH = createPlaceholder(AnalysisItem.TYPE_APP_MANAGER, "App manager", R.drawable.ic_root_apps, "Loading...");
+        
+        addItemToView(storagePH);
+        addItemToView(duplicatePH);
+        addItemToView(largePH);
+        addItemToView(appsPH);
 
-        // ✅ Run on SEPARATE THREAD, not AsyncTask
+        // 2. Start Multi-Threaded scanning
         executor.execute(new Runnable() {
             @Override
             public void run() {
                 try {
-                    // Storage Analysis
-                    if (!shouldStopScanning.get()) {
-                        android.util.Log.d(TAG, "📊 1. Analyzing Storage...");
-                        final AnalysisItem storageItem = analyzeInternalStorageOptimized();
-                        mainHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (getActivity() != null && isAdded()) {
-                                    addItemToView(storageItem);
-                                }
-                            }
-                        });
-                        Thread.sleep(100);
-                    }
+                    // Start all three categories in parallel
+                    Future<AnalysisItem> duplicateFuture = executor.submit(new java.util.concurrent.Callable<AnalysisItem>() {
+                        @Override
+                        public AnalysisItem call() throws Exception {
+                            return analyzeDuplicateFilesOptimized();
+                        }
+                    });
+                    Future<AnalysisItem> largeFilesFuture = executor.submit(new java.util.concurrent.Callable<AnalysisItem>() {
+                        @Override
+                        public AnalysisItem call() throws Exception {
+                            return analyzeLargeFilesOptimized();
+                        }
+                    });
+                    Future<AnalysisItem> appsFuture = executor.submit(new java.util.concurrent.Callable<AnalysisItem>() {
+                        @Override
+                        public AnalysisItem call() throws Exception {
+                            return analyzeAppsOptimized();
+                        }
+                    });
 
-                    // Duplicates Analysis
-                    if (!shouldStopScanning.get()) {
-                        android.util.Log.d(TAG, "🔄 2. Finding Duplicates...");
-                        final AnalysisItem duplicateItem = analyzeDuplicateFilesOptimized();
-                        mainHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (getActivity() != null && isAdded()) {
-                                    addItemToView(duplicateItem);
-                                }
-                            }
-                        });
-                        Thread.sleep(100);
-                    }
+                    // Storage analysis runs on current background thread
+                    final AnalysisItem storageResult = analyzeInternalStorageOptimized();
+                    updateUI(storageResult);
 
+                    // Wait for others and update as they finish
+                    updateUI(duplicateFuture.get());
+                    updateUI(largeFilesFuture.get());
+                    updateUI(appsFuture.get());
 
-                    // Large Files Analysis
-                    if (!shouldStopScanning.get()) {
-                        android.util.Log.d(TAG, "📦 3. Finding Large Files...");
-                        final AnalysisItem largeFilesItem = analyzeLargeFilesOptimized();
-                        mainHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (getActivity() != null && isAdded()) {
-                                    addItemToView(largeFilesItem);
-                                }
-                            }
-                        });
-                        Thread.sleep(100);
-                    }
-
-                    // Apps Analysis
-                    if (!shouldStopScanning.get()) {
-                        android.util.Log.d(TAG, "📱 4. Analyzing Apps...");
-                        final AnalysisItem appsItem = analyzeAppsOptimized();
-                        mainHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (getActivity() != null && isAdded()) {
-                                    addItemToView(appsItem);
-                                }
-                            }
-                        });
-                    }
-
-                    // ✅ MARK ANALYSIS AS COMPLETE
                     cachedData.markAnalysisComplete();
                     isAnalysisComplete = true;
-                    android.util.Log.d(TAG, "✅ Analysis complete and cached!");
 
                 } catch (Exception e) {
-                    android.util.Log.e(TAG, "Error during analysis: " + e.getMessage());
+                    android.util.Log.e(TAG, "Parallel Analysis Error: " + e.getMessage());
                 } finally {
-                    // ✅ Always reset running state
                     isAnalysisRunning = false;
-                }
-
-                // Hide loading on UI thread
-                mainHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (getActivity() != null && isAdded()) {
-                            loadingView.setVisibility(View.GONE);
-                            isDataLoaded = true;
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (getActivity() != null && isAdded()) {
+                                loadingView.setVisibility(View.GONE);
+                                isDataLoaded = true;
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
         });
+    }
+
+    private void updateUI(final AnalysisItem item) {
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (getActivity() != null && isAdded()) {
+                    addItemToView(item);
+                }
+            }
+        });
+    }
+
+    private AnalysisItem createPlaceholder(int type, String title, int icon, String summary) {
+        AnalysisItem item = new AnalysisItem();
+        item.type = type;
+        item.icon = icon;
+        item.title = title;
+        item.summary = summary;
+        item.isLoading = true;
+        return item;
     }
 
     // ============================================================
@@ -547,7 +496,7 @@ public class AnalysisFragment extends Fragment {
     }
 
     private long calculateFolderSizeQuick(File folder, int depth) {
-        if (shouldStopScanning.get() || depth > MAX_SCAN_DEPTH || folder == null || !folder.canRead()) {
+        if (shouldStopScanning.get() || depth > MAX_SCAN_DEPTH || folder == null) {
             return 0;
         }
 
@@ -563,7 +512,7 @@ public class AnalysisFragment extends Fragment {
                         size += file.length();
                         processed++;
                     } else if (file.isDirectory() && !file.getName().startsWith(".")) {
-                        if (depth < 3) {
+                        if (depth < 6) {
                             size += calculateFolderSizeQuick(file, depth + 1);
                         }
                     }
@@ -580,7 +529,7 @@ public class AnalysisFragment extends Fragment {
     }
 
     private int countFilesQuick(File folder, int depth) {
-        if (shouldStopScanning.get() || depth > 3 || folder == null || !folder.canRead()) {
+        if (shouldStopScanning.get() || depth > 8 || folder == null) {
             return 0;
         }
 
@@ -677,7 +626,7 @@ public class AnalysisFragment extends Fragment {
     }
 
     private void findDuplicatesOptimized(File dir, Map<Long, List<File>> sizeMap, int depth) {
-        if (shouldStopScanning.get() || depth > MAX_SCAN_DEPTH || dir == null || !dir.canRead()) {
+        if (shouldStopScanning.get() || depth > MAX_SCAN_DEPTH || dir == null) {
             return;
         }
 
@@ -762,7 +711,7 @@ public class AnalysisFragment extends Fragment {
     }
 
     private void findLargeFilesOptimized(File dir, List<FileItem> largeFiles, int depth) {
-        if (shouldStopScanning.get() || depth > MAX_SCAN_DEPTH || dir == null || !dir.canRead()) {
+        if (shouldStopScanning.get() || depth > MAX_SCAN_DEPTH || dir == null) {
             return;
         }
 
@@ -829,8 +778,14 @@ public class AnalysisFragment extends Fragment {
                     ApplicationInfo appInfo = packageInfo.applicationInfo;
                     File apkFile = new File(appInfo.sourceDir);
 
-                    if (apkFile.exists() && apkFile.canRead()) {
+                    if (apkFile.exists()) {
                         long appSize = apkFile.length();
+                        if (appSize <= 0) {
+                            // Fallback for Android 11+ if file length is restricted
+                            try {
+                                appSize = new File(appInfo.publicSourceDir).length();
+                            } catch (Exception e) {}
+                        }
                         totalAppSize += appSize;
 
                         AppItem appItem = new AppItem();
