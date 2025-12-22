@@ -38,7 +38,7 @@
             android:layout_weight="1"
             android:background="@color/item_doc_grid_protect_background_light">
 
-            <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CircleImage
+            <com.nextguidance.filesexplorer.filemanager.smartfiles.ui.CircleImage
                 android:id="@+id/icon_mime_background"
                 android:layout_width="@dimen/grid_icon_size"
                 android:layout_height="@dimen/grid_icon_size"

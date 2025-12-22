@@ -8,7 +8,7 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx" />
+                  <option name="appId" value="com.nextguidance.filesexplorer.filemanager.smartfiles" />
                   <option name="mobileSdkAppId" value="1:1023770654204:android:71c636184a2f74eb4b2e79" />
                   <option name="projectId" value="filemanager-e7c20" />
                   <option name="projectNumber" value="1023770654204" />

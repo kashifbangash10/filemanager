@@ -4,15 +4,15 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx",
+  "applicationId": "com.nextguidance.filesexplorer.filemanager.smartfiles",
   "variantName": "release",
   "elements": [
     {
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 2,
-      "versionName": "0.2",
+      "versionCode": 1,
+      "versionName": "0.1",
       "outputFile": "app-release.apk"
     }
   ],

@@ -13,7 +13,7 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.DirectoryView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.nextguidance.filesexplorer.filemanager.smartfiles.ui.DirectoryView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -27,7 +27,7 @@
         android:orientation="vertical"
         android:visibility="gone">
 
-        <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.MaterialProgressBar
+        <com.nextguidance.filesexplorer.filemanager.smartfiles.ui.MaterialProgressBar
             android:id="@+id/progressBar"
             style="@style/ListProgress"
             android:layout_width="@dimen/progress_bar_size"
@@ -52,7 +52,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.RecyclerViewPlus
+        <com.nextguidance.filesexplorer.filemanager.smartfiles.ui.RecyclerViewPlus
             android:id="@id/recyclerview"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -64,7 +64,7 @@
             app:gridColumnWidth="@dimen/grid_item_width"
             app:type="list" />
 
-        <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CompatTextView
+        <com.nextguidance.filesexplorer.filemanager.smartfiles.ui.CompatTextView
             android:id="@android:id/empty"
             style="@style/TextAppearance.AppCompat.Subhead"
             android:layout_width="wrap_content"
@@ -75,4 +75,4 @@
             android:text="@string/activity_transfer_empty_text"
             android:visibility="visible" />
     </FrameLayout>
-</com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.DirectoryView>
+</com.nextguidance.filesexplorer.filemanager.smartfiles.ui.DirectoryView>

@@ -3,7 +3,7 @@ package android.support.provider;
 import android.content.Context;
 import android.net.Uri;
 
-import com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.misc.Utils;
+import com.nextguidance.filesexplorer.filemanager.smartfiles.misc.Utils;
 
 /**
  * Created by HaKr on 25/01/17.

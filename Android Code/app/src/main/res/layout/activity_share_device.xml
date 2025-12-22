@@ -20,7 +20,7 @@
             android:text="@string/activity_share_label" />
     </LinearLayout>
 
-    <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.DirectoryView
+    <com.nextguidance.filesexplorer.filemanager.smartfiles.ui.DirectoryView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="?android:attr/windowBackground">
@@ -34,7 +34,7 @@
             android:orientation="vertical"
             android:visibility="gone">
 
-            <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.MaterialProgressBar
+            <com.nextguidance.filesexplorer.filemanager.smartfiles.ui.MaterialProgressBar
                 android:id="@+id/progressBar"
                 style="@style/ListProgress"
                 android:layout_width="@dimen/progress_bar_size"
@@ -64,7 +64,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
 
-            <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CompatTextView
+            <com.nextguidance.filesexplorer.filemanager.smartfiles.ui.CompatTextView
                 android:id="@android:id/empty"
                 style="@style/TextAppearance.AppCompat.Subhead"
                 android:layout_width="wrap_content"
@@ -75,5 +75,5 @@
                 android:visibility="invisible"
                 app:drawableTop="@drawable/download_app" />
         </FrameLayout>
-    </com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.DirectoryView>
+    </com.nextguidance.filesexplorer.filemanager.smartfiles.ui.DirectoryView>
 </LinearLayout>

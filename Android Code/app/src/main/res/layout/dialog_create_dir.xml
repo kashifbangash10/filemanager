@@ -14,7 +14,7 @@
      limitations under the License.
 -->
 
-<com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CommonFrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.nextguidance.filesexplorer.filemanager.smartfiles.ui.CommonFrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -29,4 +29,4 @@
         app:boxedEdges="all"
         android:theme="@style/EditTextAppTheme"/>
 
-</com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CommonFrameLayout>
+</com.nextguidance.filesexplorer.filemanager.smartfiles.ui.CommonFrameLayout>

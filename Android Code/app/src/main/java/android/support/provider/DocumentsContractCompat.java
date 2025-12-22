@@ -27,7 +27,7 @@ import android.util.Log;
 
 import java.util.ArrayList;
 
-import com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.model.DocumentsContract;
+import com.nextguidance.filesexplorer.filemanager.smartfiles.model.DocumentsContract;
 
 class DocumentsContractCompat {
     private static final String TAG = "DocumentsContractCompat";

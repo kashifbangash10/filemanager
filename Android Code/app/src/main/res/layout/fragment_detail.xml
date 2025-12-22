@@ -22,7 +22,7 @@
             android:foregroundGravity="fill"
             android:minHeight="200dp">
 
-            <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CircleImage
+            <com.nextguidance.filesexplorer.filemanager.smartfiles.ui.CircleImage
                 android:id="@+id/icon_mime_background"
                 android:layout_width="100dp"
                 android:layout_height="100dp"

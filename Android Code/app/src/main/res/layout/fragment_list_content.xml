@@ -11,7 +11,7 @@
         android:orientation="vertical"
         android:visibility="gone" >
 
-        <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.MaterialProgressBar
+        <com.nextguidance.filesexplorer.filemanager.smartfiles.ui.MaterialProgressBar
             android:id="@+id/progressBar"
             style="@style/ListProgress"
             android:layout_width="@dimen/progress_bar_size"

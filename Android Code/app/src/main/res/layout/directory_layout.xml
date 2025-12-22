@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:showIn="@layout/activity">
 
-    <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.DirectoryContainerView
+    <com.nextguidance.filesexplorer.filemanager.smartfiles.ui.DirectoryContainerView
         android:id="@+id/container_directory"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />

@@ -73,7 +73,7 @@
                 app:divider="@drawable/line_divider"
                 app:showDividers="middle|end">
 
-                <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CompatTextView
+                <com.nextguidance.filesexplorer.filemanager.smartfiles.ui.CompatTextView
                     android:id="@+id/action_rate"
                     style="@style/ButtonAppTheme"
                     android:layout_width="match_parent"
@@ -92,7 +92,7 @@
                     android:visibility="visible"
                     app:drawableStart="@drawable/ic_star" />
 
-                <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CompatTextView
+                <com.nextguidance.filesexplorer.filemanager.smartfiles.ui.CompatTextView
                     android:id="@+id/action_support"
                     style="@style/ButtonAppTheme"
                     android:layout_width="match_parent"
@@ -111,7 +111,7 @@
                     android:visibility="visible"
                     app:drawableStart="@drawable/ic_support" />
 
-                <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CompatTextView
+                <com.nextguidance.filesexplorer.filemanager.smartfiles.ui.CompatTextView
                     android:id="@+id/action_sponsor"
                     style="@style/ButtonAppTheme"
                     android:layout_width="match_parent"
@@ -130,7 +130,7 @@
                     android:visibility="gone"
                     app:drawableStart="@drawable/ic_sponsor" />
 
-                <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CompatTextView
+                <com.nextguidance.filesexplorer.filemanager.smartfiles.ui.CompatTextView
                     android:id="@+id/action_share"
                     style="@style/ButtonAppTheme"
                     android:layout_width="match_parent"
@@ -149,7 +149,7 @@
                     android:visibility="visible"
                     app:drawableStart="@drawable/ic_share" />
 
-                <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.CompatTextView
+                <com.nextguidance.filesexplorer.filemanager.smartfiles.ui.CompatTextView
                     android:id="@+id/action_feedback"
                     style="@style/ButtonAppTheme"
                     android:layout_width="match_parent"

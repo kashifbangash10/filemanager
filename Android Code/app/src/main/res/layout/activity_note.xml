@@ -47,7 +47,7 @@
 
             </ScrollView>
 
-            <com.nextenglishapp.filesgooogle.fileexplorer.myfilemanagerx.ui.MaterialProgressBar
+            <com.nextguidance.filesexplorer.filemanager.smartfiles.ui.MaterialProgressBar
                 android:id="@+id/progress"
                 style="@style/ListProgress"
                 android:layout_width="@dimen/progress_bar_size"
