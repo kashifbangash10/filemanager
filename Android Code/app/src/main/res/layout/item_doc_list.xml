@@ -33,6 +33,17 @@
         android:orientation="horizontal"
         android:baselineAligned="false">
 
+        <androidx.appcompat.widget.AppCompatCheckBox
+            android:id="@+id/checkbox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="4dp"
+            android:layout_marginEnd="4dp"
+            android:clickable="false"
+            android:focusable="false"
+            android:layout_gravity="center_vertical"
+            android:visibility="gone"/>
+
         <FrameLayout
             android:id="@android:id/icon"
             android:layout_width="@dimen/icon_size"

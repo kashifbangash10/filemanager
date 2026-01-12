@@ -73,6 +73,18 @@
                 android:background="@color/material_grey_50"
                 android:elevation="8dp" />
 
+            <com.google.android.material.bottomnavigation.BottomNavigationView
+                android:id="@+id/bottom_navigation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?android:attr/windowBackground"
+                app:menu="@menu/bottom_nav_menu"
+                app:labelVisibilityMode="labeled" />
+
+            <include
+                android:id="@+id/selection_actions"
+                layout="@layout/layout_selection_actions" />
+
         </LinearLayout>
 
         <LinearLayout

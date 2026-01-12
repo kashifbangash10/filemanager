@@ -124,6 +124,9 @@ import com.nextguidance.filesexplorer.filemanager.smartfiles.ui.DirectoryContain
 import com.nextguidance.filesexplorer.filemanager.smartfiles.ui.DrawerLayoutHelper;
 import com.nextguidance.filesexplorer.filemanager.smartfiles.ui.FloatingActionsMenu;
 import com.nextguidance.filesexplorer.filemanager.smartfiles.ui.fabs.SimpleMenuListenerAdapter;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.AnalysisFragment;
+import androidx.annotation.NonNull;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -182,6 +185,8 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     private FloatingActionsMenu mActionMenu;
     private RootInfo mParentRoot;
     private boolean SAFPermissionRequested;
+    private BottomNavigationView mBottomNav;
+    private View mSelectionBar;
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
@@ -210,6 +215,27 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
 
         mDirectoryContainer = (DirectoryContainerView) findViewById(R.id.container_directory);
         mRateContainer = (FrameLayout) findViewById(R.id.container_rate);
+
+        mBottomNav = findViewById(R.id.bottom_navigation);
+        mBottomNav.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.nav_files:
+                        if (null != mRoots) onRootPicked(mRoots.getHomeRoot(), true);
+                        return true;
+                    case R.id.nav_recents:
+                        if (null != mRoots) onRootPicked(mRoots.getRecentsRoot(), true);
+                        return true;
+                    case R.id.nav_cleaner:
+                        AnalysisFragment.show(getSupportFragmentManager());
+                        return true;
+                }
+                return false;
+            }
+        });
+
+        mSelectionBar = findViewById(R.id.selection_actions);
 
         initControls();
 
@@ -639,6 +665,9 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             mAnalysisTitle = title;
         }
         updateActionBar();
+        if (mBottomNav != null && active) {
+             mBottomNav.getMenu().findItem(R.id.nav_cleaner).setChecked(true);
+        }
     }
 
     public void updateActionBar() {
@@ -1017,6 +1046,8 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         AnalyticsManager.logEvent("upload_file", params);
     }
 
+
+
     /**
      * Update UI to reflect internal state changes not from user.
      */
@@ -1329,6 +1360,7 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             } else {
                 if (null != root && root.isHome()) {
                     HomeFragment.show(fm);
+                    if(mBottomNav != null) mBottomNav.getMenu().findItem(R.id.nav_files).setChecked(true);
                 } else if (null != root && root.isConnections()) {
                     ConnectionsFragment.show(fm);
                 } else if (null != root && root.isTransfer()) {
@@ -1338,6 +1370,12 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
                 } else if (null != root && root.isServerStorage()) {
                     ServerFragment.show(fm, root);
                 } else {
+                    if (null != root && mRoots.isRecentsRoot(root)) {
+                        if(mBottomNav != null) mBottomNav.getMenu().findItem(R.id.nav_recents).setChecked(true);
+                    } else if (mBottomNav != null) {
+                         // Default to Files for standard directories
+                         mBottomNav.getMenu().findItem(R.id.nav_files).setChecked(true);
+                    }
                     DirectoryFragment.showRecentsOpen(fm, anim, root);
 
                 }
@@ -1396,6 +1434,8 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         dumpStack();
 
     }
+
+
 
     private AppRate.OnShowListener mOnShowListener = new AppRate.OnShowListener() {
         @Override
@@ -2004,6 +2044,16 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     public void setActionMode(boolean actionMode) {
         mActionMode = actionMode;
         mToolbar.setVisibility(actionMode ? View.INVISIBLE : View.VISIBLE);
+        if (mBottomNav != null) {
+            mBottomNav.setVisibility(actionMode ? View.GONE : View.VISIBLE);
+        }
+        if (mSelectionBar != null) {
+            mSelectionBar.setVisibility(actionMode ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    public View getSelectionBar() {
+        return mSelectionBar;
     }
 
     public void invalidateMenu() {

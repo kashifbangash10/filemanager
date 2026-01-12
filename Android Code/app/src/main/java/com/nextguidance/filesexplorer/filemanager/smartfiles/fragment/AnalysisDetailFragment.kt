@@ -78,6 +78,10 @@ class AnalysisDetailFragment : Fragment() {
     private var summaryText: TextView? = null
     private var selectAllButton: ImageView? = null
 
+    private var isSelectionMode = false
+    private val selectedItems = mutableSetOf<DetailAdapter.DetailItem>()
+    private var mActionMode: android.view.ActionMode? = null
+
     private val folderStack = Stack<File>()
     private var isInFolderNavigation = false
 
@@ -134,11 +138,18 @@ class AnalysisDetailFragment : Fragment() {
     }
 
     override fun onDestroy() {
+        if (isSelectionMode) {
+            (activity as? DocumentsActivity)?.setActionMode(false)
+        }
         (activity as? DocumentsActivity)?.setAnalysisMode(false)
         super.onDestroy()
     }
 
     private fun handleBackPressed(): Boolean {
+        if (isSelectionMode) {
+            exitSelectionMode()
+            return true
+        }
         if (isInFolderNavigation && folderStack.isNotEmpty()) {
             folderStack.pop()
             if (folderStack.isNotEmpty()) {
@@ -249,14 +260,23 @@ class AnalysisDetailFragment : Fragment() {
                 }
             }
 
-            adapter = DetailAdapter(items, isDuplicateView, lifecycleScope,
-                this::handleItemClick, this::handleSelectionChanged)
+
+
+            adapter = DetailAdapter(items, isSelectionMode, lifecycleScope,
+                this::handleItemClick, this::handleSelectionChanged, this::handleItemLongClick)
             recyclerView.adapter = adapter
+            
+            // Restore selection if in mode
+             if (isSelectionMode) {
+                adapter?.setSelectedItems(selectedItems)
+            }
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Error loading data", e)
             Toast.makeText(context, "Error displaying items", Toast.LENGTH_SHORT).show()
         }
     }
+
+
 
     private fun handleItemClick(item: DetailAdapter.DetailItem) {
         item.packageName?.let { openAppInfo(it) } ?: run {
@@ -268,19 +288,176 @@ class AnalysisDetailFragment : Fragment() {
         }
     }
 
-    private fun handleSelectionChanged(selectedCount: Int, totalSize: Long) {
-        summaryText?.let { summary ->
-            cleanupButton?.let { cleanup ->
-                if (selectedCount > 0) {
-                    summary.text = "$selectedCount selected"
-                    cleanup.text = "Clean up ${Formatter.formatFileSize(context, totalSize)}"
-                    cleanup.isEnabled = true
-                } else {
-                    bottomBar?.visibility = View.VISIBLE
-                    cleanup.isEnabled = false
+    private fun handleItemLongClick(item: DetailAdapter.DetailItem) {
+        if (!isSelectionMode) {
+            startSelectionMode(item)
+        }
+    }
+    
+    private fun startSelectionMode(initialItem: DetailAdapter.DetailItem) {
+        isSelectionMode = true
+        val act = activity as? DocumentsActivity ?: return
+        
+        // Get toolbar
+        val toolbar = act.findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
+        
+        // Start ActionMode
+        mActionMode = toolbar?.startActionMode(object : android.view.ActionMode.Callback {
+            override fun onCreateActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean {
+                mode?.menuInflater?.inflate(R.menu.menu_analysis_selection, menu)
+                act.setActionMode(true)
+                setupSelectionBar()
+                return true
+            }
+            
+            override fun onPrepareActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean {
+                return false
+            }
+            
+            override fun onActionItemClicked(mode: android.view.ActionMode?, item: android.view.MenuItem?): Boolean {
+                when (item?.itemId) {
+                    R.id.action_select_all -> toggleSelectAll()
+                    R.id.action_refresh -> loadData()
+                }
+                return true
+            }
+            
+            override fun onDestroyActionMode(mode: android.view.ActionMode?) {
+                exitSelectionMode()
+            }
+        })
+        
+        // Reload adapter
+        loadData()
+        
+        // Select initial item
+        adapter?.toggleSelection(initialItem)
+    }
+
+    private fun setupSelectionBar() {
+        val act = activity as? DocumentsActivity ?: return
+        val selectionBar = act.selectionBar ?: return
+        
+        // Make all buttons visible
+        selectionBar.findViewById<View>(R.id.action_copy)?.apply {
+            visibility = View.VISIBLE
+            setOnClickListener { performOperation("Copy", false) }
+        }
+        selectionBar.findViewById<View>(R.id.action_move)?.apply {
+            visibility = View.VISIBLE
+            setOnClickListener { performOperation("Move", false) }
+        }
+        selectionBar.findViewById<View>(R.id.action_rename)?.apply {
+            visibility = View.VISIBLE
+            setOnClickListener { performOperation("Rename", true) }
+        }
+        selectionBar.findViewById<View>(R.id.action_delete)?.apply {
+            visibility = View.VISIBLE
+            setOnClickListener { performDelete() }
+        }
+        selectionBar.findViewById<View>(R.id.action_more)?.apply {
+            visibility = View.VISIBLE
+            setOnClickListener { showMoreMenu(it) }
+        }
+        
+        updateSelectionTitle(0)
+    }
+    
+    private fun showMoreMenu(anchor: View) {
+        val popup = android.widget.PopupMenu(context, anchor)
+        popup.menu.add(0, 1, 0, "Select All")
+        popup.menu.add(0, 2, 1, "Share")
+        popup.setOnMenuItemClickListener { item ->
+            when(item.itemId) {
+                1 -> toggleSelectAll()
+                2 -> performOperation("Share", false)
+            }
+            true
+        }
+        popup.show()
+    }
+    
+    private fun performOperation(op: String, singleItem: Boolean) {
+        val selected = adapter?.getSelectedItemsList() ?: return
+        if (selected.isEmpty()) return
+        
+        if (singleItem && selected.size > 1) {
+            Toast.makeText(context, "Select only one item for $op", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        // Placeholder for operations
+        Toast.makeText(context, "$op ${selected.size} items", Toast.LENGTH_SHORT).show()
+        // Here we would implement real copy/move logic or delegate to DirectoryFragment logic
+    }
+    
+    private fun performDelete() {
+        val selected = adapter?.getSelectedItemsList() ?: return
+        if (selected.isEmpty()) return
+        
+        android.app.AlertDialog.Builder(context)
+            .setTitle("Delete")
+            .setMessage("Delete ${selected.size} items?")
+            .setPositiveButton("Delete") { _, _ ->
+                 lifecycleScope.launch(Dispatchers.IO) {
+                     selected.forEach { it.file?.delete() }
+                     withContext(Dispatchers.Main) {
+                         exitSelectionMode()
+                     }
+                 }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun exitSelectionMode() {
+        isSelectionMode = false
+        selectedItems.clear()
+        mActionMode?.finish()
+        mActionMode = null
+        (activity as? DocumentsActivity)?.setActionMode(false)
+        loadData()
+    }
+
+    private fun handleSelectionChanged(selectedCount: Int, totalSize: Long, items: Set<DetailAdapter.DetailItem>) {
+        // Update local tracking
+        selectedItems.clear()
+        selectedItems.addAll(items)
+        
+        // Update title to show count
+        if (isSelectionMode) {
+            updateSelectionTitle(selectedCount)
+            
+            // Validate Select All icon state
+            val totalItems = adapter?.itemCount ?: 0
+            val selectAllItem = mActionMode?.menu?.findItem(R.id.action_select_all)
+            if (selectedCount > 0 && selectedCount == totalItems) {
+                 selectAllItem?.icon?.alpha = 255
+            } else {
+                 selectAllItem?.icon?.alpha = 130
+            }
+        }
+        
+        if (!isSelectionMode) {
+            // Logic for "Duplicate/Large File" cleanup mode (existing)
+            summaryText?.let { summary ->
+                cleanupButton?.let { cleanup ->
+                    if (selectedCount > 0) {
+                        summary.text = "$selectedCount selected"
+                        cleanup.text = "Clean up ${Formatter.formatFileSize(context, totalSize)}"
+                        cleanup.isEnabled = true
+                    } else {
+                        bottomBar?.visibility = View.VISIBLE
+                        cleanup.isEnabled = false
+                    }
                 }
             }
         }
+    }
+    
+    private fun updateSelectionTitle(count: Int) {
+        val totalItems = adapter?.itemCount ?: 0
+        mActionMode?.title = "$count / $totalItems"
     }
 
     private fun toggleSelectAll() {
@@ -430,7 +607,10 @@ class AnalysisDetailFragment : Fragment() {
                         title = folder.name
                         updateToolbarTitle()
                         bottomBar?.visibility = View.GONE
-                        adapter = DetailAdapter(items, false, lifecycleScope, this@AnalysisDetailFragment::handleItemClick, this@AnalysisDetailFragment::handleSelectionChanged)
+                        title = folder.name
+                        updateToolbarTitle()
+                        bottomBar?.visibility = View.GONE
+                        adapter = DetailAdapter(items, isSelectionMode, lifecycleScope, this@AnalysisDetailFragment::handleItemClick, this@AnalysisDetailFragment::handleSelectionChanged, this@AnalysisDetailFragment::handleItemLongClick)
                         recyclerView.adapter = adapter
                     }
                 } catch (e: Exception) {
@@ -661,10 +841,35 @@ class AnalysisDetailFragment : Fragment() {
         private val showCheckboxes: Boolean,
         private val scope: CoroutineScope,
         private val clickListener: (DetailItem) -> Unit,
-        private val selectionListener: (Int, Long) -> Unit
+        private val selectionListener: (Int, Long, Set<DetailItem>) -> Unit,
+        private val longClickListener: (DetailItem) -> Unit
     ) : RecyclerView.Adapter<DetailAdapter.ViewHolder>() {
 
-        private val selectedPositions = mutableSetOf<Integer>()
+        private val selectedPositions = mutableSetOf<Int>() // Changed from Integer to Int for better Kotlin compat
+        
+        fun toggleSelection(item: DetailItem) {
+             val index = items.indexOf(item)
+             if (index != -1) {
+                 if (selectedPositions.contains(index)) selectedPositions.remove(index)
+                 else selectedPositions.add(index)
+                 notifyItemChanged(index)
+                 updateSelection()
+             }
+        }
+        
+        fun setSelectedItems(selected: Set<DetailItem>) {
+             selectedPositions.clear()
+             selected.forEach { 
+                 val idx = items.indexOf(it)
+                 if (idx != -1) selectedPositions.add(idx)
+             }
+             notifyDataSetChanged()
+             updateSelection()
+        }
+        
+        fun getSelectedItemsList(): List<DetailItem> {
+             return items.filterIndexed { index, _ -> selectedPositions.contains(index) }
+        }
 
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val icon: ImageView = view.findViewById(R.id.icon)
@@ -774,20 +979,35 @@ class AnalysisDetailFragment : Fragment() {
             return ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_analysis_details, parent, false))
         }
 
-        override fun onBindViewHolder(holder: ViewHolder, @SuppressLint("RecyclerView") position: Int) {
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
-            holder.bind(item, showCheckboxes, selectedPositions.contains(position as Integer), scope)
+            val isChecked = selectedPositions.contains(position)
+            holder.bind(item, showCheckboxes, isChecked, scope)
 
             if (!showCheckboxes) {
                 holder.itemView.setOnClickListener { clickListener(item) }
-            } else {
-                holder.checkbox?.setOnCheckedChangeListener(null)
-                holder.checkbox?.setOnCheckedChangeListener { _, isChecked ->
-                    if (isChecked) selectedPositions.add(position as Integer)
-                    else selectedPositions.remove(position as Integer)
-                    updateSelection()
+                holder.itemView.setOnLongClickListener { 
+                    longClickListener(item)
+                    true
                 }
-                holder.itemView.setOnClickListener { holder.checkbox?.toggle() }
+            } else {
+                // Remove old listener first to prevent double firing
+                holder.checkbox?.setOnCheckedChangeListener(null)
+                
+                holder.checkbox?.setOnCheckedChangeListener { _, checked ->
+                    val currentPosition = holder.adapterPosition
+                    if (currentPosition != RecyclerView.NO_POSITION) {
+                        if (checked) {
+                            selectedPositions.add(currentPosition)
+                        } else {
+                            selectedPositions.remove(currentPosition)
+                        }
+                        updateSelection()
+                    }
+                }
+                holder.itemView.setOnClickListener { 
+                    holder.checkbox?.toggle()
+                }
             }
         }
 
@@ -795,19 +1015,22 @@ class AnalysisDetailFragment : Fragment() {
 
         private fun updateSelection() {
             var totalSize = 0L
+            val selectedBytes = mutableSetOf<DetailItem>()
             selectedPositions.forEach { pos ->
-                if (pos.toInt() < items.size) {
-                    items[pos.toInt()].file?.let { totalSize += it.length() }
+                if (pos < items.size) {
+                    val itm = items[pos]
+                    selectedBytes.add(itm)
+                    itm.file?.let { totalSize += it.length() }
                 }
             }
-            selectionListener(selectedPositions.size, totalSize)
+            selectionListener(selectedPositions.size, totalSize, selectedBytes)
         }
 
         fun toggleSelectAll() {
             if (selectedPositions.size == items.size) selectedPositions.clear()
             else {
                 selectedPositions.clear()
-                for (i in items.indices) selectedPositions.add(i as Integer)
+                for (i in items.indices) selectedPositions.add(i)
             }
             notifyDataSetChanged()
             updateSelection()

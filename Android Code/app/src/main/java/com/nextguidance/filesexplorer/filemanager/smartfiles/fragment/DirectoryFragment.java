@@ -633,16 +633,12 @@ public class DirectoryFragment extends DirectoryFragmentFlavour implements MenuI
         @Override
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
             editMode = root != null && root.isEditSupported();
-            int menuId = R.menu.mode_simple_directory;
-            if (null != root && root.isApp()) {
-                menuId = R.menu.mode_apps;
-            } else {
-                menuId = R.menu.mode_directory;
-            }
-
-            mode.getMenuInflater().inflate(menuId, menu);
+            // Use the new consistent menu
+            mode.getMenuInflater().inflate(R.menu.menu_analysis_selection, menu);
+            
             int count = mAdapter.getCheckedItemCount();
-            mode.setTitle(count + "");
+            mode.setTitle(getResources().getString(R.string.mode_selected_count, count));
+            if(mAdapter != null) mAdapter.notifyDataSetChanged();
             return true;
         }
 
@@ -657,66 +653,52 @@ public class DirectoryFragment extends DirectoryFragmentFlavour implements MenuI
                     activity.setActionMode(true);
                 }
             }
-            final int count = mAdapter.getCheckedItemCount();
-            final State state = getDisplayState(DirectoryFragment.this);
-
-            final MenuItem open = menu.findItem(R.id.menu_open);
-            final MenuItem share = menu.findItem(R.id.menu_share);
-            final MenuItem delete = menu.findItem(R.id.menu_delete);
-            final MenuItem rename = menu.findItem(R.id.menu_rename);
-
-            final boolean manageMode = state.action == ACTION_BROWSE;
-            final boolean canDelete = doc != null && doc.isDeleteSupported();
-            final boolean canRename = doc != null && doc.isRenameSupported();
-            open.setVisible(!manageMode);
-            share.setVisible(manageMode);
-            delete.setVisible(manageMode && canDelete);
-            if (null != rename) {
-                rename.setVisible(manageMode && canRename && count == 1);
-            }
-
-            if (mType == TYPE_RECENT_OPEN) {
-                delete.setVisible(true);
-            }
-            if (isApp) {
-                share.setVisible(false);
-                final MenuItem save = menu.findItem(R.id.menu_save);
-                save.setVisible(root.isAppPackage());
-                delete.setVisible(root.isAppPackage());
-
-            } else {
-                final MenuItem edit = menu.findItem(R.id.menu_edit);
-                if (edit != null) {
-                    edit.setVisible(manageMode);
-                }
-                final MenuItem info = menu.findItem(R.id.menu_info);
-                final MenuItem bookmark = menu.findItem(R.id.menu_bookmark);
-
-                final MenuItem copy = menu.findItem(R.id.menu_copy);
-                final MenuItem cut = menu.findItem(R.id.menu_cut);
-                final MenuItem compress = menu.findItem(R.id.menu_compress);
-                copy.setVisible(editMode);
-                cut.setVisible(editMode);
-                compress.setVisible(editMode && !isOperationSupported);
-
-                info.setVisible(count == 1);
-                bookmark.setVisible(count == 1);
-            }
+            int count = mAdapter.getCheckedItemCount();
+            
+            setupBottomBar(mode, count);
+            updateSelectAllIconState(mode, count);
             return true;
         }
 
         @Override
         public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-            try {
-                if (handleMenuAction(item)) {
-                    mode.finish();
-                    return true;
+            if (item.getItemId() == R.id.action_select_all) {
+                if (mAdapter != null) {
+                    int total = mAdapter.getItemCount();
+                    boolean allSelected = (mAdapter.getCheckedItemCount() == total);
+                    boolean newState = !allSelected;
+                    for (int i = 0; i < total; i++) {
+                         mAdapter.setSelected(i, newState);
+                    }
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "Error in onActionItemClicked", e);
-                Utils.showError(getActivity(), R.string.query_error);
+                return true;
+            } else if (item.getItemId() == R.id.action_refresh) {
+                onUserSortOrderChanged();
+                return true;
+            } else {
+                 try {
+                    if (handleMenuAction(item)) {
+                        mode.finish();
+                        return true;
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error in onActionItemClicked", e);
+                    Utils.showError(getActivity(), R.string.query_error);
+                }
             }
             return false;
+        }
+        
+        private void updateSelectAllIconState(ActionMode mode, int checkedCount) {
+             MenuItem selectAll = mode.getMenu().findItem(R.id.action_select_all);
+             if (selectAll != null && selectAll.getIcon() != null) {
+                 int total = mAdapter != null ? mAdapter.getItemCount() : 0;
+                 if (checkedCount > 0 && checkedCount == total) {
+                     selectAll.getIcon().setAlpha(255);
+                 } else {
+                     selectAll.getIcon().setAlpha(130);
+                 }
+             }
         }
 
         @Override
@@ -728,23 +710,19 @@ public class DirectoryFragment extends DirectoryFragmentFlavour implements MenuI
                 activity.setActionMode(false);
                 activity.setUpStatusBar();
             }
+            if(mAdapter != null) mAdapter.notifyDataSetChanged();
         }
 
         @Override
         public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
             if (checked) {
-
                 boolean valid = false;
-
                 final Cursor cursor = mAdapter.getItem(position);
                 if (cursor != null) {
                     final String docMimeType = getCursorString(cursor, Document.COLUMN_MIME_TYPE);
                     final int docFlags = getCursorInt(cursor, Document.COLUMN_FLAGS);
-
                     valid = isDocumentEnabled(docMimeType, docFlags);
-
                 }
-
                 if (!valid) {
                     mAdapter.setSelected(position, false);
                 }
@@ -752,11 +730,78 @@ public class DirectoryFragment extends DirectoryFragmentFlavour implements MenuI
 
             int count = mAdapter.getCheckedItemCount();
             mode.setTitle(getResources().getString(R.string.mode_selected_count, count));
+            updateSelectAllIconState(mode, count);
             if (count == 1 || count == 2) {
                 mode.invalidate();
             }
         }
     };
+
+    private void setupBottomBar(final ActionMode mode, int count) {
+        if(!(getActivity() instanceof DocumentsActivity)) return;
+        View bottomBar = ((DocumentsActivity)getActivity()).getSelectionBar();
+        if(bottomBar == null) return;
+
+        View copy = bottomBar.findViewById(R.id.action_copy);
+        View move = bottomBar.findViewById(R.id.action_move);
+        View rename = bottomBar.findViewById(R.id.action_rename);
+        View delete = bottomBar.findViewById(R.id.action_delete);
+        View more = bottomBar.findViewById(R.id.action_more);
+
+        // Make all visible to match Analysis style as requested
+        copy.setVisibility(View.VISIBLE);
+        move.setVisibility(View.VISIBLE);
+        rename.setVisibility(View.VISIBLE);
+        delete.setVisibility(View.VISIBLE);
+        more.setVisibility(View.VISIBLE);
+
+        View.OnClickListener listener = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int id = v.getId();
+                 if (id == R.id.action_copy) {
+                    performAction(R.id.menu_copy);
+                    mode.finish();
+                } else if (id == R.id.action_move) {
+                    performAction(R.id.menu_cut);
+                    mode.finish();
+                } else if (id == R.id.action_rename) {
+                    performAction(R.id.menu_rename);
+                    mode.finish();
+                } else if (id == R.id.action_delete) {
+                    performAction(R.id.menu_delete);
+                    mode.finish();
+                } else if (id == R.id.action_more) {
+                   showMoreMenu(v);
+                }
+            }
+        };
+
+        copy.setOnClickListener(listener);
+        move.setOnClickListener(listener);
+        rename.setOnClickListener(listener);
+        delete.setOnClickListener(listener);
+        more.setOnClickListener(listener);
+    }
+
+    private void performAction(int id){
+        handleMenuAction(id);
+    }
+
+    private void showMoreMenu(View anchor){
+         PopupMenu popup = new PopupMenu(getActivity(), anchor);
+         popup.getMenu().add(0, R.id.menu_select_all, 0, "Select All");
+         popup.getMenu().add(0, R.id.menu_share, 1, "Share");
+         popup.getMenu().add(0, R.id.menu_info, 2, "Properties");
+
+         popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+             public boolean onMenuItemClick(MenuItem item) {
+                 performAction(item.getItemId());
+                 return true;
+             }
+         });
+         popup.show();
+    }
 
     private RecyclerView.RecyclerListener mRecycleListener = new RecyclerView.RecyclerListener() {
 
@@ -1253,6 +1298,10 @@ public class DirectoryFragment extends DirectoryFragmentFlavour implements MenuI
     }
 
     public boolean handleMenuAction(MenuItem item) {
+        return handleMenuAction(item.getItemId());
+    }
+
+    public boolean handleMenuAction(int id) {
         final SparseBooleanArray checked = mAdapter.getCheckedItemPositions();
         final ArrayList<DocumentInfo> docs = new ArrayList<>();
         final int size = checked.size();
@@ -1268,11 +1317,14 @@ public class DirectoryFragment extends DirectoryFragmentFlavour implements MenuI
         if (docs.isEmpty()) {
             return false;
         }
-        return handleMenuAction(item, docs);
+        return handleMenuAction(id, docs);
     }
 
     public boolean handleMenuAction(MenuItem item, ArrayList<DocumentInfo> docs) {
-        final int id = item.getItemId();
+        return handleMenuAction(item.getItemId(), docs);
+    }
+    
+    public boolean handleMenuAction(int id, ArrayList<DocumentInfo> docs) {
         Bundle params = new Bundle();
         switch (id) {
 

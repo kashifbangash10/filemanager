@@ -17,6 +17,7 @@
             android:minHeight="36dp"
             android:paddingStart="10dp"
             android:text="Recent Media"
+            android:textStyle="bold"
             android:textAlignment="viewStart"
             android:textColor="?android:attr/textColorPrimary" />
 

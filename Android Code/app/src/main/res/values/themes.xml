@@ -29,7 +29,8 @@
         <item name="actionBarWidgetTheme">@null</item>
         <item name="actionBarTheme">@style/ThemeOverlay.AppCompat.Dark.ActionBar</item>
         <item name="actionBarPopupTheme">@style/ThemeOverlay.AppCompat.Dark</item>
-        <item name="actionModeBackground">@color/alertDarkColor</item>
+        <item name="actionModeBackground">@color/primaryColor</item>
+        <item name="actionModeCloseDrawable">@drawable/ic_action_close</item>
 
         <item name="colorPrimaryDark">@color/primaryDarkColor</item>
         <item name="colorPrimary">@color/primaryColor</item>

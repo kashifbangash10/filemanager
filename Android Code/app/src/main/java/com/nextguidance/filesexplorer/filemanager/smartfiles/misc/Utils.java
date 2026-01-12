@@ -241,9 +241,10 @@ public class Utils extends UtilsFlavour {
 
     public static long getDirectorySize(File dir) {
         long result = 0L;
-        if (dir.listFiles() != null && dir.listFiles().length > 0) {
-            for (File eachFile : dir.listFiles()) {
-                result += eachFile.isDirectory() && eachFile.canRead() ? getDirectorySize(eachFile) : eachFile.length();
+        File[] listFiles = dir.listFiles();
+        if (listFiles != null && listFiles.length > 0) {
+            for (File eachFile : listFiles) {
+                result += eachFile.isDirectory() ? getDirectorySize(eachFile) : eachFile.length();
             }
         } else if (!dir.isDirectory()) {
             result = dir.length();

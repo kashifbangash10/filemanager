@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_files"
+        android:icon="@drawable/ic_root_folder"
+        android:title="Files" />
+    <item
+        android:id="@+id/nav_recents"
+        android:icon="@drawable/ic_root_recent"
+        android:title="Recent" />
+    <item
+        android:id="@+id/nav_cleaner"
+        android:icon="@drawable/ic_clean"
+        android:title="Cleaner" />
+</menu>

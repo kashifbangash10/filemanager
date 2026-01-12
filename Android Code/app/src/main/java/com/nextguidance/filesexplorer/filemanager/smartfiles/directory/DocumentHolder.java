@@ -8,6 +8,7 @@ import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Checkable;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -40,6 +41,7 @@ public abstract class DocumentHolder extends BaseHolder implements View.OnClickL
     protected final View line1;
     protected final View line2;
     protected final View iconView;
+    protected final CheckBox checkBox;
 
     public DocumentHolder(Context context, ViewGroup parent, int layout,
                           OnItemClickListener onItemClickListener,
@@ -71,6 +73,7 @@ public abstract class DocumentHolder extends BaseHolder implements View.OnClickL
         line1 = itemView.findViewById(R.id.line1);
         line2 = itemView.findViewById(R.id.line2);
         iconView = itemView.findViewById(android.R.id.icon);
+        checkBox = (CheckBox) itemView.findViewById(R.id.checkbox);
         popupButton.setOnClickListener(this);
         popupButton.setVisibility(View.VISIBLE);
 
@@ -81,6 +84,9 @@ public abstract class DocumentHolder extends BaseHolder implements View.OnClickL
         super.setData(cursor, position);
         if (multiChoiceHelper != null) {
             updateCheckedState(position);
+        }
+        if(checkBox != null){
+            checkBox.setVisibility(isMultiChoiceActive() ? View.VISIBLE : View.GONE);
         }
     }
 
@@ -100,6 +106,9 @@ public abstract class DocumentHolder extends BaseHolder implements View.OnClickL
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
             itemView.setActivated(isChecked);
             setSelected(isChecked, true);
+        }
+        if(checkBox != null) {
+            checkBox.setChecked(isChecked);
         }
     }
 
