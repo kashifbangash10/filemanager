@@ -48,16 +48,16 @@ public class IconColorUtils {
         int icon;
 
 
-        icon = R.color.item_doc_apk;
+        icon = R.color.item_apps;
         add("application/vnd.android.package-archive", icon);
 
 
-        icon = R.color.item_doc_audio;
+        icon = R.color.item_audio;
         add("application/ogg", icon);
         add("application/x-flac", icon);
 
 
-        icon = R.color.item_doc_certificate;
+        icon = R.color.item_wifi_share;
         add("application/pgp-keys", icon);
         add("application/pgp-signature", icon);
         add("application/x-pkcs12", icon);
@@ -70,7 +70,7 @@ public class IconColorUtils {
         add("application/x-pkcs7-signature", icon);
 
 
-        icon = R.color.item_doc_code;
+        icon = R.color.item_wifi_share;
         add("application/rdf+xml", icon);
         add("application/rss+xml", icon);
         add("application/x-object", icon);
@@ -101,7 +101,7 @@ public class IconColorUtils {
         add("application/x-javascript", icon);
 
 
-        icon = R.color.item_doc_compressed;
+        icon = R.color.item_audio;
         add("application/mac-binhex40", icon);
         add("application/rar", icon);
         add("application/zip", icon);
@@ -122,24 +122,24 @@ public class IconColorUtils {
         add("application/x-rar-compressed", icon);
 
 
-        icon = R.color.item_doc_contact;
+        icon = R.color.item_analysis;
         add("text/x-vcard", icon);
         add("text/vcard", icon);
 
 
-        icon = R.color.item_doc_event;
+        icon = R.color.item_cast_queue;
         add("text/calendar", icon);
         add("text/x-vcalendar", icon);
 
 
-        icon = R.color.item_doc_font;
+        icon = R.color.item_wifi_share;
         add("application/x-font", icon);
         add("application/font-woff", icon);
         add("application/x-font-woff", icon);
         add("application/x-font-ttf", icon);
 
 
-        icon = R.color.item_doc_image;
+        icon = R.color.item_images;
         add("application/vnd.oasis.opendocument.graphics", icon);
         add("application/vnd.oasis.opendocument.graphics-template", icon);
         add("application/vnd.oasis.opendocument.image", icon);
@@ -148,11 +148,11 @@ public class IconColorUtils {
         add("application/vnd.sun.xml.draw.template", icon);
 
 
-        icon = R.color.item_doc_pdf;
+        icon = R.color.item_documents;
         add("application/pdf", icon);
 
 
-        icon = R.color.item_doc_slide;
+        icon = R.color.item_connections;
         add("application/vnd.stardivision.impress", icon);
         add("application/vnd.sun.xml.impress", icon);
         add("application/vnd.sun.xml.impress.template", icon);
@@ -160,7 +160,7 @@ public class IconColorUtils {
         add("application/vnd.oasis.opendocument.presentation", icon);
 
 
-        icon = R.color.item_doc_sheet;
+        icon = R.color.item_cleaner;
         add("application/vnd.oasis.opendocument.spreadsheet", icon);
         add("application/vnd.oasis.opendocument.spreadsheet-template", icon);
         add("application/vnd.stardivision.calc", icon);
@@ -169,7 +169,7 @@ public class IconColorUtils {
         add("application/x-kspread", icon);
 
 
-        icon = R.color.item_doc_doc;
+        icon = R.color.item_transfer_pc;
         add("application/vnd.oasis.opendocument.text", icon);
         add("application/vnd.oasis.opendocument.text-master", icon);
         add("application/vnd.oasis.opendocument.text-template", icon);
@@ -183,24 +183,24 @@ public class IconColorUtils {
         add("application/x-kword", icon);
 
 
-        icon = R.color.item_doc_video;
+        icon = R.color.item_video;
         add("application/x-quicktimeplayer", icon);
         add("application/x-shockwave-flash", icon);
 
 
-        icon = R.color.item_doc_word;
+        icon = R.color.item_transfer_pc;
         add("application/msword", icon);
         add("application/vnd.openxmlformats-officedocument.wordprocessingml.document", icon);
         add("application/vnd.openxmlformats-officedocument.wordprocessingml.template", icon);
 
 
-        icon = R.color.item_doc_excel;
+        icon = R.color.item_cleaner;
         add("application/vnd.ms-excel", icon);
         add("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", icon);
         add("application/vnd.openxmlformats-officedocument.spreadsheetml.template", icon);
 
 
-        icon = R.color.item_doc_powerpoint;
+        icon = R.color.item_connections;
         add("application/vnd.ms-powerpoint", icon);
         add("application/vnd.openxmlformats-officedocument.presentationml.presentation", icon);
         add("application/vnd.openxmlformats-officedocument.presentationml.template", icon);
@@ -217,23 +217,23 @@ public class IconColorUtils {
         if (Utils.isDir(mimeType)) {
             if (MediaDocumentsProvider.AUTHORITY.equals(authority)){
                 if(docId.startsWith(MediaDocumentsProvider.TYPE_ALBUM)){
-                    return ContextCompat.getColor(context, R.color.item_doc_audio);
+                    return ContextCompat.getColor(context, R.color.item_audio);
                 }
                 else if(docId.startsWith(MediaDocumentsProvider.TYPE_IMAGES_BUCKET)){
-                    return ContextCompat.getColor(context, R.color.item_doc_image);
+                    return ContextCompat.getColor(context, R.color.item_images);
                 }
                 else if(docId.startsWith(MediaDocumentsProvider.TYPE_VIDEOS_BUCKET)){
-                    return ContextCompat.getColor(context, R.color.item_doc_video);
+                    return ContextCompat.getColor(context, R.color.item_video);
                 }
             } else if (NonMediaDocumentsProvider.AUTHORITY.equals(authority)){
                 if(docId.startsWith(NonMediaDocumentsProvider.TYPE_APK_ROOT)){
-                    return ContextCompat.getColor(context, R.color.item_doc_apk);
+                    return ContextCompat.getColor(context, R.color.item_apps);
                 }
                 else if(docId.startsWith(NonMediaDocumentsProvider.TYPE_ARCHIVE_ROOT)){
-                    return ContextCompat.getColor(context, R.color.item_doc_compressed);
+                    return ContextCompat.getColor(context, R.color.item_audio);
                 }
                 else if(docId.startsWith(NonMediaDocumentsProvider.TYPE_DOCUMENT_ROOT)){
-                    return ContextCompat.getColor(context, R.color.item_doc_pdf);
+                    return ContextCompat.getColor(context, R.color.item_documents);
                 }
             } else if (ExtraDocumentsProvider.AUTHORITY.equals(authority)){
                 if(docId.startsWith(ExtraDocumentsProvider.ROOT_ID_WHATSAPP)){
@@ -246,7 +246,24 @@ public class IconColorUtils {
                     return ContextCompat.getColor(context, R.color.item_telegram);
                 }
             }
-            return defaultColor;
+            
+            // Common folder names colorful styling
+            String idLower = docId.toLowerCase();
+            if (idLower.contains("download")) {
+                return ContextCompat.getColor(context, R.color.item_downloads);
+            } else if (idLower.contains("dcim") || idLower.contains("camera") || idLower.contains("picture")) {
+                return ContextCompat.getColor(context, R.color.item_images);
+            } else if (idLower.contains("movie") || idLower.contains("video")) {
+                return ContextCompat.getColor(context, R.color.item_video);
+            } else if (idLower.contains("music") || idLower.contains("audio") || idLower.contains("notification") || idLower.contains("ringtone")) {
+                return ContextCompat.getColor(context, R.color.item_audio);
+            } else if (idLower.contains("document") || idLower.contains("pdf")) {
+                return ContextCompat.getColor(context, R.color.item_documents);
+            } else if (idLower.contains("whatsapp") || idLower.contains("telegram") || idLower.contains("facebook") || idLower.contains("instagram")) {
+                return ContextCompat.getColor(context, R.color.item_cleaner);
+            }
+            
+            return ContextCompat.getColor(context, R.color.item_connections); // Default vibrant folder color
         }
 
 
@@ -264,15 +281,15 @@ public class IconColorUtils {
         final String typeOnly = mimeType.split("/")[0];
 
         if ("audio".equals(typeOnly)) {
-            return ContextCompat.getColor(context, R.color.item_doc_audio);
+            return ContextCompat.getColor(context, R.color.item_audio);
         } else if ("image".equals(typeOnly)) {
-            return ContextCompat.getColor(context, R.color.item_doc_image);
+            return ContextCompat.getColor(context, R.color.item_images);
         } else if ("text".equals(typeOnly)) {
-            return ContextCompat.getColor(context, R.color.item_doc_video);
+            return ContextCompat.getColor(context, R.color.item_transfer_pc);
         } else if ("video".equals(typeOnly)) {
-            return ContextCompat.getColor(context, R.color.item_doc_video);
+            return ContextCompat.getColor(context, R.color.item_video);
         } else {
-            return ContextCompat.getColor(context, R.color.item_doc_file);
+            return ContextCompat.getColor(context, R.color.item_wifi_share);
         }
     }
 

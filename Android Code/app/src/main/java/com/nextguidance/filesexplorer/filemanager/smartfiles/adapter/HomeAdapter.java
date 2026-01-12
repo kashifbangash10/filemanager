@@ -204,8 +204,9 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
             } else if (commonInfo.rootInfo.isStorage() && !commonInfo.rootInfo.isSecondaryStorage()) {
                 drawableId = R.drawable.ic_analyze;
             }
+            int rootColor = ContextCompat.getColor(mContext, commonInfo.rootInfo.derivedColor);
             if (drawableId != -1) {
-                action.setImageDrawable(IconUtils.applyTint(mContext, drawableId, accentColor));
+                action.setImageDrawable(IconUtils.applyTint(mContext, drawableId, rootColor));
                 action_layout.setVisibility(View.VISIBLE);
             } else {
                 action.setImageDrawable(null);
@@ -218,7 +219,7 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
                     progress.setVisibility(View.VISIBLE);
                     progress.setMax(100);
                     progress.setProgress(100 - current.intValue());
-                    progress.setColor(color);
+                    progress.setColor(rootColor);
                     animateProgress(progress, commonInfo.rootInfo);
                 } catch (Exception e) {
                     progress.setVisibility(View.GONE);

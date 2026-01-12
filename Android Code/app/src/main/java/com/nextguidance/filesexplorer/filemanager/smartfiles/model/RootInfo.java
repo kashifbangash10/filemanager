@@ -202,12 +202,15 @@ public class RootInfo implements Durable, Parcelable {
             derivedTag = "storage";
         } else if (isExternalStorage()) {
             derivedIcon = R.drawable.ic_root_sdcard;
+            derivedColor = R.color.item_video;
             derivedTag = "external_storage";
         } else if (isRootedStorage()) {
             derivedIcon = R.drawable.ic_root_root;
+            derivedColor = R.color.item_cleaner;
             derivedTag = "root";
         } else if (isPhoneStorage()) {
             derivedIcon = R.drawable.ic_root_device;
+            derivedColor = R.color.item_analysis;
             derivedTag = "phone";
         } else if (isSecondaryStorage()) {
             derivedIcon = R.drawable.ic_root_sdcard;
@@ -219,6 +222,7 @@ public class RootInfo implements Durable, Parcelable {
             derivedTag = "secondary_storage";
         } else if (isUsbStorage()) {
             derivedIcon = R.drawable.ic_root_usb;
+            derivedColor = R.color.item_wifi_share;
             derivedTag = "usb_storage";
         } else if (isDownloadsFolder()) {
             derivedIcon = R.drawable.ic_root_download;
@@ -226,18 +230,23 @@ public class RootInfo implements Durable, Parcelable {
             derivedTag = "downloads";
         } else if (isBluetoothFolder()) {
             derivedIcon = R.drawable.ic_root_bluetooth;
+            derivedColor = R.color.item_analysis;
             derivedTag = "bluetooth";
         } else if (isAppBackupFolder()) {
             derivedIcon = R.drawable.ic_root_appbackup;
+            derivedColor = R.color.item_apps;
             derivedTag = "appbackup";
         } else if (isBookmarkFolder()) {
             derivedIcon = R.drawable.ic_root_bookmark;
+            derivedColor = R.color.item_connections;
             derivedTag = "bookmark";
         } else if (isHiddenFolder()) {
             derivedIcon = R.drawable.ic_root_hidden;
+            derivedColor = R.color.item_wifi_share;
             derivedTag = "hidden";
         } else if (isDownloads()) {
             derivedIcon = R.drawable.ic_root_download;
+            derivedColor = R.color.item_downloads;
             derivedTag = "downloads";
         } else if (isImages()) {
             derivedIcon = R.drawable.ic_root_image;
@@ -277,9 +286,11 @@ public class RootInfo implements Durable, Parcelable {
             derivedTag = "process";
         } else if (isRecents()) {
             derivedIcon = R.drawable.ic_root_recent;
+            derivedColor = R.color.item_analysis;
             derivedTag = "recent";
         } else if (isHome()) {
             derivedIcon = R.drawable.ic_root_home;
+            derivedColor = R.color.item_analysis;
             derivedTag = "home";
         } else if (isConnections()) {
             derivedIcon = R.drawable.ic_root_connections;
@@ -296,16 +307,20 @@ public class RootInfo implements Durable, Parcelable {
         } else if (isCloudStorage()) {
             if (isCloudGDrive()) {
                 derivedIcon = R.drawable.ic_root_gdrive;
+                derivedColor = R.color.item_analysis;
             } else if (isCloudDropBox()) {
                 derivedIcon = R.drawable.ic_root_dropbox;
+                derivedColor = R.color.item_wifi_share;
             } else if (isCloudOneDrive()) {
                 derivedIcon = R.drawable.ic_root_onedrive;
+                derivedColor = R.color.item_cast_queue;
             } else if (isCloudBox()) {
                 derivedIcon = R.drawable.ic_root_box;
+                derivedColor = R.color.item_analysis;
             } else {
                 derivedIcon = R.drawable.ic_root_cloud;
+                derivedColor = R.color.item_connections;
             }
-            derivedColor = R.color.item_connection_cloud;
             derivedTag = "cloud";
         } else if (isExtraStorage()) {
             if (isWhatsApp()) {
@@ -331,6 +346,7 @@ public class RootInfo implements Durable, Parcelable {
             derivedTag = "cast";
         }  else if (isReceiveFolder()) {
             derivedIcon = R.drawable.ic_stat_download;
+            derivedColor = R.color.item_downloads;
             derivedTag = "receivefiles";
         }
     }
@@ -596,8 +612,8 @@ public class RootInfo implements Durable, Parcelable {
 
     public Drawable loadIcon(Context context) {
         if (derivedIcon != 0) {
-            return IconUtils.applyTintAttr(context, derivedIcon,
-                    android.R.attr.textColorPrimary);
+            return IconUtils.applyTint(context, derivedIcon,
+                    ContextCompat.getColor(context, derivedColor));
         } else {
             return IconUtils.loadPackageIcon(context, authority, icon);
         }
@@ -605,8 +621,8 @@ public class RootInfo implements Durable, Parcelable {
 
     public Drawable loadDrawerIcon(Context context) {
         if (derivedIcon != 0) {
-            return IconUtils.applyTintAttr(context, derivedIcon,
-                    android.R.attr.textColorPrimary);
+             return IconUtils.applyTint(context, derivedIcon,
+                    ContextCompat.getColor(context, derivedColor));
         } else {
             return IconUtils.loadPackageIcon(context, authority, icon);
         }
@@ -623,8 +639,8 @@ public class RootInfo implements Durable, Parcelable {
 
     public Drawable loadGridIcon(Context context) {
         if (derivedIcon != 0) {
-            return IconUtils.applyTintAttr(context, derivedIcon,
-                    android.R.attr.textColorPrimaryInverse);
+            return IconUtils.applyTint(context, derivedIcon,
+                    ContextCompat.getColor(context, derivedColor));
         } else {
             return IconUtils.loadPackageIcon(context, authority, icon);
         }
@@ -632,7 +648,8 @@ public class RootInfo implements Durable, Parcelable {
 
     public Drawable loadToolbarIcon(Context context) {
         if (derivedIcon != 0) {
-            return IconUtils.applyTintAttr(context, derivedIcon, R.attr.colorControlNormal);
+            return IconUtils.applyTint(context, derivedIcon,
+                    ContextCompat.getColor(context, derivedColor));
         } else {
             return IconUtils.loadPackageIcon(context, authority, icon);
         }
