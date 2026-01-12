@@ -352,8 +352,11 @@ public class AppsProvider extends DocumentsProvider {
 				displayName = process;
 			}
 			
-			if (null != query && !displayName.toLowerCase().contains(query)) {
-				return;
+			if (null != query) {
+				String lowercaseName = displayName.toLowerCase();
+				if (!lowercaseName.startsWith(query)) {
+					return;
+				}
 			}
 			final String path = null != appInfo ? appInfo.sourceDir : "";
 			final String mimeType = Document.MIME_TYPE_APK;
@@ -389,8 +392,11 @@ public class AppsProvider extends DocumentsProvider {
             CharSequence label = appInfo.loadLabel(packageManager);
             displayName = label != null ? label.toString() : packageName;
 
-			if (null != query && !displayName.toLowerCase().contains(query)) {
-				return;
+			if (null != query) {
+				String lowercaseName = displayName.toLowerCase();
+				if (!lowercaseName.startsWith(query)) {
+					return;
+				}
 			}
 			final String path = appInfo.sourceDir;
 			final String mimeType = Document.MIME_TYPE_APK;
@@ -434,8 +440,11 @@ public class AppsProvider extends DocumentsProvider {
 			displayName = process;
 		}
 
-		if (null != query && !displayName.toLowerCase().contains(query)) {
-			return;
+		if (null != query) {
+			String lowercaseName = displayName.toLowerCase();
+			if (!lowercaseName.startsWith(query)) {
+				return;
+			}
 		}
 		final String path = null != appInfo ? appInfo.sourceDir : "";
 		final String mimeType = Document.MIME_TYPE_APK;
@@ -477,8 +486,11 @@ public class AppsProvider extends DocumentsProvider {
 			displayName = process;
 		}
 
-		if (null != query && !displayName.toLowerCase().contains(query)) {
-			return;
+		if (null != query) {
+			String lowercaseName = displayName.toLowerCase();
+			if (!lowercaseName.startsWith(query)) {
+				return;
+			}
 		}
 		final String path = null != appInfo ? appInfo.sourceDir : "";
 		final String mimeType = Document.MIME_TYPE_APK;

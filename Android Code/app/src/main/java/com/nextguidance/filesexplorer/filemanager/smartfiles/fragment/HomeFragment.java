@@ -367,9 +367,11 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
         }
     }
 
-    private void cleanRAM() {
-        Bundle params = new Bundle();
-        new OperationTask(processRoot).execute();
+    public void cleanRAM() {
+        RootInfo processRoot = roots.getProcessRoot();
+        if (processRoot != null) {
+            new OperationTask(processRoot).execute();
+        }
     }
 
     private class OperationTask extends AsyncTask<Void, Void, Boolean> {
@@ -612,6 +614,46 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                     documentsRoot.title = "Documents";
                     documentsRoot.totalBytes = documentsSize;
                     calculatedShortcuts.add(CommonInfo.from(documentsRoot, TYPE_SHORTCUT));
+                }
+
+                // 8. Cleaner
+                RootInfo processRoot = roots.getProcessRoot();
+                if (processRoot != null) {
+                    processRoot = copyRootInfo(processRoot);
+                    processRoot.title = "Cleaner";
+                    calculatedShortcuts.add(CommonInfo.from(processRoot, TYPE_SHORTCUT));
+                }
+
+                // 9. WiFi Share
+                RootInfo transferRoot = roots.getTransferRoot();
+                if (transferRoot != null) {
+                    transferRoot = copyRootInfo(transferRoot);
+                    transferRoot.title = "WiFi Share";
+                    calculatedShortcuts.add(CommonInfo.from(transferRoot, TYPE_SHORTCUT));
+                }
+
+                // 10. Transfer to PC
+                RootInfo serverRoot = roots.getServerRoot();
+                if (serverRoot != null) {
+                    serverRoot = copyRootInfo(serverRoot);
+                    serverRoot.title = "Transfer to PC";
+                    calculatedShortcuts.add(CommonInfo.from(serverRoot, TYPE_SHORTCUT));
+                }
+
+                // 11. Cast Queue
+                RootInfo castRoot = roots.getCastRoot();
+                if (castRoot != null) {
+                    castRoot = copyRootInfo(castRoot);
+                    castRoot.title = "Cast Queue";
+                    calculatedShortcuts.add(CommonInfo.from(castRoot, TYPE_SHORTCUT));
+                }
+
+                // 12. Connections
+                RootInfo connectionsRoot = roots.getConnectionsRoot();
+                if (connectionsRoot != null) {
+                    connectionsRoot = copyRootInfo(connectionsRoot);
+                    connectionsRoot.title = "Connections";
+                    calculatedShortcuts.add(CommonInfo.from(connectionsRoot, TYPE_SHORTCUT));
                 }
 
             } catch (Exception e) {

@@ -14,6 +14,7 @@ import android.widget.TextView;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.nextguidance.filesexplorer.filemanager.smartfiles.DocumentsActivity;
 import com.nextguidance.filesexplorer.filemanager.smartfiles.R;
 import com.nextguidance.filesexplorer.filemanager.smartfiles.misc.CrashReportingManager;
 import com.nextguidance.filesexplorer.filemanager.smartfiles.misc.IconHelper;
@@ -230,12 +231,14 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
 
     public class ShortcutViewHolder extends ViewHolder {
         public ImageView icon;
+        public View iconBackground;
         public TextView title;
         public TextView subtitle;
 
         public ShortcutViewHolder(View v) {
             super(v);
             icon = v.findViewById(R.id.icon);
+            iconBackground = v.findViewById(R.id.icon_background);
             title = v.findViewById(R.id.title);
             subtitle = v.findViewById(R.id.subtitle);
         }
@@ -247,8 +250,13 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
             if (root == null) return;
 
             title.setText(root.title);
+            String rootTitle = root.title != null ? root.title.toLowerCase() : "";
 
-            String rootTitle = root.title.toLowerCase();
+            // Icons aur background color set karein
+            if (iconBackground instanceof com.nextguidance.filesexplorer.filemanager.smartfiles.ui.CircleImage) {
+                ((com.nextguidance.filesexplorer.filemanager.smartfiles.ui.CircleImage) iconBackground)
+                        .setColor(ContextCompat.getColor(mContext, root.derivedColor));
+            }
 
             // Click listener
             itemView.setOnClickListener(v -> {
@@ -257,6 +265,13 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
                     if (mContext instanceof androidx.fragment.app.FragmentActivity) {
                         com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.AnalysisFragment.show(
                                 ((androidx.fragment.app.FragmentActivity) mContext).getSupportFragmentManager());
+                    }
+                } else if (rootTitle.equals("cleaner") || rootTitle.equals("clean")) {
+                    if (mContext instanceof DocumentsActivity) {
+                        androidx.fragment.app.Fragment f = ((DocumentsActivity) mContext).getSupportFragmentManager().findFragmentById(R.id.container_directory);
+                        if (f instanceof com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.HomeFragment) {
+                            ((com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.HomeFragment) f).cleanRAM();
+                        }
                     }
                 } else {
                     // Baaki items ke liye normal flow
@@ -331,6 +346,31 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
                         subtitle.setText("0 B");
                     }
                     icon.setImageResource(R.drawable.ic_category_documents);
+                    break;
+
+                case "cleaner":
+                    subtitle.setText("Clean Now");
+                    icon.setImageResource(R.drawable.ic_root_process);
+                    break;
+
+                case "wifi share":
+                    subtitle.setText("Transfer");
+                    icon.setImageResource(R.drawable.ic_root_transfer);
+                    break;
+
+                case "transfer to pc":
+                    subtitle.setText("FTP Server");
+                    icon.setImageResource(R.drawable.ic_root_server);
+                    break;
+
+                case "cast queue":
+                    subtitle.setText("Chromecast");
+                    icon.setImageResource(R.drawable.ic_root_cast);
+                    break;
+
+                case "connections":
+                    subtitle.setText("Cloud & FTP");
+                    icon.setImageResource(R.drawable.ic_root_connections);
                     break;
 
                 default:

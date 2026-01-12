@@ -41,6 +41,9 @@ class AnalysisFragment : Fragment() {
         private var isAnalysisComplete = false
 
         @JvmStatic
+        fun getCache(): AnalysisCache? = cachedData
+
+        @JvmStatic
         fun show(fm: FragmentManager) {
             val fragment = AnalysisFragment()
             fm.beginTransaction()
@@ -304,12 +307,36 @@ class AnalysisFragment : Fragment() {
                         // Storage calculation
                         if (path.startsWith(rootDir)) {
                             val relativePath = path.substring(rootDir.length).trimStart('/')
-                            val topDir = relativePath.split('/')[0]
-                            if (topDir.isNotEmpty() && !topDir.startsWith(".")) {
-                                folderSizeMap[topDir] = (folderSizeMap[topDir] ?: 0L) + size
-                                folderCountMap[topDir] = (folderCountMap[topDir] ?: 0) + 1
+                            val parts = relativePath.split('/')
+                            var currentPath = rootDir
+                            for (i in 0 until parts.size - 1) {
+                                val folderName = parts[i]
+                                currentPath += if (currentPath.endsWith("/")) folderName else "/$folderName"
+                                
+                                val folder = cachedData?.allFoldersMap?.getOrPut(currentPath) {
+                                    FolderItem().apply {
+                                        this.path = currentPath
+                                        this.name = folderName
+                                    }
+                                }
+                                folder?.size = (folder?.size ?: 0L) + size
+                                folder?.itemCount = (folder?.itemCount ?: 0) + 1
+                                
+                                // topDir aggregation for the main list
+                                if (i == 0) {
+                                    folderSizeMap[folderName] = (folderSizeMap[folderName] ?: 0L) + size
+                                    folderCountMap[folderName] = (folderCountMap[folderName] ?: 0) + 1
+                                }
                             }
                         }
+
+                        // Store all files for detail view
+                        cachedData?.allFiles?.add(FileItem().apply {
+                            this.name = name
+                            this.path = try { File(path).parent ?: "" } catch(e: Exception) { "" }
+                            this.size = size
+                            this.fullPath = path
+                        })
 
                         // Duplicates (size-based candidate)
                         if (size > 50 * 1024) {
@@ -642,6 +669,8 @@ class AnalysisFragment : Fragment() {
 
     class AnalysisCache {
         val storageFolders = mutableListOf<FolderItem>()
+        val allFoldersMap = mutableMapOf<String, FolderItem>()
+        val allFiles = mutableListOf<FileItem>()
         val duplicateGroups = mutableListOf<DuplicateGroup>()
         val largeFiles = mutableListOf<FileItem>()
         val apps = mutableListOf<AppItem>()
@@ -657,6 +686,8 @@ class AnalysisFragment : Fragment() {
         fun isValid() = System.currentTimeMillis() - timestamp < 5 * 60 * 1000
         fun clear() {
             storageFolders.clear()
+            allFoldersMap.clear()
+            allFiles.clear()
             duplicateGroups.clear()
             largeFiles.clear()
             apps.clear()

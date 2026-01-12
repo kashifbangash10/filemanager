@@ -12,6 +12,9 @@ import static com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.Dir
 import static com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.DirectoryFragment.ANIM_NONE;
 import static com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.DirectoryFragment.ANIM_SIDE;
 import static com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.DirectoryFragment.ANIM_UP;
+import static com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.DirectoryFragment.TYPE_NORMAL;
+import static com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.DirectoryFragment.TYPE_SEARCH;
+import static com.nextguidance.filesexplorer.filemanager.smartfiles.misc.Utils.EXTRA_DOC;
 import static com.nextguidance.filesexplorer.filemanager.smartfiles.misc.AnalyticsManager.FILE_COUNT;
 import static com.nextguidance.filesexplorer.filemanager.smartfiles.misc.AnalyticsManager.FILE_MOVE;
 import static com.nextguidance.filesexplorer.filemanager.smartfiles.misc.AnalyticsManager.FILE_TYPE;
@@ -583,7 +586,9 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             mState.showFolderSize = SettingsActivity.getDisplayFolderSize(this);
             mState.showThumbnail = SettingsActivity.getDisplayFileThumbnail(this);
             mState.showHiddenFiles = SettingsActivity.getDisplayFileHidden(this);
+            if (!mSearchExpanded) {
             invalidateMenu();
+        }
         }
         initProtection();
     }
@@ -745,9 +750,27 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
                 return true;
             }
 
+            private final Handler mHandler = new Handler();
+            private Runnable mSearchRunnable;
+
             @Override
-            public boolean onQueryTextChange(String newText) {
-                return false;
+            public boolean onQueryTextChange(final String newText) {
+                mSearchResultShown = !TextUtils.isEmpty(newText);
+                mState.currentSearch = newText;
+                
+                if (mSearchRunnable != null) {
+                    mHandler.removeCallbacks(mSearchRunnable);
+                }
+                
+                mSearchRunnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        onCurrentDirectoryChanged(ANIM_NONE);
+                    }
+                };
+                
+                mHandler.postDelayed(mSearchRunnable, 300);
+                return true;
             }
         });
 
@@ -998,7 +1021,9 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
      * Update UI to reflect internal state changes not from user.
      */
     public void onStateChanged() {
-        invalidateMenu();
+        if (!mSearchExpanded) {
+            invalidateMenu();
+        }
     }
 
     /**
@@ -1318,12 +1343,21 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
                 }
             }
         } else {
-            if (mState.currentSearch != null && mSearchResultShown) {
+            boolean searchMode = mSearchExpanded && !TextUtils.isEmpty(mState.currentSearch);
+            Fragment fragmentObj = DirectoryFragment.get(fm);
+            if (fragmentObj instanceof DirectoryFragment) {
+                DirectoryFragment fragment = (DirectoryFragment) fragmentObj;
+                if (searchMode && fragment.getType() == DirectoryFragment.TYPE_SEARCH && mState.currentSearch != null && mState.currentSearch.equals(fragment.getQuery())) {
+                    return;
+                }
+                if (!searchMode && fragment.getType() == DirectoryFragment.TYPE_NORMAL && cwd != null && cwd.equals(fragment.getArguments().getParcelable(Utils.EXTRA_DOC))) {
+                    return;
+                }
+            }
 
+            if (searchMode) {
                 DirectoryFragment.showSearch(fm, root, cwd, mState.currentSearch, anim);
-                mSearchResultShown = false;
             } else {
-
                 DirectoryFragment.showNormal(fm, root, cwd, anim);
             }
         }
@@ -1356,7 +1390,9 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         }
 
         updateActionBar();
-        invalidateMenu();
+        if (!mSearchExpanded) {
+            invalidateMenu();
+        }
         dumpStack();
 
     }

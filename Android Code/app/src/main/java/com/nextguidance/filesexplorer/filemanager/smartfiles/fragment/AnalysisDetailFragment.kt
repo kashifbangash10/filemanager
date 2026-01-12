@@ -342,29 +342,83 @@ class AnalysisDetailFragment : Fragment() {
 
             lifecycleScope.launch(Dispatchers.Main) {
                 try {
+                    val cache = AnalysisFragment.getCache()
+                    val currentPath = folder.absolutePath
                     val items = withContext(Dispatchers.IO) {
                         val result = mutableListOf<DetailAdapter.DetailItem>()
-                        folder.listFiles()?.filter { !it.name.startsWith(".") }?.forEach { file ->
-                            try {
-                                result.add(DetailAdapter.DetailItem().apply {
-                                    name = file.name
-                                    path = getShortPath(file.absolutePath)
-                                    this.file = file
-                                    if (file.isDirectory) {
-                                        isFolder = true
-                                        icon = R.drawable.ic_root_folder
-                                        iconColor = getFolderIconColor(file.name)
-                                        size = Formatter.formatFileSize(context, getFolderSizeQuick(file))
-                                        subtitle = "${countFilesQuick(file)} items"
-                                    } else {
-                                        isFolder = false
-                                        icon = getFileIcon(file.name)
-                                        iconColor = -0xde690d // 0xFF2196F3
-                                        size = Formatter.formatFileSize(context, file.length())
-                                        subtitle = getFileDate(file)
+                        val seenPaths = mutableSetOf<String>()
+
+                        // 1. Prefer Cache (Consistent with Scan Results)
+                        if (cache != null) {
+                            // Sub-folders detected during scan
+                            cache.allFoldersMap.forEach { (path, folderInfo) ->
+                                if (path != currentPath) {
+                                    val f = File(path)
+                                    if (f.parent == currentPath && !seenPaths.contains(path)) {
+                                        seenPaths.add(path)
+                                        result.add(DetailAdapter.DetailItem().apply {
+                                            name = folderInfo.name
+                                            this.path = getShortPath(path)
+                                            this.file = f
+                                            isFolder = true
+                                            icon = R.drawable.ic_root_folder
+                                            iconColor = getFolderIconColor(name ?: "")
+                                            size = Formatter.formatFileSize(context, folderInfo.size)
+                                            subtitle = "${folderInfo.itemCount} items"
+                                        })
                                     }
-                                })
-                            } catch (e: Exception) {}
+                                }
+                            }
+                            // Files detected during scan
+                            cache.allFiles.filter { it.path == currentPath }.forEach { fileInfo ->
+                                if (!seenPaths.contains(fileInfo.fullPath)) {
+                                    seenPaths.add(fileInfo.fullPath)
+                                    result.add(DetailAdapter.DetailItem().apply {
+                                        name = fileInfo.name
+                                        this.path = getShortPath(fileInfo.fullPath)
+                                        this.file = File(fileInfo.fullPath)
+                                        isFolder = false
+                                        icon = getFileIcon(name ?: "")
+                                        iconColor = -0xde690d // 0xFF2196F3
+                                        size = Formatter.formatFileSize(context, fileInfo.size)
+                                        subtitle = getFileDate(this.file!!)
+                                    })
+                                }
+                            }
+                        }
+
+                        // 2. Supplement with real-time listFiles()
+                        folder.listFiles()?.filter { !it.name.startsWith(".") }?.forEach { file ->
+                            val absPath = file.absolutePath
+                            if (!seenPaths.contains(absPath)) {
+                                seenPaths.add(absPath)
+                                try {
+                                    result.add(DetailAdapter.DetailItem().apply {
+                                        name = file.name
+                                        path = getShortPath(absPath)
+                                        this.file = file
+                                        if (file.isDirectory) {
+                                            isFolder = true
+                                            icon = R.drawable.ic_root_folder
+                                            iconColor = getFolderIconColor(name ?: "")
+                                            val cachedFolder = cache?.allFoldersMap?.get(absPath)
+                                            if (cachedFolder != null) {
+                                                size = Formatter.formatFileSize(context, cachedFolder.size)
+                                                subtitle = "${cachedFolder.itemCount} items"
+                                            } else {
+                                                size = Formatter.formatFileSize(context, getFolderSizeQuick(file))
+                                                subtitle = "${countFilesQuick(file)} items"
+                                            }
+                                        } else {
+                                            isFolder = false
+                                            icon = getFileIcon(name ?: "")
+                                            iconColor = -0xde690d // 0xFF2196F3
+                                            size = Formatter.formatFileSize(context, file.length())
+                                            subtitle = getFileDate(file)
+                                        }
+                                    })
+                                } catch (e: Exception) {}
+                            }
                         }
                         result.sortWith(compareBy({ !it.isFolder }, { it.name?.lowercase() }))
                         result

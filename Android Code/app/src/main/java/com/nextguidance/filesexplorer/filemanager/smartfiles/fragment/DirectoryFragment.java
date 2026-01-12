@@ -142,6 +142,14 @@ public class DirectoryFragment extends DirectoryFragmentFlavour implements MenuI
     public static final int ANIM_DOWN = 3;
     public static final int ANIM_UP = 4;
 
+    public int getType() {
+        return mType;
+    }
+
+    public String getQuery() {
+        return getArguments().getString(EXTRA_QUERY);
+    }
+
     private int mType = TYPE_NORMAL;
     private String mStateKey;
 

@@ -99,4 +99,17 @@
 
     <color name="material_black_protected">#88000000</color>
     <color name="navBarColor">#33ffffff</color>
+
+    <color name="item_analysis">#2196F3</color>
+    <color name="item_cleaner">#4CAF50</color>
+    <color name="item_downloads">#673AB7</color>
+    <color name="item_video">#E91E63</color>
+    <color name="item_audio">#FF9800</color>
+    <color name="item_images">#33AFFF</color>
+    <color name="item_apps">#8BC34A</color>
+    <color name="item_documents">#FF5722</color>
+    <color name="item_wifi_share">#607D8B</color>
+    <color name="item_transfer_pc">#3F51B5</color>
+    <color name="item_cast_queue">#F44336</color>
+    <color name="item_connections">#FFC107</color>
 </resources>

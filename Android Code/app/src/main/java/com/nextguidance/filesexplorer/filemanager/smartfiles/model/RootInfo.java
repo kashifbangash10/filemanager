@@ -198,6 +198,7 @@ public class RootInfo implements Durable, Parcelable {
         
         if (isInternalStorage()) {
             derivedIcon = R.drawable.ic_root_internal;
+            derivedColor = R.color.item_analysis;
             derivedTag = "storage";
         } else if (isExternalStorage()) {
             derivedIcon = R.drawable.ic_root_sdcard;
@@ -221,6 +222,7 @@ public class RootInfo implements Durable, Parcelable {
             derivedTag = "usb_storage";
         } else if (isDownloadsFolder()) {
             derivedIcon = R.drawable.ic_root_download;
+            derivedColor = R.color.item_downloads;
             derivedTag = "downloads";
         } else if (isBluetoothFolder()) {
             derivedIcon = R.drawable.ic_root_bluetooth;
@@ -239,19 +241,19 @@ public class RootInfo implements Durable, Parcelable {
             derivedTag = "downloads";
         } else if (isImages()) {
             derivedIcon = R.drawable.ic_root_image;
-            derivedColor = R.color.item_doc_image;
+            derivedColor = R.color.item_images;
             derivedTag = "images";
         } else if (isVideos()) {
             derivedIcon = R.drawable.ic_root_video;
-            derivedColor = R.color.item_doc_video;
+            derivedColor = R.color.item_video;
             derivedTag = "videos";
         } else if (isAudio()) {
             derivedIcon = R.drawable.ic_root_audio;
-            derivedColor = R.color.item_doc_audio;
+            derivedColor = R.color.item_audio;
             derivedTag = "audio";
         } else if (isDocument()) {
             derivedIcon = R.drawable.ic_root_document;
-            derivedColor = R.color.item_doc_pdf;
+            derivedColor = R.color.item_documents;
             derivedTag = "document";
         } else if (isArchive()) {
             derivedIcon = R.drawable.ic_root_archive;
@@ -263,14 +265,15 @@ public class RootInfo implements Durable, Parcelable {
             derivedTag = "apk";
         } else if (isUserApp()) {
             derivedIcon = R.drawable.ic_root_apps;
-            derivedColor = R.color.item_doc_apps;
+            derivedColor = R.color.item_apps;
             derivedTag = "user_apps";
         } else if (isSystemApp()) {
             derivedIcon = R.drawable.ic_root_system_apps;
-            derivedColor = R.color.item_doc_apps;
+            derivedColor = R.color.item_apps;
             derivedTag = "system_apps";
         } else if (isAppProcess()) {
             derivedIcon = R.drawable.ic_root_process;
+            derivedColor = R.color.item_cleaner;
             derivedTag = "process";
         } else if (isRecents()) {
             derivedIcon = R.drawable.ic_root_recent;
@@ -280,10 +283,11 @@ public class RootInfo implements Durable, Parcelable {
             derivedTag = "home";
         } else if (isConnections()) {
             derivedIcon = R.drawable.ic_root_connections;
+            derivedColor = R.color.item_connections;
             derivedTag = "connections";
         } else if (isServerStorage()) {
             derivedIcon = R.drawable.ic_root_server;
-            derivedColor = R.color.item_connection_server;
+            derivedColor = R.color.item_transfer_pc;
             derivedTag = "server";
         } else if (isNetworkStorage()) {
             derivedIcon = R.drawable.ic_root_network;
@@ -319,11 +323,11 @@ public class RootInfo implements Durable, Parcelable {
             }
         } else if (isTransfer()) {
             derivedIcon = R.drawable.ic_root_transfer;
-            derivedColor = R.color.item_transfer;
+            derivedColor = R.color.item_wifi_share;
             derivedTag = "transfer";
         }  else if (isCast()) {
             derivedIcon = R.drawable.ic_root_cast;
-            derivedColor = R.color.item_cast;
+            derivedColor = R.color.item_cast_queue;
             derivedTag = "cast";
         }  else if (isReceiveFolder()) {
             derivedIcon = R.drawable.ic_stat_download;
