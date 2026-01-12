@@ -57,13 +57,13 @@ public class RootsExpandableAdapter extends BaseExpandableListAdapter {
                     recent.add(new RootItem(root));
                 }
             } else if (root.isConnections()) {
-                connection.add(new RootItem(root));
+                // connection.add(new RootItem(root));
             } else if (root.isTransfer()) {
-                transfer.add(new RootItem(root));
+                // transfer.add(new RootItem(root));
             } else if (root.isReceiveFolder()) {
                 receive.add(new RootItem(root));
             } else if (root.isCast()) {
-                cast.add(new RootItem(root));
+                // cast.add(new RootItem(root));
             } else if (root.isRootedStorage()) {
                 rooted.add(new RootItem(root));
             } else if (root.isPhoneStorage()) {
@@ -89,7 +89,9 @@ public class RootsExpandableAdapter extends BaseExpandableListAdapter {
             } else if (RootInfo.isApps(root)) {
                 apps.add(new RootItem(root));
             } else if (RootInfo.isNetwork(root)) {
-                network.add(new RootItem(root));
+                if (!root.isServerStorage()) {
+                    network.add(new RootItem(root));
+                }
             } else if (RootInfo.isCloud(root)) {
                 cloud.add(new RootItem(root));
             } else if (RootInfo.isLibraryExtra(root)) {

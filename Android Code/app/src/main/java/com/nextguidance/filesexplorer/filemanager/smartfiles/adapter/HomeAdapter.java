@@ -292,7 +292,7 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
                     } else {
                         subtitle.setText("0%");
                     }
-                    icon.setImageResource(R.drawable.ic_category_analysis);
+                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_category_analysis, ContextCompat.getColor(mContext, root.derivedColor)));
                     break;
 
                 case "downloads":
@@ -301,7 +301,7 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
                     } else {
                         subtitle.setText("0 B");
                     }
-                    icon.setImageResource(R.drawable.ic_category_downloads);
+                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_category_downloads, ContextCompat.getColor(mContext, root.derivedColor)));
                     break;
 
                 case "video":
@@ -310,7 +310,7 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
                     } else {
                         subtitle.setText("0 B");
                     }
-                    icon.setImageResource(R.drawable.ic_category_videos);
+                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_category_videos, ContextCompat.getColor(mContext, root.derivedColor)));
                     break;
 
                 case "audio":
@@ -319,7 +319,7 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
                     } else {
                         subtitle.setText("0 B");
                     }
-                    icon.setImageResource(R.drawable.ic_category_audio);
+                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_category_audio, ContextCompat.getColor(mContext, root.derivedColor)));
                     break;
 
                 case "images":
@@ -328,7 +328,7 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
                     } else {
                         subtitle.setText("0 B");
                     }
-                    icon.setImageResource(R.drawable.ic_category_images);
+                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_category_images, ContextCompat.getColor(mContext, root.derivedColor)));
                     break;
 
                 case "apps":
@@ -337,7 +337,7 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
                     } else {
                         subtitle.setText("0 B");
                     }
-                    icon.setImageResource(R.drawable.ic_category_apps);
+                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_category_apps, ContextCompat.getColor(mContext, root.derivedColor)));
                     break;
 
                 case "documents":
@@ -346,32 +346,32 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
                     } else {
                         subtitle.setText("0 B");
                     }
-                    icon.setImageResource(R.drawable.ic_category_documents);
+                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_category_documents, ContextCompat.getColor(mContext, root.derivedColor)));
                     break;
 
                 case "cleaner":
                     subtitle.setText("Clean Now");
-                    icon.setImageResource(R.drawable.ic_root_process);
+                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_root_process, ContextCompat.getColor(mContext, root.derivedColor)));
                     break;
 
                 case "wifi share":
                     subtitle.setText("Transfer");
-                    icon.setImageResource(R.drawable.ic_root_transfer);
+                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_root_transfer, ContextCompat.getColor(mContext, root.derivedColor)));
                     break;
 
                 case "transfer to pc":
                     subtitle.setText("FTP Server");
-                    icon.setImageResource(R.drawable.ic_root_server);
+                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_root_server, ContextCompat.getColor(mContext, root.derivedColor)));
                     break;
 
                 case "cast queue":
                     subtitle.setText("Chromecast");
-                    icon.setImageResource(R.drawable.ic_root_cast);
+                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_root_cast, ContextCompat.getColor(mContext, root.derivedColor)));
                     break;
 
                 case "connections":
                     subtitle.setText("Cloud & FTP");
-                    icon.setImageResource(R.drawable.ic_root_connections);
+                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_root_connections, ContextCompat.getColor(mContext, root.derivedColor)));
                     break;
 
                 default:

@@ -25,36 +25,40 @@
             android:orientation="vertical"
             android:layout_marginStart="12dp">
 
-            <TextView
-                android:id="@+id/name"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="?android:attr/textColorPrimary"
-                android:maxLines="1"
-                android:ellipsize="end" />
+                android:orientation="horizontal"
+                android:baselineAligned="false">
+
+                <TextView
+                    android:id="@+id/name"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+
+                <TextView
+                    android:id="@+id/size"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:textStyle="bold"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:layout_gravity="center_vertical" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/path"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textSize="11sp"
-                android:textColor="?android:attr/textColorSecondary"
-                android:maxLines="1"
-                android:ellipsize="middle" />
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone" />
 
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/size"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:textAppearance="?android:attr/textAppearanceSmall"
-            android:textStyle="bold"
-            android:textColor="?android:attr/textColorPrimary" />
 
     </LinearLayout>
 

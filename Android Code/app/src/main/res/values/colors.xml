@@ -108,7 +108,7 @@
     <color name="item_images">#33AFFF</color>
     <color name="item_apps">#8BC34A</color>
     <color name="item_documents">#FF5722</color>
-    <color name="item_wifi_share">#607D8B</color>
+    <color name="item_wifi_share">#00BCD4</color>
     <color name="item_transfer_pc">#3F51B5</color>
     <color name="item_cast_queue">#F44336</color>
     <color name="item_connections">#FFC107</color>

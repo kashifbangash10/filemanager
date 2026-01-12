@@ -517,11 +517,7 @@ class AnalysisFragment : Fragment() {
                 val pathView = subView.findViewById<TextView>(R.id.path)
                 pathView.text = sub.path
                 // Hide path/package name for Large Files and App Manager to match requested UI
-                if (item.type == AnalysisItem.TYPE_LARGE_FILES || item.type == AnalysisItem.TYPE_APP_MANAGER) {
-                    pathView.visibility = View.GONE
-                } else {
-                    pathView.visibility = View.VISIBLE
-                }
+                pathView.visibility = View.GONE
                 subView.findViewById<TextView>(R.id.size).text = sub.size
                 val subIcon = subView.findViewById<ImageView>(R.id.icon)
                 if (sub.isApp) {

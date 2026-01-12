@@ -169,6 +169,9 @@ public class DocumentInfo implements Durable, Parcelable {
         this.lastModified = getCursorLong(cursor, Document.COLUMN_LAST_MODIFIED);
         this.flags = getCursorInt(cursor, Document.COLUMN_FLAGS);
         this.summary = getCursorString(cursor, Document.COLUMN_SUMMARY);
+        if (this.summary != null && this.summary.startsWith("/")) {
+            this.summary = null;
+        }
         this.size = getCursorLong(cursor, Document.COLUMN_SIZE);
         this.icon = getCursorInt(cursor, Document.COLUMN_ICON);
         this.path = getCursorString(cursor, Document.COLUMN_PATH);

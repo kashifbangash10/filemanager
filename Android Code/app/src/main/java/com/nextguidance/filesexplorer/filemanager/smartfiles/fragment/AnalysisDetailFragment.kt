@@ -676,8 +676,8 @@ class AnalysisDetailFragment : Fragment() {
 
             fun bind(item: DetailItem, showCheckbox: Boolean, isChecked: Boolean, scope: CoroutineScope) {
                 name.text = item.name ?: ""
-                path.text = item.path ?: ""
-                path.visibility = if (item.path != null) View.VISIBLE else View.GONE
+                path.text = ""
+                path.visibility = View.GONE
                 size.text = item.size ?: ""
                 size.visibility = if (item.size != null) View.VISIBLE else View.GONE
                 subtitle?.text = item.subtitle ?: ""

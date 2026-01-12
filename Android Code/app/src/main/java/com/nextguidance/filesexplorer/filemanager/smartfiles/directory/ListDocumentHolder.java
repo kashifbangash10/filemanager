@@ -85,6 +85,10 @@ public class ListDocumentHolder extends DocumentHolder {
             hasLine1 = true;
         }
 
+        if (summary != null) {
+            summary.setVisibility(View.GONE);
+        }
+
         Drawable iconDrawable = null;
         if (mEnv.getType() == TYPE_RECENT_OPEN) {
             final String docRootId = getCursorString(cursor, RootCursorWrapper.COLUMN_ROOT_ID);
@@ -97,34 +101,12 @@ public class ListDocumentHolder extends DocumentHolder {
                 iconDrawable = root.loadIcon(context);
             }
 
-            if (summary != null) {
-                final boolean alwaysShowSummary = mEnv.getContext().getResources().getBoolean(R.bool.always_show_summary);
-                if (alwaysShowSummary) {
-                    summary.setText(root.getDirectoryString());
-                    summary.setVisibility(View.VISIBLE);
-                    hasLine2 = true;
-                } else {
-                    if (iconDrawable != null && roots.isIconUniqueBlocking(root)) {
-
-                        summary.setVisibility(View.INVISIBLE);
-                    } else {
-                        summary.setText(root.getDirectoryString());
-                        summary.setVisibility(View.VISIBLE);
-
-                        hasLine2 = true;
-                    }
-                }
-            }
         } else {
 
 
             if (Utils.isDir(mDoc.mimeType) && state.derivedMode == MODE_GRID) {
                 iconDrawable = IconUtils.applyTintAttr(context, R.drawable.ic_root_folder,
                         android.R.attr.textColorPrimaryInverse);
-            }
-
-            if (summary != null) {
-                 summary.setVisibility(View.GONE);
             }
         }
 
@@ -134,20 +116,25 @@ public class ListDocumentHolder extends DocumentHolder {
             icon2.setVisibility(View.GONE);
 
         if (iconDrawable != null) {
-            if (hasLine1) {
-                icon1.setVisibility(View.GONE);
-
-            } else {
+            if (hasLine1 && icon1 != null) {
+                icon1.setVisibility(View.VISIBLE);
+                icon1.setImageDrawable(iconDrawable);
+            } else if (icon2 != null) {
                 icon2.setVisibility(View.VISIBLE);
                 icon2.setImageDrawable(iconDrawable);
             }
         }
 
-        if (mDoc.lastModified == -1) {
-            date.setText(null);
+        if (Utils.isDir(mDoc.mimeType) && mDoc.summary != null) {
+             date.setText(mDoc.summary);
+             hasLine2 = true;
         } else {
-            date.setText(Utils.formatTime(context, mDoc.lastModified));
-            hasLine2 = true;
+            if (mDoc.lastModified == -1) {
+                date.setText(null);
+            } else {
+                date.setText(Utils.formatTime(context, mDoc.lastModified));
+                hasLine2 = true;
+            }
         }
 
         final FolderSizeAsyncTask oldSizeTask = (FolderSizeAsyncTask) size.getTag();
@@ -158,15 +145,8 @@ public class ListDocumentHolder extends DocumentHolder {
         if (state.showSize) {
             size.setVisibility(View.VISIBLE);
             if (Utils.isDir(mDoc.mimeType) || mDoc.size == -1) {
+                size.setText(null);
                 ArrayMap<Integer, Long> sizes = DocumentsApplication.getFolderSizes();
-                
-                // Use summary for folder info (item count) if available
-                if (Utils.isDir(mDoc.mimeType) && mDoc.summary != null) {
-                    size.setText(mDoc.summary);
-                } else {
-                    size.setText(null);
-                }
-                
                 if (state.showFolderSize) {
                     long sizeInBytes = sizes.containsKey(position) ? sizes.get(position) : -1;
                     if (sizeInBytes != -1) {
@@ -179,7 +159,7 @@ public class ListDocumentHolder extends DocumentHolder {
                 }
             } else {
                 size.setText(Formatter.formatFileSize(context, mDoc.size));
-                hasLine2 = true;
+                // No need to set hasLine2 = true here as size is now in line 1
             }
         } else {
             size.setVisibility(View.GONE);

@@ -86,10 +86,23 @@
                     android:layout_weight="1"
                     android:singleLine="true"
                     android:ellipsize="middle"
-                    android:layout_gravity="start"
+                    android:layout_gravity="center_vertical"
                     android:textAlignment="viewStart"
                     android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
                     android:textColor="?android:attr/textColorPrimary" />
+
+                <TextView
+                    android:id="@+id/size"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="8dp"
+                    android:layout_marginStart="8dp"
+                    android:singleLine="true"
+                    android:gravity="end"
+                    android:layout_gravity="center_vertical"
+                    android:textAlignment="viewEnd"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                    android:textColor="?android:attr/textColorSecondary" />
 
                 <ImageView
                     android:id="@android:id/icon1"
@@ -98,6 +111,7 @@
                     android:layout_marginLeft="8dp"
                     android:layout_marginStart="8dp"
                     android:scaleType="centerInside"
+                    android:layout_gravity="center_vertical"
                     android:contentDescription="@null" />
 
             </LinearLayout>
@@ -108,8 +122,6 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:layout_marginRight="10dp"
-                android:layout_marginEnd="10dp"
                 android:baselineAligned="false">
 
                 <TextView
@@ -125,21 +137,9 @@
                     android:textColor="?android:attr/textColorSecondary" />
 
                 <TextView
-                    android:id="@+id/size"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="8dp"
-                    android:layout_marginStart="8dp"
-                    android:singleLine="true"
-                    android:gravity="end"
-                    android:textAlignment="viewEnd"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-                    android:textColor="?android:attr/textColorSecondary" />
-
-                <TextView
                     android:id="@android:id/summary"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
                     android:visibility="gone" />
 
             </LinearLayout>
