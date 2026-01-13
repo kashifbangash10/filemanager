@@ -85,6 +85,10 @@
                 android:id="@+id/selection_actions"
                 layout="@layout/layout_selection_actions" />
 
+            <include
+                android:id="@+id/paste_actions"
+                layout="@layout/layout_paste_actions" />
+
         </LinearLayout>
 
         <LinearLayout

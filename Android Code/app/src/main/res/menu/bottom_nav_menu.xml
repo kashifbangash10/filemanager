@@ -3,13 +3,13 @@
     <item
         android:id="@+id/nav_files"
         android:icon="@drawable/ic_root_folder"
-        android:title="Files" />
+        android:title="FILES" />
     <item
-        android:id="@+id/nav_recents"
-        android:icon="@drawable/ic_root_recent"
-        android:title="Recent" />
+        android:id="@+id/nav_home"
+        android:icon="@drawable/ic_root_home"
+        android:title="HOME" />
     <item
         android:id="@+id/nav_cleaner"
         android:icon="@drawable/ic_clean"
-        android:title="Cleaner" />
+        android:title="CLEANER" />
 </menu>

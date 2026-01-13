@@ -44,6 +44,11 @@ class AnalysisFragment : Fragment() {
         fun getCache(): AnalysisCache? = cachedData
 
         @JvmStatic
+        fun setCache(cache: AnalysisCache?) {
+            cachedData = cache
+        }
+
+        @JvmStatic
         fun show(fm: FragmentManager) {
             val fragment = AnalysisFragment()
             fm.beginTransaction()

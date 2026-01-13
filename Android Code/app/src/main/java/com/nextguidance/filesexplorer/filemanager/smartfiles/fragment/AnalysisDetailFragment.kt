@@ -11,6 +11,7 @@ import android.media.ThumbnailUtils
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
 import android.text.format.Formatter
 import android.view.KeyEvent
@@ -42,6 +43,21 @@ class AnalysisDetailFragment : Fragment() {
         private const val ARG_DUPLICATES = "duplicates"
         private const val ARG_LARGE_FILES = "large_files"
         private const val ARG_APPS = "apps"
+        private const val ARG_AUTO_INTERNAL = "auto_internal"
+
+        @JvmStatic
+        fun showInternalStorage(fm: FragmentManager?) {
+            if (fm == null) return
+            val fragment = AnalysisDetailFragment()
+            val args = Bundle()
+            args.putString(ARG_TITLE, "Internal Storage")
+            args.putBoolean(ARG_AUTO_INTERNAL, true)
+            fragment.arguments = args
+
+            fm.beginTransaction()
+                .replace(R.id.container_directory, fragment, TAG)
+                .commitAllowingStateLoss()
+        }
 
         @JvmStatic
         fun show(fm: FragmentManager?, title: String,
@@ -271,6 +287,123 @@ class AnalysisDetailFragment : Fragment() {
                         })
                     }
                 }
+                args.getBoolean(ARG_AUTO_INTERNAL, false) -> {
+                    val cache = AnalysisFragment.getCache()
+                    if (cache != null && cache.isValid() && cache.storageFolders.isNotEmpty()) {
+                        cache.storageFolders.forEach { folder ->
+                            val f = File(folder.path)
+                            if (f.exists()) {
+                                items.add(DetailAdapter.DetailItem().apply {
+                                    name = folder.name
+                                    path = getShortPath(folder.path)
+                                    subtitle = "${folder.itemCount} items"
+                                    size = try { Formatter.formatFileSize(context, folder.size) } catch(e: Exception) { "0 B" }
+                                    file = f
+                                    isFolder = true
+                                    icon = R.drawable.ic_root_folder
+                                    iconColor = getFolderIconColor(folder.name)
+                                })
+                            }
+                        }
+                    } else {
+                        lifecycleScope.launch(Dispatchers.Main) {
+                            val scannedFolders = withContext(Dispatchers.IO) {
+                                val rootDir = Environment.getExternalStorageDirectory().absolutePath
+                                val folderSizeMap = mutableMapOf<String, Long>()
+                                val folderCountMap = mutableMapOf<String, Int>()
+                                
+                                val newCache = cache ?: AnalysisFragment.AnalysisCache()
+                                newCache.clear()
+                                
+                                val projection = arrayOf(
+                                    MediaStore.Files.FileColumns.SIZE,
+                                    MediaStore.Files.FileColumns.DATA,
+                                    MediaStore.Files.FileColumns.DISPLAY_NAME
+                                )
+                                
+                                try {
+                                    context?.contentResolver?.query(
+                                        MediaStore.Files.getContentUri("external"),
+                                        projection, null, null, null
+                                    )?.use { cursor ->
+                                        val sizeIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.SIZE)
+                                        val dataIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA)
+                                        val nameIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME)
+                                        
+                                        while (cursor.moveToNext()) {
+                                            val size = cursor.getLong(sizeIdx)
+                                            val path = cursor.getString(dataIdx) ?: continue
+                                            val name = cursor.getString(nameIdx) ?: "Unknown"
+                                            
+                                            if (path.startsWith(prefix = rootDir)) {
+                                                val relativePath = path.substring(rootDir.length).trimStart('/')
+                                                val parts = relativePath.split('/')
+                                                
+                                                if (parts.size > 1) {
+                                                    val topDir = parts[0]
+                                                    folderSizeMap[topDir] = (folderSizeMap[topDir] ?: 0L) + size
+                                                    folderCountMap[topDir] = (folderCountMap[topDir] ?: 0) + 1
+                                                }
+                                                
+                                                var currentPath = rootDir
+                                                for (i in 0 until parts.size - 1) {
+                                                    val folderName = parts[i]
+                                                    currentPath += if (currentPath.endsWith("/")) folderName else "/$folderName"
+                                                    val folderItem = newCache.allFoldersMap.getOrPut(currentPath) {
+                                                        AnalysisFragment.FolderItem().apply {
+                                                            this.path = currentPath
+                                                            this.name = folderName
+                                                        }
+                                                    }
+                                                    folderItem.size = folderItem.size + size
+                                                    folderItem.itemCount = folderItem.itemCount + 1
+                                                }
+                                                
+                                                newCache.allFiles.add(AnalysisFragment.FileItem().apply {
+                                                    this.name = name
+                                                    this.path = File(path).parent ?: ""
+                                                    this.size = size
+                                                    this.fullPath = path
+                                                })
+                                            }
+                                        }
+                                    }
+                                } catch (e: Exception) {}
+                                
+                                val finalFoldersList = folderSizeMap.map { (name, size) ->
+                                    AnalysisFragment.FolderItem().apply {
+                                        this.name = name
+                                        this.path = File(rootDir as String).resolve(name).absolutePath
+                                        this.size = size
+                                        this.itemCount = folderCountMap[name] ?: 0
+                                    }
+                                }.sortedByDescending { it.size }
+                                
+                                newCache.storageFolders.addAll(finalFoldersList)
+                                newCache.markAnalysisComplete()
+                                AnalysisFragment.setCache(newCache)
+                                
+                                finalFoldersList
+                            }
+                            
+                            if (isAdded) {
+                                val newItems = scannedFolders.map { folder ->
+                                    DetailAdapter.DetailItem().apply {
+                                        name = folder.name
+                                        path = getShortPath(folder.path)
+                                        subtitle = "${folder.itemCount} items"
+                                        size = Formatter.formatFileSize(context, folder.size)
+                                        file = File(folder.path)
+                                        isFolder = true
+                                        icon = R.drawable.ic_root_folder
+                                        iconColor = getFolderIconColor(folder.name)
+                                    }
+                                }
+                                adapter?.updateItems(newItems)
+                            }
+                        }
+                    }
+                }
             }
 
 
@@ -385,13 +518,81 @@ class AnalysisDetailFragment : Fragment() {
         val selected = adapter?.getSelectedItemsList() ?: return
         if (selected.isEmpty()) return
         
-        if (singleItem && selected.size > 1) {
-            Toast.makeText(context, "Select only one item for $op", Toast.LENGTH_SHORT).show()
-            return
+        when(op) {
+            "Copy", "Move" -> {
+                val files = selected.mapNotNull { it.file }
+                if (files.isNotEmpty()) {
+                    (activity as? DocumentsActivity)?.setPasteMode(true, files, null, op == "Move")
+                    exitSelectionMode()
+                    Toast.makeText(context, "${files.size} items ready to $op", Toast.LENGTH_SHORT).show()
+                }
+            }
+            "Share" -> {
+                val files = selected.mapNotNull { it.file }
+                if (files.isNotEmpty()) {
+                    shareFiles(files)
+                }
+            }
+            else -> {
+                Toast.makeText(context, "$op ${selected.size} items", Toast.LENGTH_SHORT).show()
+            }
         }
+    }
+
+    fun onPasteRequested(files: List<File>, isMove: Boolean) {
+        val targetFolder = if (isInFolderNavigation) folderStack.peek() else null
         
-        // Placeholder for operations
-        Toast.makeText(context, "$op ${selected.size} items", Toast.LENGTH_SHORT).show()
+        if (targetFolder == null || !targetFolder.exists() || !targetFolder.isDirectory) {
+             Toast.makeText(context, "Please navigate to a folder to paste", Toast.LENGTH_SHORT).show()
+             return
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            var successCount = 0
+            files.forEach { file ->
+                try {
+                    val dest = File(targetFolder, file.name)
+                    if (isMove) {
+                        if (file.renameTo(dest)) successCount++
+                    } else {
+                        file.copyRecursively(dest, overwrite = true)
+                        successCount++
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e(TAG, "Paste failed for ${file.name}", e)
+                }
+            }
+
+            withContext(Dispatchers.Main) {
+                (activity as? DocumentsActivity)?.setPasteMode(false, null, null, false)
+                loadData(resetNavigation = false)
+                Toast.makeText(context, "Pasted $successCount items", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun shareFiles(files: List<File>) {
+        try {
+            val uris = ArrayList<Uri>()
+            files.forEach { file ->
+                val uri = androidx.core.content.FileProvider.getUriForFile(
+                    requireContext(),
+                    "${requireContext().packageName}.provider",
+                    file
+                )
+                uris.add(uri)
+            }
+
+            val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                type = "*/*"
+                putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(intent, "Share files"))
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Share failed", e)
+            Toast.makeText(context, "Share failed", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun updateSelectionTitle(count: Int) {

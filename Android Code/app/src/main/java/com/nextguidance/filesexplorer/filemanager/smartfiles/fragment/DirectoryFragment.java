@@ -130,6 +130,8 @@ import java.util.ArrayList;
  */
 public class DirectoryFragment extends DirectoryFragmentFlavour implements MenuItem.OnMenuItemClickListener {
 
+    public static final String TAG = "DirectoryFragment";
+
     private static final String KEY_ADAPTER = "key_adapter";
     private CompatTextView mEmptyView;
 
@@ -141,6 +143,10 @@ public class DirectoryFragment extends DirectoryFragmentFlavour implements MenuI
     public static final int ANIM_SIDE = 2;
     public static final int ANIM_DOWN = 3;
     public static final int ANIM_UP = 4;
+
+    public DocumentInfo getDocumentInfo() {
+        return doc;
+    }
 
     public int getType() {
         return mType;
@@ -1456,7 +1462,7 @@ public class DirectoryFragment extends DirectoryFragmentFlavour implements MenuI
     }
 
     private void moveDocument(ArrayList<DocumentInfo> docs, boolean move) {
-        MoveFragment.show(getFragmentManager(), docs, move);
+        ((DocumentsActivity) getActivity()).setPasteMode(true, null, docs, move);
         Bundle params = new Bundle();
         params.putBoolean(FILE_MOVE, move);
         params.putInt(FILE_COUNT, docs.size());

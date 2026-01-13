@@ -126,6 +126,8 @@ import com.nextguidance.filesexplorer.filemanager.smartfiles.ui.FloatingActionsM
 import com.nextguidance.filesexplorer.filemanager.smartfiles.ui.fabs.SimpleMenuListenerAdapter;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.AnalysisFragment;
+import com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.HomeFragment;
+import com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.EmptyFragment;
 import androidx.annotation.NonNull;
 
 import java.io.File;
@@ -137,6 +139,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.AnalysisDetailFragment;
 import java.util.concurrent.Executor;
 
 
@@ -187,6 +190,10 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     private boolean SAFPermissionRequested;
     private BottomNavigationView mBottomNav;
     private View mSelectionBar;
+    private View mPasteBar;
+    private List<File> mClipboardFiles = new ArrayList<>();
+    private ArrayList<DocumentInfo> mClipboardDocs = new ArrayList<>();
+    private boolean mIsMoveMode = false;
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
@@ -221,21 +228,27 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                 switch (item.getItemId()) {
-                    case R.id.nav_files:
+                    case R.id.nav_home:
                         if (null != mRoots) onRootPicked(mRoots.getHomeRoot(), true);
                         return true;
-                    case R.id.nav_recents:
-                        if (null != mRoots) onRootPicked(mRoots.getRecentsRoot(), true);
+                    case R.id.nav_files:
+                        AnalysisDetailFragment.showInternalStorage(getSupportFragmentManager());
                         return true;
                     case R.id.nav_cleaner:
-                        AnalysisFragment.show(getSupportFragmentManager());
+                        EmptyFragment.show(getSupportFragmentManager());
                         return true;
                 }
                 return false;
             }
         });
+        mBottomNav.setSelectedItemId(R.id.nav_home);
 
         mSelectionBar = findViewById(R.id.selection_actions);
+        mPasteBar = findViewById(R.id.paste_actions);
+        if (mPasteBar != null) {
+            mPasteBar.findViewById(R.id.action_paste_cancel).setOnClickListener(v -> setPasteMode(false, null, null, false));
+            mPasteBar.findViewById(R.id.action_paste_execute).setOnClickListener(v -> executePaste());
+        }
 
         initControls();
 
@@ -666,7 +679,9 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         }
         updateActionBar();
         if (mBottomNav != null && active) {
-             mBottomNav.getMenu().findItem(R.id.nav_cleaner).setChecked(true);
+            if ("Internal Storage".equals(title)) {
+                mBottomNav.getMenu().findItem(R.id.nav_files).setChecked(true);
+            }
         }
     }
 
@@ -1113,6 +1128,10 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
 
     @Override
     public void onBackPressed() {
+        if (mPasteBar != null && mPasteBar.getVisibility() == View.VISIBLE) {
+            setPasteMode(false, null, null, false);
+            return;
+        }
         if (mInAnalysis) {
             super.onBackPressed();
             return;
@@ -1363,7 +1382,7 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             } else {
                 if (null != root && root.isHome()) {
                     HomeFragment.show(fm);
-                    if(mBottomNav != null) mBottomNav.getMenu().findItem(R.id.nav_files).setChecked(true);
+                    if(mBottomNav != null) mBottomNav.getMenu().findItem(R.id.nav_home).setChecked(true);
                 } else if (null != root && root.isConnections()) {
                     ConnectionsFragment.show(fm);
                 } else if (null != root && root.isTransfer()) {
@@ -1373,14 +1392,11 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
                 } else if (null != root && root.isServerStorage()) {
                     ServerFragment.show(fm, root);
                 } else {
-                    if (null != root && mRoots.isRecentsRoot(root)) {
-                        if(mBottomNav != null) mBottomNav.getMenu().findItem(R.id.nav_recents).setChecked(true);
-                    } else if (mBottomNav != null) {
+                    if (mBottomNav != null) {
                          // Default to Files for standard directories
                          mBottomNav.getMenu().findItem(R.id.nav_files).setChecked(true);
                     }
                     DirectoryFragment.showRecentsOpen(fm, anim, root);
-
                 }
             }
         } else {
@@ -1738,6 +1754,56 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         } catch (Exception e) {
             Log.e(TAG, "Error in onDocumentPicked", e);
             Utils.showError(this, R.string.query_error);
+        }
+    }
+
+    public void setPasteMode(boolean active, List<File> files, ArrayList<DocumentInfo> docs, boolean move) {
+        if (active) {
+            mIsMoveMode = move;
+            if (files != null) {
+                mClipboardFiles = new ArrayList<>(files);
+                mClipboardDocs.clear();
+            } else if (docs != null) {
+                mClipboardDocs = new ArrayList<>(docs);
+                mClipboardFiles.clear();
+            }
+            if (mPasteBar != null) mPasteBar.setVisibility(View.VISIBLE);
+            if (mBottomNav != null) mBottomNav.setVisibility(View.GONE);
+        } else {
+            if (mClipboardFiles != null) mClipboardFiles.clear();
+            if (mClipboardDocs != null) mClipboardDocs.clear();
+            if (mPasteBar != null) mPasteBar.setVisibility(View.GONE);
+            if (mBottomNav != null) mBottomNav.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void executePaste() {
+        FragmentManager fm = getSupportFragmentManager();
+        Fragment fragment = fm.findFragmentByTag(DirectoryFragment.TAG);
+        if (fragment == null) {
+             fragment = fm.findFragmentById(R.id.container_directory);
+        }
+        
+        if (fragment instanceof AnalysisDetailFragment) {
+            ((AnalysisDetailFragment) fragment).onPasteRequested(mClipboardFiles, mIsMoveMode);
+        } else if (fragment instanceof DirectoryFragment) {
+            // Standard directory handled via MoveTask typically, 
+            // but we can trigger it here if it's using the new bar.
+            if (!mClipboardDocs.isEmpty()) {
+                onMoveRequested(mClipboardDocs, ((DirectoryFragment) fragment).getDocumentInfo(), mIsMoveMode);
+                setPasteMode(false, null, null, false);
+            }
+        }
+    }
+
+    private void deleteDocument(ArrayList<DocumentInfo> docs, int type) {
+        if (mState.action == ACTION_OPEN || mState.action == ACTION_GET_CONTENT || mState.action == ACTION_BROWSE) {
+            final int size = docs.size();
+            final Uri[] uris = new Uri[size];
+            for (int i = 0; i < size; i++) {
+                uris[i] = docs.get(i).derivedUri;
+            }
+            new ExistingFinishTask(uris).executeOnExecutor(getCurrentExecutor());
         }
     }
 

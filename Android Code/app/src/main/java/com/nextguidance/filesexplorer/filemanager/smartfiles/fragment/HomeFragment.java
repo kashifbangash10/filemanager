@@ -167,11 +167,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
         internalStorageCard.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (roots == null) roots = DocumentsApplication.getRootsCache(getActivity());
-                RootInfo primaryRoot = roots.getPrimaryRoot();
-                if (primaryRoot != null && mActivity instanceof DocumentsActivity) {
-                    ((DocumentsActivity) mActivity).onRootPicked(primaryRoot, mHomeRoot);
-                }
+                AnalysisDetailFragment.showInternalStorage(getFragmentManager());
             }
         });
 
