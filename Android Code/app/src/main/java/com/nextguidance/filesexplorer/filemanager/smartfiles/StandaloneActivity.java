@@ -527,7 +527,9 @@ public class StandaloneActivity extends BaseActivity {
 
     @Override
     public void setActionMode(boolean actionMode) {
-
+        if (actionMode) {
+            lockNavigation();
+        }
     }
 
     @Override
@@ -582,6 +584,9 @@ public class StandaloneActivity extends BaseActivity {
     }
 
     private void onCurrentDirectoryChanged(int anim) {
+        if (isNavigationLocked()) {
+            return;
+        }
         final FragmentManager fm = getSupportFragmentManager();
         final RootInfo root = getCurrentRoot();
         final DocumentInfo cwd = getCurrentDirectory();
@@ -611,6 +616,9 @@ public class StandaloneActivity extends BaseActivity {
     }
     @Override
     public void onStackPicked(DocumentStack stack) {
+        if (isNavigationLocked()) {
+            return;
+        }
         try {
 
             stack.updateDocuments(getContentResolver());
@@ -623,6 +631,9 @@ public class StandaloneActivity extends BaseActivity {
     }
     @Override
     public void onRootPicked(RootInfo root, boolean closeDrawer) {
+        if (isNavigationLocked()) {
+            return;
+        }
 
         mState.stack.root = root;
         mState.stack.clear();
@@ -686,6 +697,9 @@ public class StandaloneActivity extends BaseActivity {
     }
     @Override
     public void onDocumentPicked(DocumentInfo doc) {
+        if (isNavigationLocked()) {
+            return;
+        }
         final FragmentManager fm = getSupportFragmentManager();
         if (doc.isDirectory()) {
             mState.stack.push(doc);

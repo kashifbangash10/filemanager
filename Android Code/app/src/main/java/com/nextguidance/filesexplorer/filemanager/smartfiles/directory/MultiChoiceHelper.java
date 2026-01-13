@@ -55,6 +55,11 @@ public class MultiChoiceHelper {
 							updateCheckedState(position);
 						}
 					} else {
+						// Final guard: check if action mode was just started by long-press
+						Context context = view.getContext();
+						if (context instanceof DocumentsActivity && ((DocumentsActivity)context).getActionMode()) {
+							return;
+						}
 						if (clickListener != null) {
 							clickListener.onItemClick(view, getLayoutPosition());
 						}
@@ -295,15 +300,19 @@ public class MultiChoiceHelper {
 	}
 
 	public void startSupportActionModeIfNeeded() {
-
-            if (choiceActionMode == null) {
-                if (multiChoiceModeCallback == null) {
-                    Log.i("MultiChoiceHelper", "No callback set");
-                    return;
-                }
-                choiceActionMode = activity.startSupportActionMode(multiChoiceModeCallback);
-
-        }
+		if (choiceActionMode == null) {
+			if (multiChoiceModeCallback == null) {
+				Log.i("MultiChoiceHelper", "No callback set");
+				return;
+			}
+			
+			// IMMEDIATE MODE ACTIVATION: Close the window where navigation can occur
+			if (activity instanceof DocumentsActivity) {
+				((DocumentsActivity)activity).setActionMode(true);
+			}
+			
+			choiceActionMode = activity.startSupportActionMode(multiChoiceModeCallback);
+		}
 	}
 
 	public static class SavedState implements Parcelable {

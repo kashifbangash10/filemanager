@@ -13,14 +13,11 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.text.format.Formatter
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.CheckBox
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
-import android.widget.Button
+import android.widget.*
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -105,7 +102,7 @@ class AnalysisDetailFragment : Fragment() {
         view.isFocusableInTouchMode = true
         view.requestFocus()
         view.setOnKeyListener { _, keyCode, event ->
-            if (keyCode == android.view.KeyEvent.KEYCODE_BACK && event.action == android.view.KeyEvent.ACTION_UP) {
+            if (keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
                 handleBackPressed()
             } else false
         }
@@ -147,7 +144,7 @@ class AnalysisDetailFragment : Fragment() {
 
     private fun handleBackPressed(): Boolean {
         if (isSelectionMode) {
-            exitSelectionMode()
+            mActionMode?.finish()
             return true
         }
         if (isInFolderNavigation && folderStack.isNotEmpty()) {
@@ -165,11 +162,19 @@ class AnalysisDetailFragment : Fragment() {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun loadData() {
+    private fun loadData(resetNavigation: Boolean = true) {
         try {
             val args = arguments ?: return
-            isInFolderNavigation = false
-            folderStack.clear()
+            
+            if (resetNavigation) {
+                isInFolderNavigation = false
+                folderStack.clear()
+            }
+            
+            if (isInFolderNavigation && folderStack.isNotEmpty()) {
+                openFolderInternally(folderStack.peek())
+                return
+            }
 
             val items = mutableListOf<DetailAdapter.DetailItem>()
             var isDuplicateView = false
@@ -178,16 +183,19 @@ class AnalysisDetailFragment : Fragment() {
                 args.containsKey(ARG_FOLDERS) -> {
                     val folders = args.getSerializable(ARG_FOLDERS) as? List<AnalysisFragment.FolderItem>
                     folders?.forEach { folder ->
-                        items.add(DetailAdapter.DetailItem().apply {
-                            name = folder.name
-                            path = getShortPath(folder.path)
-                            subtitle = "${folder.itemCount} items"
-                            size = try { Formatter.formatFileSize(context, folder.size) } catch(e: Exception) { "0 B" }
-                            file = File(folder.path)
-                            isFolder = true
-                            icon = R.drawable.ic_root_folder
-                            iconColor = getFolderIconColor(folder.name)
-                        })
+                        val f = File(folder.path)
+                        if (f.exists()) {
+                            items.add(DetailAdapter.DetailItem().apply {
+                                name = folder.name
+                                path = getShortPath(folder.path)
+                                subtitle = "${folder.itemCount} items"
+                                size = try { Formatter.formatFileSize(context, folder.size) } catch(e: Exception) { "0 B" }
+                                file = f
+                                isFolder = true
+                                icon = R.drawable.ic_root_folder
+                                iconColor = getFolderIconColor(folder.name)
+                            })
+                        }
                     }
                 }
                 args.containsKey(ARG_DUPLICATES) -> {
@@ -202,17 +210,19 @@ class AnalysisDetailFragment : Fragment() {
                             group.filePaths.forEach { filePath ->
                                 try {
                                     val f = File(filePath)
-                                    items.add(DetailAdapter.DetailItem().apply {
-                                        name = group.fileName
-                                        path = getShortPath(filePath)
-                                        size = try { Formatter.formatFileSize(context, group.size) } catch(e: Exception) { "0 B" }
-                                        subtitle = getFileDate(f)
-                                        file = f
-                                        isFolder = false
-                                        isSelectable = true
-                                        icon = getFileIcon(group.fileName)
-                                        iconColor = -0x3ef9 // 0xFFFFC107
-                                    })
+                                    if (f.exists()) {
+                                        items.add(DetailAdapter.DetailItem().apply {
+                                            name = group.fileName
+                                            path = getShortPath(filePath)
+                                            size = try { Formatter.formatFileSize(context, group.size) } catch(e: Exception) { "0 B" }
+                                            subtitle = getFileDate(f)
+                                            file = f
+                                            isFolder = false
+                                            isSelectable = true
+                                            icon = getFileIcon(group.fileName)
+                                            iconColor = -0x3ef9 // 0xFFFFC107
+                                        })
+                                    }
                                 } catch (e: Exception) {}
                             }
                         }
@@ -224,22 +234,25 @@ class AnalysisDetailFragment : Fragment() {
                     val largeFiles = args.getSerializable(ARG_LARGE_FILES) as? List<AnalysisFragment.FileItem>
                     largeFiles?.forEach { fileInfo ->
                         try {
-                            items.add(DetailAdapter.DetailItem().apply {
-                                name = fileInfo.name
-                                val fileName = fileInfo.name.lowercase()
-                                if (fileName.endsWith(".apk")) {
-                                    path = null
-                                    subtitle = getFileDate(File(fileInfo.fullPath))
-                                } else {
-                                    path = getShortPath(fileInfo.fullPath)
-                                    subtitle = null
-                                }
-                                size = try { Formatter.formatFileSize(context, fileInfo.size) } catch(e: Exception) { "0 B" }
-                                file = File(fileInfo.fullPath)
-                                isFolder = false
-                                icon = getFileIcon(fileInfo.name)
-                                iconColor = -0x6800 // 0xFFFF9800
-                            })
+                            val f = File(fileInfo.fullPath)
+                            if (f.exists()) {
+                                items.add(DetailAdapter.DetailItem().apply {
+                                    name = fileInfo.name
+                                    val fileName = fileInfo.name.lowercase()
+                                    if (fileName.endsWith(".apk")) {
+                                        path = null
+                                        subtitle = getFileDate(f)
+                                    } else {
+                                        path = getShortPath(fileInfo.fullPath)
+                                        subtitle = null
+                                    }
+                                    size = try { Formatter.formatFileSize(context, fileInfo.size) } catch(e: Exception) { "0 B" }
+                                    file = f
+                                    isFolder = false
+                                    icon = getFileIcon(fileInfo.name)
+                                    iconColor = -0x6800 // 0xFFFF9800
+                                })
+                            }
                         } catch (e: Exception) {}
                     }
                 }
@@ -262,13 +275,17 @@ class AnalysisDetailFragment : Fragment() {
 
 
 
-            adapter = DetailAdapter(items, isSelectionMode, lifecycleScope,
-                this::handleItemClick, this::handleSelectionChanged, this::handleItemLongClick)
-            recyclerView.adapter = adapter
-            
-            // Restore selection if in mode
-             if (isSelectionMode) {
-                adapter?.setSelectedItems(selectedItems)
+            val currentAdapter = adapter
+            if (currentAdapter != null) {
+                currentAdapter.updateItems(items)
+                currentAdapter.setSelectionMode(isSelectionMode)
+                if (isSelectionMode) {
+                    currentAdapter.setSelectedItems(selectedItems)
+                }
+            } else {
+                adapter = DetailAdapter(items, isSelectionMode, lifecycleScope,
+                    this::handleItemClick, this::handleSelectionChanged, this::handleItemLongClick)
+                recyclerView.adapter = adapter
             }
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Error loading data", e)
@@ -327,8 +344,11 @@ class AnalysisDetailFragment : Fragment() {
             }
         })
         
-        // Reload adapter
-        loadData()
+        // Update adapter mode without full reset if possible
+        adapter?.setSelectionMode(true)
+        if (adapter == null) {
+            loadData(resetNavigation = false)
+        }
         
         // Select initial item
         adapter?.toggleSelection(initialItem)
@@ -349,7 +369,7 @@ class AnalysisDetailFragment : Fragment() {
         }
         selectionBar.findViewById<View>(R.id.action_rename)?.apply {
             visibility = View.VISIBLE
-            setOnClickListener { performOperation("Rename", true) }
+            setOnClickListener { performRename() }
         }
         selectionBar.findViewById<View>(R.id.action_delete)?.apply {
             visibility = View.VISIBLE
@@ -359,8 +379,24 @@ class AnalysisDetailFragment : Fragment() {
             visibility = View.VISIBLE
             setOnClickListener { showMoreMenu(it) }
         }
+    }
+
+    private fun performOperation(op: String, singleItem: Boolean) {
+        val selected = adapter?.getSelectedItemsList() ?: return
+        if (selected.isEmpty()) return
         
-        updateSelectionTitle(0)
+        if (singleItem && selected.size > 1) {
+            Toast.makeText(context, "Select only one item for $op", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        // Placeholder for operations
+        Toast.makeText(context, "$op ${selected.size} items", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun updateSelectionTitle(count: Int) {
+        val totalItems = adapter?.itemCount ?: 0
+        mActionMode?.title = "$count / $totalItems"
     }
     
     private fun showMoreMenu(anchor: View) {
@@ -377,30 +413,76 @@ class AnalysisDetailFragment : Fragment() {
         popup.show()
     }
     
-    private fun performOperation(op: String, singleItem: Boolean) {
+    private fun performRename() {
         val selected = adapter?.getSelectedItemsList() ?: return
-        if (selected.isEmpty()) return
-        
-        if (singleItem && selected.size > 1) {
-            Toast.makeText(context, "Select only one item for $op", Toast.LENGTH_SHORT).show()
+        if (selected.size != 1) {
+            Toast.makeText(context, "Select only one item to rename", Toast.LENGTH_SHORT).show()
             return
         }
-        
-        // Placeholder for operations
-        Toast.makeText(context, "$op ${selected.size} items", Toast.LENGTH_SHORT).show()
-        // Here we would implement real copy/move logic or delegate to DirectoryFragment logic
+        val item = selected[0]
+        val file = item.file ?: return
+
+        val input = EditText(context)
+        input.setText(item.name)
+        input.setSelection(input.text.length)
+
+        val lp = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.MATCH_PARENT
+        )
+        input.layoutParams = lp
+
+        val container = LinearLayout(context)
+        container.orientation = LinearLayout.VERTICAL
+        val padding = (16 * resources.displayMetrics.density).toInt()
+        container.setPadding(padding, padding / 2, padding, 0)
+        container.addView(input)
+
+        android.app.AlertDialog.Builder(context)
+            .setTitle("Rename")
+            .setView(container)
+            .setPositiveButton("OK") { _, _ ->
+                val newName = input.text.toString()
+                if (newName.isNotEmpty() && newName != item.name) {
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        try {
+                            val newFile = File(file.parent, newName)
+                            if (file.renameTo(newFile)) {
+                                withContext(Dispatchers.Main) {
+                                    item.name = newName
+                                    item.file = newFile
+                                    item.path = getShortPath(newFile.absolutePath)
+                                    exitSelectionMode()
+                                }
+                            } else {
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(context, "Rename failed", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        } catch (e: Exception) {
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
-    
+
     private fun performDelete() {
         val selected = adapter?.getSelectedItemsList() ?: return
         if (selected.isEmpty()) return
-        
+
         android.app.AlertDialog.Builder(context)
             .setTitle("Delete")
             .setMessage("Delete ${selected.size} items?")
             .setPositiveButton("Delete") { _, _ ->
+                 val itemsToDelete = selected.toSet()
+                 adapter?.removeItems(itemsToDelete)
                  lifecycleScope.launch(Dispatchers.IO) {
-                     selected.forEach { it.file?.delete() }
+                     itemsToDelete.forEach { it.file?.deleteRecursively() }
                      withContext(Dispatchers.Main) {
                          exitSelectionMode()
                      }
@@ -411,12 +493,15 @@ class AnalysisDetailFragment : Fragment() {
     }
 
     private fun exitSelectionMode() {
+        if (!isSelectionMode) return
         isSelectionMode = false
         selectedItems.clear()
         mActionMode?.finish()
         mActionMode = null
         (activity as? DocumentsActivity)?.setActionMode(false)
-        loadData()
+        adapter?.setSelectionMode(false)
+        // Refresh data to show changes
+        loadData(resetNavigation = false)
     }
 
     private fun handleSelectionChanged(selectedCount: Int, totalSize: Long, items: Set<DetailAdapter.DetailItem>) {
@@ -455,11 +540,6 @@ class AnalysisDetailFragment : Fragment() {
         }
     }
     
-    private fun updateSelectionTitle(count: Int) {
-        val totalItems = adapter?.itemCount ?: 0
-        mActionMode?.title = "$count / $totalItems"
-    }
-
     private fun toggleSelectAll() {
         adapter?.toggleSelectAll()
     }
@@ -531,7 +611,7 @@ class AnalysisDetailFragment : Fragment() {
                             cache.allFoldersMap.forEach { (path, folderInfo) ->
                                 if (path != currentPath) {
                                     val f = File(path)
-                                    if (f.parent == currentPath && !seenPaths.contains(path)) {
+                                    if (f.exists() && f.parent == currentPath && !seenPaths.contains(path)) {
                                         seenPaths.add(path)
                                         result.add(DetailAdapter.DetailItem().apply {
                                             name = folderInfo.name
@@ -549,17 +629,20 @@ class AnalysisDetailFragment : Fragment() {
                             // Files detected during scan
                             cache.allFiles.filter { it.path == currentPath }.forEach { fileInfo ->
                                 if (!seenPaths.contains(fileInfo.fullPath)) {
-                                    seenPaths.add(fileInfo.fullPath)
-                                    result.add(DetailAdapter.DetailItem().apply {
-                                        name = fileInfo.name
-                                        this.path = getShortPath(fileInfo.fullPath)
-                                        this.file = File(fileInfo.fullPath)
-                                        isFolder = false
-                                        icon = getFileIcon(name ?: "")
-                                        iconColor = -0xde690d // 0xFF2196F3
-                                        size = Formatter.formatFileSize(context, fileInfo.size)
-                                        subtitle = getFileDate(this.file!!)
-                                    })
+                                    val f = File(fileInfo.fullPath)
+                                    if (f.exists()) {
+                                        seenPaths.add(fileInfo.fullPath)
+                                        result.add(DetailAdapter.DetailItem().apply {
+                                            name = fileInfo.name
+                                            this.path = getShortPath(fileInfo.fullPath)
+                                            this.file = f
+                                            isFolder = false
+                                            icon = getFileIcon(name ?: "")
+                                            iconColor = -0xde690d // 0xFF2196F3
+                                            size = Formatter.formatFileSize(context, fileInfo.size)
+                                            subtitle = getFileDate(f)
+                                        })
+                                    }
                                 }
                             }
                         }
@@ -837,18 +920,37 @@ class AnalysisDetailFragment : Fragment() {
     }
 
     private class DetailAdapter(
-        private val items: List<DetailItem>,
-        private val showCheckboxes: Boolean,
+        private var items: List<DetailItem>,
+        private var showCheckboxes: Boolean,
         private val scope: CoroutineScope,
         private val clickListener: (DetailItem) -> Unit,
         private val selectionListener: (Int, Long, Set<DetailItem>) -> Unit,
         private val longClickListener: (DetailItem) -> Unit
     ) : RecyclerView.Adapter<DetailAdapter.ViewHolder>() {
+        private var itemsList = items.toMutableList()
+        private val selectedPositions = mutableSetOf<Int>()
+        
+        fun updateItems(newItems: List<DetailItem>) {
+            this.itemsList = newItems.toMutableList()
+            this.items = newItems
+            notifyDataSetChanged()
+        }
 
-        private val selectedPositions = mutableSetOf<Int>() // Changed from Integer to Int for better Kotlin compat
+        fun removeItems(itemsToRemove: Set<DetailItem>) {
+            itemsList.removeAll(itemsToRemove)
+            items = itemsList.toList()
+            selectedPositions.clear()
+            notifyDataSetChanged()
+        }
+        
+        fun setSelectionMode(show: Boolean) {
+            showCheckboxes = show
+            if (!show) selectedPositions.clear()
+            notifyDataSetChanged()
+        }
         
         fun toggleSelection(item: DetailItem) {
-             val index = items.indexOf(item)
+             val index = itemsList.indexOf(item)
              if (index != -1) {
                  if (selectedPositions.contains(index)) selectedPositions.remove(index)
                  else selectedPositions.add(index)
@@ -860,7 +962,7 @@ class AnalysisDetailFragment : Fragment() {
         fun setSelectedItems(selected: Set<DetailItem>) {
              selectedPositions.clear()
              selected.forEach { 
-                 val idx = items.indexOf(it)
+                 val idx = itemsList.indexOf(it)
                  if (idx != -1) selectedPositions.add(idx)
              }
              notifyDataSetChanged()
@@ -868,7 +970,7 @@ class AnalysisDetailFragment : Fragment() {
         }
         
         fun getSelectedItemsList(): List<DetailItem> {
-             return items.filterIndexed { index, _ -> selectedPositions.contains(index) }
+             return itemsList.filterIndexed { index, _ -> selectedPositions.contains(index) }
         }
 
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -980,7 +1082,7 @@ class AnalysisDetailFragment : Fragment() {
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val item = items[position]
+            val item = itemsList[position]
             val isChecked = selectedPositions.contains(position)
             holder.bind(item, showCheckboxes, isChecked, scope)
 
@@ -1011,14 +1113,14 @@ class AnalysisDetailFragment : Fragment() {
             }
         }
 
-        override fun getItemCount() = items.size
+        override fun getItemCount() = itemsList.size
 
         private fun updateSelection() {
             var totalSize = 0L
             val selectedBytes = mutableSetOf<DetailItem>()
             selectedPositions.forEach { pos ->
-                if (pos < items.size) {
-                    val itm = items[pos]
+                if (pos < itemsList.size) {
+                    val itm = itemsList[pos]
                     selectedBytes.add(itm)
                     itm.file?.let { totalSize += it.length() }
                 }
@@ -1027,17 +1129,17 @@ class AnalysisDetailFragment : Fragment() {
         }
 
         fun toggleSelectAll() {
-            if (selectedPositions.size == items.size) selectedPositions.clear()
+            if (selectedPositions.size == itemsList.size) selectedPositions.clear()
             else {
                 selectedPositions.clear()
-                for (i in items.indices) selectedPositions.add(i)
+                for (i in itemsList.indices) selectedPositions.add(i)
             }
             notifyDataSetChanged()
             updateSelection()
         }
 
         fun getSelectedFiles(): List<File> {
-            return selectedPositions.mapNotNull { pos -> if (pos.toInt() < items.size) items[pos.toInt()].file else null }
+            return selectedPositions.mapNotNull { pos -> if (pos.toInt() < itemsList.size) itemsList[pos.toInt()].file else null }
         }
 
         class DetailItem {

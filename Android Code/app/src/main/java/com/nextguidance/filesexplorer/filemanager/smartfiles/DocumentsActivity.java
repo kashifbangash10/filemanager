@@ -1324,6 +1324,9 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     public void onCurrentDirectoryChanged(int anim) {
+        if (mActionMode || isNavigationLocked()) {
+            return;
+        }
 
         if (!Utils.isActivityAlive(DocumentsActivity.this)) {
             return;
@@ -1455,6 +1458,9 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     };
 
     public void onStackPicked(DocumentStack stack) {
+        if (mActionMode || isNavigationLocked()) {
+            return;
+        }
         try {
 
             stack.updateDocuments(getContentResolver());
@@ -1475,6 +1481,9 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     }
 
     public void onRootPicked(RootInfo root, boolean closeDrawer) {
+        if (mActionMode || isNavigationLocked()) {
+            return;
+        }
         try {
             if (null == root) {
                 return;
@@ -1629,6 +1638,9 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     }
 
     public void onDocumentPicked(DocumentInfo doc) {
+        if (mActionMode || isNavigationLocked()) {
+            return;
+        }
         try {
             final FragmentManager fm = getSupportFragmentManager();
             if (doc.isDirectory() || DocumentArchiveHelper.isSupportedArchiveType(doc.mimeType)) {
@@ -2043,6 +2055,21 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
 
     public void setActionMode(boolean actionMode) {
         mActionMode = actionMode;
+        
+        if (actionMode) {
+            lockNavigation();
+        }
+
+        // Spinner Lockdown: Detach listener before hiding to prevent "Jump to Root"
+        if (mToolbarStack != null) {
+            if (actionMode) {
+                mToolbarStack.setOnItemSelectedListener(null);
+            } else {
+                mIgnoreNextNavigation = true;
+                mToolbarStack.setOnItemSelectedListener(mStackListener);
+            }
+        }
+
         mToolbar.setVisibility(actionMode ? View.INVISIBLE : View.VISIBLE);
         if (mBottomNav != null) {
             mBottomNav.setVisibility(actionMode ? View.GONE : View.VISIBLE);

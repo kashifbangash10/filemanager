@@ -564,6 +564,9 @@ public class DirectoryFragment extends DirectoryFragmentFlavour implements MenuI
             = new RecyclerFragment.RecyclerItemClickListener.OnItemClickListener() {
         @Override
         public void onItemClick(View view, int position) {
+            if (mAdapter.getCheckedItemCount() > 0 || (mActivity instanceof DocumentsActivity && ((DocumentsActivity)mActivity).getActionMode()) || (mActivity != null && mActivity.isNavigationLocked())) {
+                return;
+            }
             try {
                 final Cursor cursor = mAdapter.getItem(position);
                 if (cursor != null) {

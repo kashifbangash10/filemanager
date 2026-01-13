@@ -63,6 +63,23 @@ import java.util.List;
 public abstract class BaseActivity extends ActionBarActivity {
     public static final String TAG = "Documents";
     private RootsCache mRoots;
+    private boolean mNavigationLocked = false;
+    private android.os.Handler mLockHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+
+    public void lockNavigation() {
+        mNavigationLocked = true;
+        mLockHandler.removeCallbacksAndMessages(null);
+        mLockHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mNavigationLocked = false;
+            }
+        }, 800);
+    }
+
+    public boolean isNavigationLocked() {
+        return mNavigationLocked;
+    }
 
     public abstract State getDisplayState();
 
