@@ -355,6 +355,23 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             requestStoragePermissions();
         }
 
+        // Handle back button to close info drawer
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // Check if info drawer is open
+                if (mDrawerLayoutHelper != null && mInfoContainer != null && 
+                    mDrawerLayoutHelper.isDrawerOpen(mInfoContainer)) {
+                    // Close the info drawer
+                    setInfoDrawerOpen(false);
+                } else {
+                    // Let the system handle back press
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
+        });
+
     }
 
     @Override

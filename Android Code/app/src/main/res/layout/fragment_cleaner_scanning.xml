@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_cleaner_scanning_blue">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@android:color/transparent"
+        android:elevation="0dp">
+
+        <TextView
+            android:id="@+id/text_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Storage manager"
+            android:textSize="20sp"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:layout_gravity="center_vertical"/>
+    </androidx.appcompat.widget.Toolbar>
+
+    <FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true">
+
+        <!-- Outer Ring -->
+        <View
+            android:id="@+id/ring_outer"
+            android:layout_width="260dp"
+            android:layout_height="260dp"
+            android:background="@drawable/ic_scanning_ring_white"
+            android:layout_gravity="center"/>
+
+        <!-- Inner Ring -->
+        <View
+            android:id="@+id/ring_inner"
+            android:layout_width="180dp"
+            android:layout_height="180dp"
+            android:background="@drawable/ic_scanning_ring_white"
+            android:layout_gravity="center"
+            android:alpha="0.5"/>
+
+        <!-- Icon -->
+        <ImageView
+            android:id="@+id/icon_scan_type"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/ic_cleaner_storage"
+            android:tint="#FFFFFF"
+            android:layout_gravity="center"/>
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="100dp"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/text_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Scanning storage files"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:id="@+id/text_path"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="/storage/emulated/0/"
+            android:textColor="#CCFFFFFF"
+            android:textSize="14sp"
+            android:layout_marginTop="8dp"
+            android:singleLine="true"
+            android:ellipsize="middle"
+            android:paddingHorizontal="32dp"/>
+    </LinearLayout>
+
+</RelativeLayout>

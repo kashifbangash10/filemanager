@@ -18,7 +18,9 @@ import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AnimationUtils
 import android.widget.*
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -31,6 +33,7 @@ import com.nextguidance.filesexplorer.filemanager.smartfiles.R
 import kotlinx.coroutines.*
 import java.io.File
 import java.io.Serializable
+import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -56,6 +59,7 @@ class AnalysisDetailFragment : Fragment() {
 
             fm.beginTransaction()
                 .replace(R.id.container_directory, fragment, TAG)
+                .addToBackStack(null)
                 .commitAllowingStateLoss()
         }
 
@@ -166,10 +170,15 @@ class AnalysisDetailFragment : Fragment() {
         if (isInFolderNavigation && folderStack.isNotEmpty()) {
             folderStack.pop()
             if (folderStack.isNotEmpty()) {
-                openFolderInternally(folderStack.peek())
+                val previousFolder = folderStack.peek()
+                title = previousFolder.name
+                updateToolbarTitle()
+                openFolderInternally(previousFolder)
                 return true
             } else {
                 isInFolderNavigation = false
+                title = "Internal Storage"
+                updateToolbarTitle()
                 loadData()
                 return true
             }
@@ -203,13 +212,15 @@ class AnalysisDetailFragment : Fragment() {
                         if (f.exists()) {
                             items.add(DetailAdapter.DetailItem().apply {
                                 name = folder.name
-                                path = getShortPath(folder.path)
-                                subtitle = "${folder.itemCount} items"
-                                size = try { Formatter.formatFileSize(context, folder.size) } catch(e: Exception) { "0 B" }
+                                path = folder.path
+                                sizeBytes = folder.size
+                                size = Formatter.formatFileSize(context, folder.size)
+                                subtitle = "${Formatter.formatFileSize(context, folder.size)} | ${folder.itemCount} items"
                                 file = f
                                 isFolder = true
-                                icon = R.drawable.ic_root_folder
-                                iconColor = getFolderIconColor(folder.name)
+                                isSelectable = false // Folders not selectable in this view usually? Or yes? Image 3 has radio buttons. I'll enable it.
+                                icon = if (folder.name == "Pictures") R.drawable.ic_doc_image else R.drawable.ic_doc_folder // Placeholders
+                                iconColor = -0xba3f01 // Default blue-ish
                             })
                         }
                     }
@@ -295,12 +306,14 @@ class AnalysisDetailFragment : Fragment() {
                             if (f.exists()) {
                                 items.add(DetailAdapter.DetailItem().apply {
                                     name = folder.name
-                                    path = getShortPath(folder.path)
-                                    subtitle = "${folder.itemCount} items"
-                                    size = try { Formatter.formatFileSize(context, folder.size) } catch(e: Exception) { "0 B" }
+                                    path = folder.path
+                                    sizeBytes = folder.size
+                                    size = Formatter.formatFileSize(context, folder.size)
+                                    subtitle = "${Formatter.formatFileSize(context, folder.size)} | ${folder.itemCount} items"
                                     file = f
                                     isFolder = true
-                                    icon = R.drawable.ic_root_folder
+                                    isSelectable = true
+                                    icon = R.drawable.ic_doc_folder
                                     iconColor = getFolderIconColor(folder.name)
                                 })
                             }
@@ -390,12 +403,14 @@ class AnalysisDetailFragment : Fragment() {
                                 val newItems = scannedFolders.map { folder ->
                                     DetailAdapter.DetailItem().apply {
                                         name = folder.name
-                                        path = getShortPath(folder.path)
-                                        subtitle = "${folder.itemCount} items"
+                                        path = folder.path
+                                        sizeBytes = folder.size
                                         size = Formatter.formatFileSize(context, folder.size)
+                                        subtitle = "${Formatter.formatFileSize(context, folder.size)} | ${folder.itemCount} items"
                                         file = File(folder.path)
                                         isFolder = true
-                                        icon = R.drawable.ic_root_folder
+                                        isSelectable = true
+                                        icon = if (folder.name == "Pictures") R.drawable.ic_doc_image else R.drawable.ic_doc_folder
                                         iconColor = getFolderIconColor(folder.name)
                                     }
                                 }
@@ -796,6 +811,8 @@ class AnalysisDetailFragment : Fragment() {
 
             if (folderStack.isEmpty() || folderStack.peek() != folder) {
                 folderStack.push(folder)
+                title = folder.name
+                updateToolbarTitle()
             }
 
             lifecycleScope.launch(Dispatchers.Main) {
@@ -804,83 +821,42 @@ class AnalysisDetailFragment : Fragment() {
                     val currentPath = folder.absolutePath
                     val items = withContext(Dispatchers.IO) {
                         val result = mutableListOf<DetailAdapter.DetailItem>()
-                        val seenPaths = mutableSetOf<String>()
-
-                        // 1. Prefer Cache (Consistent with Scan Results)
-                        if (cache != null) {
-                            // Sub-folders detected during scan
-                            cache.allFoldersMap.forEach { (path, folderInfo) ->
-                                if (path != currentPath) {
-                                    val f = File(path)
-                                    if (f.exists() && f.parent == currentPath && !seenPaths.contains(path)) {
-                                        seenPaths.add(path)
-                                        result.add(DetailAdapter.DetailItem().apply {
-                                            name = folderInfo.name
-                                            this.path = getShortPath(path)
-                                            this.file = f
-                                            isFolder = true
-                                            icon = R.drawable.ic_root_folder
-                                            iconColor = getFolderIconColor(name ?: "")
-                                            size = Formatter.formatFileSize(context, folderInfo.size)
-                                            subtitle = "${folderInfo.itemCount} items"
-                                        })
-                                    }
-                                }
-                            }
-                            // Files detected during scan
-                            cache.allFiles.filter { it.path == currentPath }.forEach { fileInfo ->
-                                if (!seenPaths.contains(fileInfo.fullPath)) {
-                                    val f = File(fileInfo.fullPath)
-                                    if (f.exists()) {
-                                        seenPaths.add(fileInfo.fullPath)
-                                        result.add(DetailAdapter.DetailItem().apply {
-                                            name = fileInfo.name
-                                            this.path = getShortPath(fileInfo.fullPath)
-                                            this.file = f
-                                            isFolder = false
-                                            icon = getFileIcon(name ?: "")
-                                            iconColor = -0xde690d // 0xFF2196F3
-                                            size = Formatter.formatFileSize(context, fileInfo.size)
-                                            subtitle = getFileDate(f)
-                                        })
-                                    }
-                                }
-                            }
-                        }
-
-                        // 2. Supplement with real-time listFiles()
+                        
+                        // Direct file system access - FAST!
                         folder.listFiles()?.filter { !it.name.startsWith(".") }?.forEach { file ->
-                            val absPath = file.absolutePath
-                            if (!seenPaths.contains(absPath)) {
-                                seenPaths.add(absPath)
-                                try {
-                                    result.add(DetailAdapter.DetailItem().apply {
-                                        name = file.name
-                                        path = getShortPath(absPath)
-                                        this.file = file
-                                        if (file.isDirectory) {
-                                            isFolder = true
-                                            icon = R.drawable.ic_root_folder
-                                            iconColor = getFolderIconColor(name ?: "")
-                                            val cachedFolder = cache?.allFoldersMap?.get(absPath)
-                                            if (cachedFolder != null) {
-                                                size = Formatter.formatFileSize(context, cachedFolder.size)
-                                                subtitle = "${cachedFolder.itemCount} items"
-                                            } else {
-                                                size = Formatter.formatFileSize(context, getFolderSizeQuick(file))
-                                                subtitle = "${countFilesQuick(file)} items"
-                                            }
+                            try {
+                                val absPath = file.absolutePath
+                                result.add(DetailAdapter.DetailItem().apply {
+                                    name = file.name
+                                    path = getShortPath(absPath)
+                                    this.file = file
+                                    if (file.isDirectory) {
+                                        isFolder = true
+                                        icon = R.drawable.ic_root_folder
+                                        iconColor = getFolderIconColor(name ?: "")
+                                        // Try to get cached size, otherwise quick estimate
+                                        val cachedFolder = cache?.allFoldersMap?.get(absPath)
+                                        if (cachedFolder != null) {
+                                            size = Formatter.formatFileSize(context, cachedFolder.size)
+                                            subtitle = "${cachedFolder.itemCount} items"
                                         } else {
-                                            isFolder = false
-                                            icon = getFileIcon(name ?: "")
-                                            iconColor = -0xde690d // 0xFF2196F3
-                                            size = Formatter.formatFileSize(context, file.length())
-                                            subtitle = getFileDate(file)
+                                            // Quick count without deep scan
+                                            val fileCount = file.listFiles()?.size ?: 0
+                                            subtitle = "$fileCount items"
+                                            size = "" // Don't calculate size for speed
                                         }
-                                    })
-                                } catch (e: Exception) {}
-                            }
+                                    } else {
+                                        isFolder = false
+                                        icon = getFileIcon(name ?: "")
+                                        iconColor = -0xde690d
+                                        size = Formatter.formatFileSize(context, file.length())
+                                        subtitle = null
+                                    }
+                                })
+                            } catch (e: Exception) {}
                         }
+                        
+                        // Sort: folders first, then alphabetically
                         result.sortWith(compareBy({ !it.isFolder }, { it.name?.lowercase() }))
                         result
                     }
@@ -888,9 +864,6 @@ class AnalysisDetailFragment : Fragment() {
                     if (items.isEmpty()) {
                         Toast.makeText(context, "Empty folder", Toast.LENGTH_SHORT).show()
                     } else {
-                        title = folder.name
-                        updateToolbarTitle()
-                        bottomBar?.visibility = View.GONE
                         title = folder.name
                         updateToolbarTitle()
                         bottomBar?.visibility = View.GONE
@@ -1130,6 +1103,7 @@ class AnalysisDetailFragment : Fragment() {
     ) : RecyclerView.Adapter<DetailAdapter.ViewHolder>() {
         private var itemsList = items.toMutableList()
         private val selectedPositions = mutableSetOf<Int>()
+        private val totalStorage: Long = File(Environment.getExternalStorageDirectory().absolutePath).totalSpace.coerceAtLeast(1L)
         
         fun updateItems(newItems: List<DetailItem>) {
             this.itemsList = newItems.toMutableList()
@@ -1174,13 +1148,15 @@ class AnalysisDetailFragment : Fragment() {
              return itemsList.filterIndexed { index, _ -> selectedPositions.contains(index) }
         }
 
-        class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
             val icon: ImageView = view.findViewById(R.id.icon)
             val name: TextView = view.findViewById(R.id.name)
             val path: TextView = view.findViewById(R.id.path)
             val size: TextView = view.findViewById(R.id.size)
             val subtitle: TextView? = try { view.findViewById(R.id.subtitle) } catch (e: Exception) { null }
-            val checkbox: CheckBox? = try { view.findViewById(R.id.checkbox) } catch (e: Exception) { null }
+            val checkbox: CompoundButton? = try { view.findViewById(R.id.checkbox) } catch (e: Exception) { null } // Changed to CompoundButton for CheckBox/RadioButton
+            val percentage: TextView? = try { view.findViewById(R.id.percentage) } catch (e: Exception) { null }
+            val usageBar: View? = try { view.findViewById(R.id.usage_bar) } catch (e: Exception) { null }
 
             fun bind(item: DetailItem, showCheckbox: Boolean, isChecked: Boolean, scope: CoroutineScope) {
                 name.text = item.name ?: ""
@@ -1190,6 +1166,23 @@ class AnalysisDetailFragment : Fragment() {
                 size.visibility = if (item.size != null) View.VISIBLE else View.GONE
                 subtitle?.text = item.subtitle ?: ""
                 subtitle?.visibility = if (item.subtitle != null) View.VISIBLE else View.GONE
+                
+                if (item.sizeBytes > 0) {
+                     val percent = (item.sizeBytes.toDouble() / this@DetailAdapter.totalStorage.toDouble()) * 100
+                     percentage?.text = String.format("%.2f%%", percent)
+                     if (usageBar != null) {
+                          val params = usageBar.layoutParams as? androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+                          if (params != null) {
+                              params.matchConstraintPercentWidth = (percent / 100f).toFloat().coerceIn(0f, 1f)
+                              usageBar.layoutParams = params
+                              usageBar.visibility = View.VISIBLE
+                          }
+                     }
+                     percentage?.visibility = View.VISIBLE
+                } else {
+                     percentage?.visibility = View.GONE
+                     usageBar?.visibility = View.INVISIBLE
+                }
 
                 checkbox?.visibility = if (showCheckbox) View.VISIBLE else View.GONE
                 if (showCheckbox) checkbox?.isChecked = isChecked
@@ -1347,6 +1340,7 @@ class AnalysisDetailFragment : Fragment() {
             var name: String? = null
             var path: String? = null
             var size: String? = null
+            var sizeBytes: Long = 0
             var subtitle: String? = null
             var packageName: String? = null
             var isFolder = false

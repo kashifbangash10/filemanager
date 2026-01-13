@@ -768,7 +768,7 @@ public class DirectoryFragment extends DirectoryFragmentFlavour implements MenuI
             @Override
             public void onClick(View v) {
                 int id = v.getId();
-                 if (id == R.id.action_copy) {
+                if (id == R.id.action_copy) {
                     performAction(R.id.menu_copy);
                     mode.finish();
                 } else if (id == R.id.action_move) {
