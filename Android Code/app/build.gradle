@@ -37,10 +37,22 @@ android {
 
     }
 
+    signingConfigs {
+        release {
+            storeFile file('D:\\nextguidance.jks')
+            storePassword 'nextguidance'
+            keyAlias 'nextguidance'
+            keyPassword 'nextguidance'
+            enableV1Signing true
+            enableV2Signing true
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
     packagingOptions {

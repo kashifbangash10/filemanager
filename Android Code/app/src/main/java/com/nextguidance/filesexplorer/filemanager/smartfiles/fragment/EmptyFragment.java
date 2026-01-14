@@ -1,6 +1,7 @@
 package com.nextguidance.filesexplorer.filemanager.smartfiles.fragment;
 
 import android.os.Bundle;
+import android.text.format.Formatter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,7 +19,6 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.nextguidance.filesexplorer.filemanager.smartfiles.R;
 import com.nextguidance.filesexplorer.filemanager.smartfiles.DocumentsActivity;
-import com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.AnalysisDetailFragment; // Added import
 
 public class EmptyFragment extends Fragment {
     public static final String TAG = "EmptyFragment";
@@ -47,7 +47,19 @@ public class EmptyFragment extends Fragment {
         setupUI(view);
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Refresh junk size when returning to this screen
+        if (getView() != null) {
+            updateJunkSize(getView());
+        }
+    }
+
     private void setupUI(View view) {
+        // Update junk size dynamically
+        updateJunkSize(view);
+        
         // Setup Circle Button
         View cleanBtn = view.findViewById(R.id.btn_clean_action);
         cleanBtn.setOnClickListener(v -> {
@@ -72,6 +84,38 @@ public class EmptyFragment extends Fragment {
                 
         setupOption(view.findViewById(R.id.option_apps), "App manager", "Uninstall unnecessary apps", 
                 R.drawable.ic_root_apps, 0xFFE8F5E9, 0xFF4CAF50); // Green
+    }
+
+    private void updateJunkSize(View view) {
+        TextView junkSizeText = view.findViewById(R.id.text_junk_size);
+        if (junkSizeText == null) return;
+        
+        try {
+            AnalysisFragment.AnalysisCache cache = AnalysisFragment.getCache();
+            long totalJunk = 0;
+            
+            if (cache != null && cache.isValid()) {
+                // Calculate total junk from duplicates (wasted space)
+                for (AnalysisFragment.DuplicateGroup group : cache.duplicateGroups) {
+                    totalJunk += group.size * (group.count - 1);
+                }
+                
+                // Add large files size
+                for (AnalysisFragment.FileItem file : cache.largeFiles) {
+                    totalJunk += file.size;
+                }
+            }
+            
+            // Format and display
+            if (totalJunk > 0) {
+                String formattedSize = Formatter.formatFileSize(getContext(), totalJunk);
+                junkSizeText.setText(formattedSize);
+            } else {
+                junkSizeText.setText("0 B");
+            }
+        } catch (Exception e) {
+            junkSizeText.setText("--");
+        }
     }
 
     private void setupOption(View optionView, String title, String subtitle, int iconRes, int bgTint, int iconTint) {

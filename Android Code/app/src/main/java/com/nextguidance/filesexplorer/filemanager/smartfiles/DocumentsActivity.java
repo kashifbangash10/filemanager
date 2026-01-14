@@ -140,6 +140,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.AnalysisDetailFragment;
+import com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.CleanTabFragment;
 import java.util.concurrent.Executor;
 
 
@@ -164,6 +165,10 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     private SearchView mSearchView;
 
     private Toolbar mToolbar;
+
+    public Toolbar getToolbar() {
+        return mToolbar;
+    }
     private Spinner mToolbarStack;
 
     private DrawerLayoutHelper mDrawerLayoutHelper;
@@ -210,6 +215,7 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         super.onCreate(icicle);
 
         mRoots = DocumentsApplication.getRootsCache(this);
+        AnalysisFragment.startGlobalAnalysis(this);
 
         setResult(Activity.RESULT_CANCELED);
         setContentView(R.layout.activity);
@@ -234,8 +240,8 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
                     case R.id.nav_files:
                         AnalysisDetailFragment.showInternalStorage(getSupportFragmentManager());
                         return true;
-                    case R.id.nav_cleaner:
-                        EmptyFragment.show(getSupportFragmentManager());
+                    case R.id.nav_clean:
+                        CleanTabFragment.show(getSupportFragmentManager());
                         return true;
                 }
                 return false;
@@ -2096,6 +2102,18 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
 
     private final Handler handler = new Handler();
     private Drawable oldBackground;
+
+    public void selectHomeTab() {
+        if (mBottomNav != null) {
+            mBottomNav.setSelectedItemId(R.id.nav_home);
+        }
+    }
+
+    public void selectFilesTab() {
+        if (mBottomNav != null) {
+            mBottomNav.setSelectedItemId(R.id.nav_files);
+        }
+    }
 
     private void changeActionBarColor() {
 

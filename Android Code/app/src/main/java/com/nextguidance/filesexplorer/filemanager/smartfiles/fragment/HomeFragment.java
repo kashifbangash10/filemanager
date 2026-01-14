@@ -612,13 +612,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                     calculatedShortcuts.add(CommonInfo.from(documentsRoot, TYPE_SHORTCUT));
                 }
 
-                // 8. Cleaner
-                RootInfo processRoot = roots.getProcessRoot();
-                if (processRoot != null) {
-                    processRoot = copyRootInfo(processRoot);
-                    processRoot.title = "Cleaner";
-                    calculatedShortcuts.add(CommonInfo.from(processRoot, TYPE_SHORTCUT));
-                }
+
 
                 // 9. WiFi Share
                 RootInfo transferRoot = roots.getTransferRoot();

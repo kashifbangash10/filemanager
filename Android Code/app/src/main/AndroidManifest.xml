@@ -448,5 +448,10 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+        <activity
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.JunkCleaningActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/DocumentsTheme.Document" />
+
     </application>
 </manifest>

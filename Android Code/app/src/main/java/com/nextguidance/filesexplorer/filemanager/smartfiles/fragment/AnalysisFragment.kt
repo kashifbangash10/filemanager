@@ -56,6 +56,158 @@ class AnalysisFragment : Fragment() {
                 .addToBackStack(null)
                 .commitAllowingStateLoss()
         }
+
+        @JvmStatic
+        fun startGlobalAnalysis(context: Context) {
+            if (isAnalysisRunning || (cachedData != null && cachedData!!.isValid())) return
+            
+            GlobalScope.launch(Dispatchers.IO) {
+                isAnalysisRunning = true
+                try {
+                    val cache = cachedData ?: AnalysisCache()
+                    cachedData = cache
+                    
+                    // Simple logic to perform background scan
+                    val rootDir = Environment.getExternalStorageDirectory()
+                    if (rootDir.exists()) {
+                        performFullScan(context, rootDir.absolutePath, cache)
+                        isAnalysisComplete = true
+                        cache.markAnalysisComplete()
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e(TAG, "Global Analysis Error", e)
+                } finally {
+                    isAnalysisRunning = false
+                }
+            }
+        }
+
+        private suspend fun performFullScan(ctx: Context, rootDir: String, cache: AnalysisCache) = withContext(Dispatchers.IO) {
+            cache.clear()
+            val projection = arrayOf(
+                MediaStore.Files.FileColumns.DISPLAY_NAME,
+                MediaStore.Files.FileColumns.SIZE,
+                MediaStore.Files.FileColumns.DATA
+            )
+            
+            val folderSizeMap = mutableMapOf<String, Long>()
+            val folderCountMap = mutableMapOf<String, Int>()
+            val sizeMap = mutableMapOf<Long, MutableList<String>>()
+
+            try {
+                ctx.contentResolver.query(
+                    MediaStore.Files.getContentUri("external"),
+                    projection, null, null, null
+                )?.use { cursor ->
+                    val nameIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME)
+                    val sizeIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.SIZE)
+                    val dataIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA)
+                    
+                    val videoExts = setOf("mp4", "avi", "mkv", "mov", "webm", "3gp")
+                    val imageExts = setOf("jpg", "jpeg", "png", "gif", "webp")
+                    val audioExts = setOf("mp3", "wav", "m4a", "flac")
+                    val docExts = setOf("pdf", "doc", "docx", "xls", "xlsx", "txt", "ppt", "pptx")
+
+                    val stat = StatFs(rootDir)
+                    cache.totalStorageBytes = stat.totalBytes
+
+                    while (cursor.moveToNext()) {
+                        val size = cursor.getLong(sizeIdx)
+                        val path = cursor.getString(dataIdx) ?: continue
+                        val name = cursor.getString(nameIdx) ?: "Unknown"
+                        val ext = name.substringAfterLast('.', "").lowercase()
+
+                        if (videoExts.contains(ext)) cache.totalVideoSize += size
+                        else if (imageExts.contains(ext)) cache.totalImageSize += size
+                        else if (audioExts.contains(ext)) cache.totalAudioSize += size
+                        else if (docExts.contains(ext)) cache.totalDocSize += size
+
+                        if (path.startsWith(rootDir)) {
+                            val relativePath = path.substring(rootDir.length).trimStart('/')
+                            val parts = relativePath.split('/')
+                            if (parts.size > 1) {
+                                val topDir = parts[0]
+                                folderSizeMap[topDir] = (folderSizeMap[topDir] ?: 0L) + size
+                                folderCountMap[topDir] = (folderCountMap[topDir] ?: 0) + 1
+                            }
+
+                            var currentPath = rootDir
+                            for (i in 0 until parts.size - 1) {
+                                val folderName = parts[i]
+                                currentPath += if (currentPath.endsWith("/")) folderName else "/$folderName"
+                                val folder = cache.allFoldersMap.getOrPut(currentPath) {
+                                    FolderItem().apply { this.path = currentPath; this.name = folderName }
+                                }
+                                folder.size += size
+                                folder.itemCount++
+                            }
+                        }
+
+                        cache.allFiles.add(FileItem().apply {
+                            this.name = name
+                            this.path = File(path).parent ?: ""
+                            this.size = size
+                            this.fullPath = path
+                        })
+
+                        if (size > 50 * 1024) {
+                            sizeMap.getOrPut(size) { mutableListOf() }.add(path)
+                        }
+
+                        if (size > 50 * 1024 * 1024L) {
+                            cache.largeFiles.add(FileItem().apply {
+                                this.name = name
+                                this.path = File(path).parent ?: ""
+                                this.size = size
+                                this.fullPath = path
+                            })
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e(TAG, "Scan Error", e)
+            }
+
+            folderSizeMap.forEach { (name, size) ->
+                cache.storageFolders.add(FolderItem().apply {
+                    this.name = name
+                    this.path = File(rootDir, name).absolutePath
+                    this.size = size
+                    this.itemCount = folderCountMap[name] ?: 0
+                })
+            }
+            cache.storageFolders.sortByDescending { it.size }
+
+            sizeMap.forEach { (size, paths) ->
+                if (paths.size > 1) {
+                    cache.duplicateGroups.add(DuplicateGroup().apply {
+                        fileName = File(paths[0]).name
+                        this.size = size
+                        count = paths.size
+                        filePaths.addAll(paths)
+                    })
+                }
+            }
+            cache.duplicateGroups.sortByDescending { it.size * (it.count - 1) }
+
+            // Apps scan (simplified for background)
+            try {
+                val pm = ctx.packageManager
+                val pkgs = pm.getInstalledPackages(0)
+                pkgs.forEach { pkg ->
+                    pkg.applicationInfo?.let { appInfo ->
+                        val appItem = AppItem().apply {
+                            name = pm.getApplicationLabel(appInfo).toString()
+                            packageName = pkg.packageName
+                            val apk = File(appInfo.sourceDir)
+                            size = if (apk.exists()) apk.length() else 0
+                        }
+                        cache.apps.add(appItem)
+                    }
+                }
+                cache.apps.sortByDescending { it.size }
+            } catch (e: Exception) {}
+        }
     }
 
     private lateinit var containerLayout: LinearLayout
@@ -669,12 +821,12 @@ class AnalysisFragment : Fragment() {
     data class SubItem(val name: String, val path: String, val size: String, val icon: Int, val extra: String, val isApp: Boolean = false)
 
     class AnalysisCache {
-        val storageFolders = mutableListOf<FolderItem>()
-        val allFoldersMap = mutableMapOf<String, FolderItem>()
-        val allFiles = mutableListOf<FileItem>()
-        val duplicateGroups = mutableListOf<DuplicateGroup>()
-        val largeFiles = mutableListOf<FileItem>()
-        val apps = mutableListOf<AppItem>()
+        @JvmField val storageFolders = mutableListOf<FolderItem>()
+        @JvmField val allFoldersMap = mutableMapOf<String, FolderItem>()
+        @JvmField val allFiles = mutableListOf<FileItem>()
+        @JvmField val duplicateGroups = mutableListOf<DuplicateGroup>()
+        @JvmField val largeFiles = mutableListOf<FileItem>()
+        @JvmField val apps = mutableListOf<AppItem>()
         private var timestamp = 0L
 
         var totalVideoSize = 0L
