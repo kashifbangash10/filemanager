@@ -133,11 +133,19 @@ public class CleanerScanningFragment extends Fragment {
         if (getFragmentManager() != null) {
             getFragmentManager().popBackStack();
             
-            if (type == TYPE_STORAGE) {
-                AnalysisDetailFragment.showInternalStorage(getFragmentManager());
-            } else {
-                 // Reuse AnalysisDetail or other fragment
-                 AnalysisDetailFragment.showInternalStorage(getFragmentManager()); 
+            switch (type) {
+                case TYPE_STORAGE:
+                    AnalysisDetailFragment.showCleanerInternalStorage(getFragmentManager());
+                    break;
+                case TYPE_DUPLICATE:
+                    AnalysisDetailFragment.showCleanerDuplicates(getFragmentManager());
+                    break;
+                case TYPE_LARGE:
+                    AnalysisDetailFragment.showCleanerLargeFiles(getFragmentManager());
+                    break;
+                case TYPE_APPS:
+                    AnalysisDetailFragment.showCleanerAppManager(getFragmentManager());
+                    break;
             }
         }
     }

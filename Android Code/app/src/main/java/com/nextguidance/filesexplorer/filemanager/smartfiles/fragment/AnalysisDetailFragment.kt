@@ -47,6 +47,26 @@ class AnalysisDetailFragment : Fragment() {
         private const val ARG_LARGE_FILES = "large_files"
         private const val ARG_APPS = "apps"
         private const val ARG_AUTO_INTERNAL = "auto_internal"
+        private const val ARG_AUTO_DUPLICATE = "auto_duplicate"
+        private const val ARG_AUTO_LARGE = "auto_large_files"
+        private const val ARG_AUTO_APPS = "auto_apps"
+        private const val ARG_IS_CLEANER = "arg_is_cleaner"
+
+        @JvmStatic
+        fun showCleanerInternalStorage(fm: FragmentManager?) {
+            if (fm == null) return
+            val fragment = AnalysisDetailFragment()
+            val args = Bundle()
+            args.putString(ARG_TITLE, "Storage manager")
+            args.putBoolean(ARG_AUTO_INTERNAL, true)
+            args.putBoolean(ARG_IS_CLEANER, true)
+            fragment.arguments = args
+
+            fm.beginTransaction()
+                .replace(R.id.container_directory, fragment, TAG)
+                .addToBackStack(null)
+                .commitAllowingStateLoss()
+        }
 
         @JvmStatic
         fun showInternalStorage(fm: FragmentManager?) {
@@ -55,6 +75,54 @@ class AnalysisDetailFragment : Fragment() {
             val args = Bundle()
             args.putString(ARG_TITLE, "Internal Storage")
             args.putBoolean(ARG_AUTO_INTERNAL, true)
+            fragment.arguments = args
+
+            fm.beginTransaction()
+                .replace(R.id.container_directory, fragment, TAG)
+                .addToBackStack(null)
+                .commitAllowingStateLoss()
+        }
+
+        @JvmStatic
+        fun showCleanerDuplicates(fm: FragmentManager?) {
+            if (fm == null) return
+            val fragment = AnalysisDetailFragment()
+            val args = Bundle()
+            args.putString(ARG_TITLE, "Duplicate files")
+            args.putBoolean(ARG_AUTO_DUPLICATE, true)
+            args.putBoolean(ARG_IS_CLEANER, true)
+            fragment.arguments = args
+
+            fm.beginTransaction()
+                .replace(R.id.container_directory, fragment, TAG)
+                .addToBackStack(null)
+                .commitAllowingStateLoss()
+        }
+
+        @JvmStatic
+        fun showCleanerLargeFiles(fm: FragmentManager?) {
+            if (fm == null) return
+            val fragment = AnalysisDetailFragment()
+            val args = Bundle()
+            args.putString(ARG_TITLE, "Large files")
+            args.putBoolean(ARG_AUTO_LARGE, true)
+            args.putBoolean(ARG_IS_CLEANER, true)
+            fragment.arguments = args
+
+            fm.beginTransaction()
+                .replace(R.id.container_directory, fragment, TAG)
+                .addToBackStack(null)
+                .commitAllowingStateLoss()
+        }
+
+        @JvmStatic
+        fun showCleanerAppManager(fm: FragmentManager?) {
+            if (fm == null) return
+            val fragment = AnalysisDetailFragment()
+            val args = Bundle()
+            args.putString(ARG_TITLE, "App manager")
+            args.putBoolean(ARG_AUTO_APPS, true)
+            args.putBoolean(ARG_IS_CLEANER, true)
             fragment.arguments = args
 
             fm.beginTransaction()
@@ -95,6 +163,11 @@ class AnalysisDetailFragment : Fragment() {
     private var summaryText: TextView? = null
     private var selectAllButton: ImageView? = null
 
+    private var cleanerBottomBar: View? = null
+    private var storageInfoText: TextView? = null
+    private var btnCleanerAction: Button? = null
+    private var isCleanerMode = false
+
     private var isSelectionMode = false
     private val selectedItems = mutableSetOf<DetailAdapter.DetailItem>()
     private var mActionMode: android.view.ActionMode? = null
@@ -115,6 +188,11 @@ class AnalysisDetailFragment : Fragment() {
 
             cleanupButton?.setOnClickListener { performCleanup() }
             selectAllButton?.setOnClickListener { toggleSelectAll() }
+
+            cleanerBottomBar = view.findViewById(R.id.cleaner_bottom_bar)
+            storageInfoText = view.findViewById(R.id.storage_info_text)
+            btnCleanerAction = view.findViewById(R.id.btn_cleaner_action)
+            btnCleanerAction?.setOnClickListener { performDelete() }
         } catch (e: Exception) {
             android.util.Log.w(TAG, "Bottom bar views not found")
         }
@@ -133,6 +211,25 @@ class AnalysisDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         title = arguments?.getString(ARG_TITLE)
+        isCleanerMode = arguments?.getBoolean(ARG_IS_CLEANER, false) == true
+        
+        if (isCleanerMode) {
+             val path = Environment.getExternalStorageDirectory()
+             try {
+                val stat = android.os.StatFs(path.path)
+                val total = Formatter.formatFileSize(context, stat.blockCountLong * stat.blockSizeLong)
+                val available = Formatter.formatFileSize(context, stat.availableBlocksLong * stat.blockSizeLong)
+                storageInfoText?.text = "Available: $available   Total: $total"
+             } catch (e: Exception) {
+                storageInfoText?.text = "Available: --   Total: --"
+             }
+             cleanerBottomBar?.visibility = View.VISIBLE
+             bottomBar?.visibility = View.GONE
+        } else {
+             cleanerBottomBar?.visibility = View.GONE
+             // bottomBar handled by existing logic
+        }
+
         updateToolbarTitle()
         loadData()
 
@@ -177,7 +274,7 @@ class AnalysisDetailFragment : Fragment() {
                 return true
             } else {
                 isInFolderNavigation = false
-                title = "Internal Storage"
+                title = arguments?.getString(ARG_TITLE) ?: "Analysis"
                 updateToolbarTitle()
                 loadData()
                 return true
@@ -241,13 +338,14 @@ class AnalysisDetailFragment : Fragment() {
                                         items.add(DetailAdapter.DetailItem().apply {
                                             name = group.fileName
                                             path = getShortPath(filePath)
+                                            sizeBytes = group.size
                                             size = try { Formatter.formatFileSize(context, group.size) } catch(e: Exception) { "0 B" }
                                             subtitle = getFileDate(f)
                                             file = f
                                             isFolder = false
                                             isSelectable = true
                                             icon = getFileIcon(group.fileName)
-                                            iconColor = -0x3ef9 // 0xFFFFC107
+                                            iconColor = -0x3ef9
                                         })
                                     }
                                 } catch (e: Exception) {}
@@ -265,6 +363,7 @@ class AnalysisDetailFragment : Fragment() {
                             if (f.exists()) {
                                 items.add(DetailAdapter.DetailItem().apply {
                                     name = fileInfo.name
+                                    sizeBytes = fileInfo.size
                                     val fileName = fileInfo.name.lowercase()
                                     if (fileName.endsWith(".apk")) {
                                         path = null
@@ -276,8 +375,9 @@ class AnalysisDetailFragment : Fragment() {
                                     size = try { Formatter.formatFileSize(context, fileInfo.size) } catch(e: Exception) { "0 B" }
                                     file = f
                                     isFolder = false
+                                    isSelectable = true
                                     icon = getFileIcon(fileInfo.name)
-                                    iconColor = -0x6800 // 0xFFFF9800
+                                    iconColor = -0x6800
                                 })
                             }
                         } catch (e: Exception) {}
@@ -289,10 +389,12 @@ class AnalysisDetailFragment : Fragment() {
                         items.add(DetailAdapter.DetailItem().apply {
                             name = app.name
                             path = app.packageName
+                            sizeBytes = app.size
                             subtitle = getInstallDate()
                             size = try { Formatter.formatFileSize(context, app.size) } catch(e: Exception) { "0 B" }
                             packageName = app.packageName
                             isApp = true
+                            isSelectable = true
                             icon = R.drawable.ic_root_apps
                             iconColor = 0
                         })
@@ -319,131 +421,255 @@ class AnalysisDetailFragment : Fragment() {
                             }
                         }
                     } else {
-                        lifecycleScope.launch(Dispatchers.Main) {
-                            val scannedFolders = withContext(Dispatchers.IO) {
-                                val rootDir = Environment.getExternalStorageDirectory().absolutePath
-                                val folderSizeMap = mutableMapOf<String, Long>()
-                                val folderCountMap = mutableMapOf<String, Int>()
-                                
-                                val newCache = cache ?: AnalysisFragment.AnalysisCache()
-                                newCache.clear()
-                                
-                                val projection = arrayOf(
-                                    MediaStore.Files.FileColumns.SIZE,
-                                    MediaStore.Files.FileColumns.DATA,
-                                    MediaStore.Files.FileColumns.DISPLAY_NAME
-                                )
-                                
-                                try {
-                                    context?.contentResolver?.query(
-                                        MediaStore.Files.getContentUri("external"),
-                                        projection, null, null, null
-                                    )?.use { cursor ->
-                                        val sizeIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.SIZE)
-                                        val dataIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA)
-                                        val nameIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME)
-                                        
-                                        while (cursor.moveToNext()) {
-                                            val size = cursor.getLong(sizeIdx)
-                                            val path = cursor.getString(dataIdx) ?: continue
-                                            val name = cursor.getString(nameIdx) ?: "Unknown"
-                                            
-                                            if (path.startsWith(prefix = rootDir)) {
-                                                val relativePath = path.substring(rootDir.length).trimStart('/')
-                                                val parts = relativePath.split('/')
-                                                
-                                                if (parts.size > 1) {
-                                                    val topDir = parts[0]
-                                                    folderSizeMap[topDir] = (folderSizeMap[topDir] ?: 0L) + size
-                                                    folderCountMap[topDir] = (folderCountMap[topDir] ?: 0) + 1
-                                                }
-                                                
-                                                var currentPath = rootDir
-                                                for (i in 0 until parts.size - 1) {
-                                                    val folderName = parts[i]
-                                                    currentPath += if (currentPath.endsWith("/")) folderName else "/$folderName"
-                                                    val folderItem = newCache.allFoldersMap.getOrPut(currentPath) {
-                                                        AnalysisFragment.FolderItem().apply {
-                                                            this.path = currentPath
-                                                            this.name = folderName
-                                                        }
-                                                    }
-                                                    folderItem.size = folderItem.size + size
-                                                    folderItem.itemCount = folderItem.itemCount + 1
-                                                }
-                                                
-                                                newCache.allFiles.add(AnalysisFragment.FileItem().apply {
-                                                    this.name = name
-                                                    this.path = File(path).parent ?: ""
-                                                    this.size = size
-                                                    this.fullPath = path
-                                                })
-                                            }
-                                        }
+                        startAnalysisScan()
+                    }
+                }
+            args.getBoolean(ARG_AUTO_DUPLICATE, false) -> {
+                isDuplicateView = true
+                val cache = AnalysisFragment.getCache()
+                if (cache != null && cache.isValid() && cache.duplicateGroups.isNotEmpty()) {
+                    var totalDuplicates = 0
+                    var totalSize = 0L
+                    cache.duplicateGroups.forEach { group ->
+                        totalDuplicates += group.filePaths.size
+                        totalSize += group.size * group.filePaths.size
+                        group.filePaths.forEach { filePath ->
+                            try {
+                                val f = File(filePath)
+                                if (f.exists()) {
+                                    items.add(DetailAdapter.DetailItem().apply {
+                                        name = group.fileName
+                                        path = getShortPath(filePath)
+                                        sizeBytes = group.size
+                                        size = try { Formatter.formatFileSize(context, group.size) } catch(e: Exception) { "0 B" }
+                                        subtitle = getFileDate(f)
+                                        file = f
+                                        isFolder = false
+                                        isSelectable = true
+                                        icon = getFileIcon(group.fileName)
+                                        iconColor = -0x3ef9
+                                    })
+                                }
+                            } catch (e: Exception) {}
+                        }
+                    }
+                    bottomBar?.visibility = View.VISIBLE
+                    summaryText?.text = "Duplicate files: $totalDuplicates  Size: ${try { Formatter.formatFileSize(context, totalSize) } catch(e: Exception) { "" }}"
+                } else {
+                    startAnalysisScan()
+                }
+            }
+            args.getBoolean(ARG_AUTO_LARGE, false) -> {
+                val cache = AnalysisFragment.getCache()
+                if (cache != null && cache.isValid() && cache.largeFiles.isNotEmpty()) {
+                    cache.largeFiles.forEach { fileInfo ->
+                        try {
+                            val f = File(fileInfo.fullPath)
+                            if (f.exists()) {
+                                items.add(DetailAdapter.DetailItem().apply {
+                                    name = fileInfo.name
+                                    sizeBytes = fileInfo.size
+                                    val fileName = fileInfo.name.lowercase()
+                                    if (fileName.endsWith(".apk")) {
+                                        path = null
+                                        subtitle = getFileDate(f)
+                                    } else {
+                                        path = getShortPath(fileInfo.fullPath)
+                                        subtitle = null
                                     }
-                                } catch (e: Exception) {}
-                                
-                                val finalFoldersList = folderSizeMap.map { (name, size) ->
-                                    AnalysisFragment.FolderItem().apply {
-                                        this.name = name
-                                        this.path = File(rootDir as String).resolve(name).absolutePath
-                                        this.size = size
-                                        this.itemCount = folderCountMap[name] ?: 0
-                                    }
-                                }.sortedByDescending { it.size }
-                                
-                                newCache.storageFolders.addAll(finalFoldersList)
-                                newCache.markAnalysisComplete()
-                                AnalysisFragment.setCache(newCache)
-                                
-                                finalFoldersList
+                                    size = try { Formatter.formatFileSize(context, fileInfo.size) } catch(e: Exception) { "0 B" }
+                                    file = f
+                                    isFolder = false
+                                    isSelectable = true
+                                    icon = getFileIcon(fileInfo.name)
+                                    iconColor = -0x6800
+                                })
+                            }
+                        } catch (e: Exception) {}
+                    }
+                } else {
+                    startAnalysisScan()
+                }
+            }
+            args.getBoolean(ARG_AUTO_APPS, false) -> {
+                val cache = AnalysisFragment.getCache()
+                if (cache != null && cache.isValid() && cache.apps.isNotEmpty()) {
+                    cache.apps.forEach { app ->
+                        items.add(DetailAdapter.DetailItem().apply {
+                            name = app.name
+                            path = app.packageName
+                            sizeBytes = app.size
+                            subtitle = getInstallDate()
+                            size = try { Formatter.formatFileSize(context, app.size) } catch(e: Exception) { "0 B" }
+                            packageName = app.packageName
+                            isApp = true
+                            isSelectable = true
+                            icon = R.drawable.ic_root_apps
+                            iconColor = 0
+                        })
+                    }
+                } else {
+                    startAnalysisScan()
+                }
+            }
+        }
+
+        val currentAdapter = adapter
+        if (currentAdapter != null) {
+            currentAdapter.updateItems(items)
+            currentAdapter.setSelectionMode(isSelectionMode || isCleanerMode)
+            if (isSelectionMode) {
+                currentAdapter.setSelectedItems(selectedItems)
+            }
+        } else {
+            adapter = DetailAdapter(items, isSelectionMode || isCleanerMode, lifecycleScope,
+                this::handleItemClick, this::handleSelectionChanged, this::handleItemLongClick, isCleanerMode)
+            recyclerView.adapter = adapter
+        }
+        
+        if (isCleanerMode && items.isNotEmpty()) {
+             handleSelectionChanged(0, 0, emptySet())
+        }
+    } catch (e: Exception) {
+        android.util.Log.e(TAG, "Error loading data", e)
+    }
+}
+
+private fun startAnalysisScan() {
+    lifecycleScope.launch(Dispatchers.Main) {
+        val context = context ?: return@launch
+        val rootDir = Environment.getExternalStorageDirectory().absolutePath
+        val newCache = withContext(Dispatchers.IO) {
+            val cache = AnalysisFragment.getCache() ?: AnalysisFragment.AnalysisCache()
+            cache.clear()
+            
+            val projection = arrayOf(
+                MediaStore.Files.FileColumns.DISPLAY_NAME,
+                MediaStore.Files.FileColumns.SIZE,
+                MediaStore.Files.FileColumns.DATA
+            )
+            
+            val folderSizeMap = mutableMapOf<String, Long>()
+            val folderCountMap = mutableMapOf<String, Int>()
+            val sizeMap = mutableMapOf<Long, MutableList<String>>()
+
+            try {
+                context.contentResolver?.query(
+                    MediaStore.Files.getContentUri("external"),
+                    projection, null, null, null
+                )?.use { cursor ->
+                    val nameIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME)
+                    val sizeIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.SIZE)
+                    val dataIdx = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA)
+                    
+                    while (cursor.moveToNext()) {
+                        val size = cursor.getLong(sizeIdx)
+                        val path = cursor.getString(dataIdx) ?: continue
+                        val name = cursor.getString(nameIdx) ?: "Unknown"
+                        
+                        if (path.startsWith(rootDir)) {
+                            val relativePath = path.substring(rootDir.length).trimStart('/')
+                            val parts = relativePath.split('/')
+                            
+                            if (parts.size > 1) {
+                                val topDir = parts[0]
+                                folderSizeMap[topDir] = (folderSizeMap[topDir] ?: 0L) + size
+                                folderCountMap[topDir] = (folderCountMap[topDir] ?: 0) + 1
                             }
                             
-                            if (isAdded) {
-                                val newItems = scannedFolders.map { folder ->
-                                    DetailAdapter.DetailItem().apply {
-                                        name = folder.name
-                                        path = folder.path
-                                        sizeBytes = folder.size
-                                        size = Formatter.formatFileSize(context, folder.size)
-                                        subtitle = "${Formatter.formatFileSize(context, folder.size)} | ${folder.itemCount} items"
-                                        file = File(folder.path)
-                                        isFolder = true
-                                        isSelectable = true
-                                        icon = if (folder.name == "Pictures") R.drawable.ic_doc_image else R.drawable.ic_doc_folder
-                                        iconColor = getFolderIconColor(folder.name)
+                            var currentPath = rootDir
+                            for (i in 0 until parts.size - 1) {
+                                val folderName = parts[i]
+                                currentPath += if (currentPath.endsWith("/")) folderName else "/$folderName"
+                                val folderItem = cache.allFoldersMap.getOrPut(currentPath) {
+                                    AnalysisFragment.FolderItem().apply {
+                                        this.path = currentPath
+                                        this.name = folderName
                                     }
                                 }
-                                adapter?.updateItems(newItems)
+                                folderItem.size += size
+                                folderItem.itemCount++
+                            }
+                            
+                            cache.allFiles.add(AnalysisFragment.FileItem().apply {
+                                this.name = name
+                                this.path = File(path).parent ?: ""
+                                this.size = size
+                                this.fullPath = path
+                            })
+
+                            if (size > 50 * 1024) {
+                                sizeMap.getOrPut(size) { mutableListOf() }.add(path)
+                            }
+                            
+                            if (size > 50 * 1024 * 1024L) {
+                                cache.largeFiles.add(AnalysisFragment.FileItem().apply {
+                                    this.name = name
+                                    this.path = File(path).parent ?: ""
+                                    this.size = size
+                                    this.fullPath = path
+                                })
                             }
                         }
                     }
                 }
-            }
-
-
-
-            val currentAdapter = adapter
-            if (currentAdapter != null) {
-                currentAdapter.updateItems(items)
-                currentAdapter.setSelectionMode(isSelectionMode)
-                if (isSelectionMode) {
-                    currentAdapter.setSelectedItems(selectedItems)
+            } catch (e: Exception) {}
+            
+            val finalFoldersList = folderSizeMap.map { (name, size) ->
+                AnalysisFragment.FolderItem().apply {
+                    this.name = name
+                    this.path = File(rootDir).resolve(name).absolutePath
+                    this.size = size
+                    this.itemCount = folderCountMap[name] ?: 0
                 }
-            } else {
-                adapter = DetailAdapter(items, isSelectionMode, lifecycleScope,
-                    this::handleItemClick, this::handleSelectionChanged, this::handleItemLongClick)
-                recyclerView.adapter = adapter
+            }.sortedByDescending { it.size }
+            
+            cache.storageFolders.addAll(finalFoldersList)
+
+            sizeMap.forEach { (size, paths) ->
+                if (paths.size > 1) {
+                    cache.duplicateGroups.add(AnalysisFragment.DuplicateGroup().apply {
+                        fileName = try { File(paths[0]).name } catch (e: Exception) { "Unknown" }
+                        this.size = size
+                        count = paths.size
+                        filePaths.addAll(paths)
+                    })
+                }
             }
-        } catch (e: Exception) {
-            android.util.Log.e(TAG, "Error loading data", e)
-            Toast.makeText(context, "Error displaying items", Toast.LENGTH_SHORT).show()
+            cache.duplicateGroups.sortByDescending { it.size * (it.count - 1) }
+
+            try {
+                val pm = context.packageManager
+                val pkgs = pm.getInstalledPackages(0)
+                pkgs?.forEach { pkg ->
+                    pkg.applicationInfo?.let { appInfo ->
+                        val appItem = AnalysisFragment.AppItem().apply {
+                            name = pm.getApplicationLabel(appInfo).toString()
+                            packageName = pkg.packageName
+                            val apk = File(appInfo.sourceDir)
+                            size = if (apk.exists()) apk.length() else 0
+                        }
+                        cache.apps.add(appItem)
+                    }
+                }
+                cache.apps.sortByDescending { it.size }
+            } catch (e: Exception) {}
+
+            cache.markAnalysisComplete()
+            AnalysisFragment.setCache(cache)
+            cache
+        }
+        
+        if (isAdded) {
+            loadData(resetNavigation = false)
         }
     }
-
-
-
+}
     private fun handleItemClick(item: DetailAdapter.DetailItem) {
+        if (isCleanerMode) {
+            adapter?.toggleSelection(item)
+            return
+        }
         item.packageName?.let { openAppInfo(it) } ?: run {
             if (item.isFolder) {
                 openFolderInternally(item.file)
@@ -454,7 +680,9 @@ class AnalysisDetailFragment : Fragment() {
     }
 
     private fun handleItemLongClick(item: DetailAdapter.DetailItem) {
-        if (!isSelectionMode) {
+        if (isCleanerMode) {
+            adapter?.toggleSelection(item)
+        } else if (!isSelectionMode) {
             startSelectionMode(item)
         }
     }
@@ -691,6 +919,32 @@ class AnalysisDetailFragment : Fragment() {
         val selected = adapter?.getSelectedItemsList() ?: return
         if (selected.isEmpty()) return
 
+        if (isCleanerMode) {
+             android.app.AlertDialog.Builder(context)
+                .setTitle("Clean up")
+                .setMessage("Clean up files from device?")
+                .setPositiveButton("Clean up") { _, _ ->
+                     val paths = ArrayList<String>()
+                     var totalSelectedSize = 0L
+                     selected.forEach { 
+                         it.file?.absolutePath?.let { p -> paths.add(p) }
+                         totalSelectedSize += it.sizeBytes
+                     }
+                     
+                     val sizeDisplay = Formatter.formatFileSize(context, totalSelectedSize)
+                     
+                     // Remove from adapter immediately to update UI underneath
+                     val itemsToDelete = selected.toSet()
+                     adapter?.removeItems(itemsToDelete)
+                     exitSelectionMode()
+
+                     CleanerResultFragment.show(fragmentManager, paths, sizeDisplay, title)
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+             return
+        }
+
         android.app.AlertDialog.Builder(context)
             .setTitle("Delete")
             .setMessage("Delete ${selected.size} items?")
@@ -737,19 +991,35 @@ class AnalysisDetailFragment : Fragment() {
             } else {
                  selectAllItem?.icon?.alpha = 130
             }
-        }
-        
-        if (!isSelectionMode) {
-            // Logic for "Duplicate/Large File" cleanup mode (existing)
-            summaryText?.let { summary ->
-                cleanupButton?.let { cleanup ->
-                    if (selectedCount > 0) {
-                        summary.text = "$selectedCount selected"
-                        cleanup.text = "Clean up ${Formatter.formatFileSize(context, totalSize)}"
-                        cleanup.isEnabled = true
-                    } else {
-                        bottomBar?.visibility = View.VISIBLE
-                        cleanup.isEnabled = false
+        } else {
+            if (isCleanerMode) {
+                 btnCleanerAction?.let { btn ->
+                      if (selectedCount > 0) {
+                           btn.text = "Clean up ${Formatter.formatFileSize(context, totalSize)}"
+                           btn.isEnabled = true
+                            btn.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2196F3.toInt())
+                            btn.setTextColor(0xFFFFFFFF.toInt())
+                      } else {
+                           btn.text = "Clean up 0 B"
+                           btn.isEnabled = false
+                           btn.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFE0E0E0.toInt())
+                           btn.setTextColor(0xFF757575.toInt())
+                      }
+                 }
+            } else {
+                summaryText?.let { summary ->
+                    cleanupButton?.let { cleanup ->
+                        if (selectedCount > 0) {
+                            summary.text = "$selectedCount selected"
+                            cleanup.text = "Clean up ${Formatter.formatFileSize(context, totalSize)}"
+                            cleanup.isEnabled = true
+                            cleanup.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2196F3.toInt())
+                            cleanup.setTextColor(0xFFFFFFFF.toInt())
+                        } else {
+                            cleanup.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFE0E0E0.toInt())
+                            cleanup.setTextColor(0xFF757575.toInt())
+                            cleanup.isEnabled = false
+                        }
                     }
                 }
             }
@@ -1099,7 +1369,8 @@ class AnalysisDetailFragment : Fragment() {
         private val scope: CoroutineScope,
         private val clickListener: (DetailItem) -> Unit,
         private val selectionListener: (Int, Long, Set<DetailItem>) -> Unit,
-        private val longClickListener: (DetailItem) -> Unit
+        private val longClickListener: (DetailItem) -> Unit,
+        private val isCleanerMode: Boolean = false
     ) : RecyclerView.Adapter<DetailAdapter.ViewHolder>() {
         private var itemsList = items.toMutableList()
         private val selectedPositions = mutableSetOf<Int>()
@@ -1167,7 +1438,7 @@ class AnalysisDetailFragment : Fragment() {
                 subtitle?.text = item.subtitle ?: ""
                 subtitle?.visibility = if (item.subtitle != null) View.VISIBLE else View.GONE
                 
-                if (item.sizeBytes > 0) {
+                if (item.sizeBytes > 0 && this@DetailAdapter.isCleanerMode) {
                      val percent = (item.sizeBytes.toDouble() / this@DetailAdapter.totalStorage.toDouble()) * 100
                      percentage?.text = String.format("%.2f%%", percent)
                      if (usageBar != null) {
@@ -1185,7 +1456,10 @@ class AnalysisDetailFragment : Fragment() {
                 }
 
                 checkbox?.visibility = if (showCheckbox) View.VISIBLE else View.GONE
-                if (showCheckbox) checkbox?.isChecked = isChecked
+                if (showCheckbox) {
+                    checkbox?.isChecked = isChecked
+                    checkbox?.buttonTintList = android.content.res.ColorStateList.valueOf(0xFF2196F3.toInt())
+                }
 
                 if (item.icon != 0) {
                     icon.setImageResource(item.icon)
@@ -1302,7 +1576,7 @@ class AnalysisDetailFragment : Fragment() {
                     }
                 }
                 holder.itemView.setOnClickListener { 
-                    holder.checkbox?.toggle()
+                    holder.checkbox?.let { cb -> cb.isChecked = !cb.isChecked }
                 }
             }
         }
@@ -1316,7 +1590,7 @@ class AnalysisDetailFragment : Fragment() {
                 if (pos < itemsList.size) {
                     val itm = itemsList[pos]
                     selectedBytes.add(itm)
-                    itm.file?.let { totalSize += it.length() }
+                    totalSize += itm.sizeBytes
                 }
             }
             selectionListener(selectedPositions.size, totalSize, selectedBytes)

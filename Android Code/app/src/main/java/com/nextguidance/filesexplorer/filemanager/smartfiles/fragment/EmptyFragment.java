@@ -17,6 +17,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.nextguidance.filesexplorer.filemanager.smartfiles.R;
+import com.nextguidance.filesexplorer.filemanager.smartfiles.DocumentsActivity;
 import com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.AnalysisDetailFragment; // Added import
 
 public class EmptyFragment extends Fragment {
@@ -39,6 +40,10 @@ public class EmptyFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         
+        if (getActivity() instanceof DocumentsActivity) {
+            ((DocumentsActivity) getActivity()).setTitle("Home");
+        }
+        
         setupUI(view);
     }
 
@@ -50,7 +55,9 @@ public class EmptyFragment extends Fragment {
             RotateAnimation rotate = new RotateAnimation(0, 360, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
             rotate.setDuration(1000);
             v.startAnimation(rotate);
-            Toast.makeText(getContext(), "Scanning for junk...", Toast.LENGTH_SHORT).show();
+            
+            // Launch Junk Cleaner
+            JunkCleanerFragment.show(getFragmentManager());
         });
 
         // Setup Option Cards
