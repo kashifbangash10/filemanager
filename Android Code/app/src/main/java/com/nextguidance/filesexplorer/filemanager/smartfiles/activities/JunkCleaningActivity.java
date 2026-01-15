@@ -1,10 +1,11 @@
 package com.nextguidance.filesexplorer.filemanager.smartfiles.activities;
 
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -14,10 +15,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.nextguidance.filesexplorer.filemanager.smartfiles.R;
 import com.nextguidance.filesexplorer.filemanager.smartfiles.adapter.JunkCleanAdapter;
 import com.nextguidance.filesexplorer.filemanager.smartfiles.model.JunkItem;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class JunkCleaningActivity extends AppCompatActivity {
 
@@ -31,6 +33,8 @@ public class JunkCleaningActivity extends AppCompatActivity {
     private long totalJunkInBytes = 0;
     private Handler handler = new Handler(Looper.getMainLooper());
     private android.view.animation.Animation radarAnim;
+    private ExecutorService scanExecutor = Executors.newSingleThreadExecutor();
+    private boolean isScanning = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +50,6 @@ public class JunkCleaningActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerViewJunk);
         btnCleanUp = findViewById(R.id.btnCleanUp);
 
-        // Overlay Views
         cleaningOverlay = findViewById(R.id.cleaningOverlay);
         cleaningContainer = findViewById(R.id.cleaningContainer);
         successContainer = findViewById(R.id.successContainer);
@@ -59,7 +62,7 @@ public class JunkCleaningActivity extends AppCompatActivity {
 
         setupList();
         startRadarAnimation();
-        startScanning();
+        startRealScanning();
 
         btnCleanUp.setOnClickListener(v -> performClean());
     }
@@ -120,100 +123,135 @@ public class JunkCleaningActivity extends AppCompatActivity {
         return 0;
     }
 
-    private void startScanning() {
-        scanSequential(0);
-    }
-
-    private void scanSequential(final int index) {
-        if (index >= junkItems.size()) {
-            tvScanStatus.setText("Scan Complete");
-            tvCurrentPath.setText("System is ready for cleanup");
-            radarSweep.clearAnimation();
-            radarSweep.setVisibility(View.GONE);
-            
-            btnCleanUp.setVisibility(View.VISIBLE);
-            updateButtonSize();
-            return;
-        }
-
-        final JunkItem item = junkItems.get(index);
-        item.setScanning(true);
-        item.setScanPath("/storage/emulated/0/" + item.getName().toLowerCase().replace(" ", ""));
-        adapter.notifyItemChanged(index);
-
-        int delay = 800 + (int)(Math.random() * 1000);
-        handler.postDelayed(() -> {
-            long size = getSimulatedSize(item.getName());
-            item.setScanning(false);
-            
-            if (size > 0) {
-                item.setSize(formatSize(size));
-                // Match reference: Empty folders scanned but NOT selected by default
-                item.setChecked(!item.getName().equals("Empty folders"));
-                totalJunkInBytes += size;
-            } else {
-                item.setSize("No junk");
-                item.setChecked(false);
-            }
-            
-            // Update the big counter in the radar center
-            tvTotalValue.setText(formatSizeOnlyNumber(totalJunkInBytes));
-            tvTotalUnit.setText(formatSizeOnlyUnit(totalJunkInBytes));
-
-            // Populate sub items (realistic data from reference)
-            if (size > 0) {
-                List<JunkItem.SubJunkItem> subs = new ArrayList<>();
-                if (item.getName().equals("App cache")) {
-                    subs.add(new JunkItem.SubJunkItem("SHAREit", formatSize(size / 2), R.drawable.ic_app_shareit, 0));
-                    subs.add(new JunkItem.SubJunkItem("Thumbnail Caches", formatSize(size / 4), R.drawable.ic_file_image, 0));
-                    subs.add(new JunkItem.SubJunkItem("App File", formatSize(size / 8), R.drawable.ic_file_document, 0));
-                    subs.add(new JunkItem.SubJunkItem("Cache", formatSize(size / 8), R.drawable.ic_file_document, 0));
-                } else if (item.getName().equals("Empty folders")) {
-                    int orange = 0xFFFF9800;
-                    subs.add(new JunkItem.SubJunkItem("/storage/emulated/0/kopo", "3.4 KB", R.drawable.ic_root_folder, orange));
-                    subs.add(new JunkItem.SubJunkItem("/storage/emulated/0/download", "3.4 KB", R.drawable.ic_root_folder, orange));
-                    subs.add(new JunkItem.SubJunkItem("/storage/emulated/0/tencent", "3.4 KB", R.drawable.ic_root_folder, orange));
-                    subs.add(new JunkItem.SubJunkItem("/storage/emulated/0/SHAREit/apps", "3.4 KB", R.drawable.ic_root_folder, orange));
-                } else if (item.getName().equals("Residual junk")) {
-                    subs.add(new JunkItem.SubJunkItem("VidMate", formatSize(size), R.drawable.ic_app_vidmate, 0));
-                } else {
-                    subs.add(new JunkItem.SubJunkItem("System Log", formatSize(size / 2), R.drawable.ic_file_document, 0));
-                    subs.add(new JunkItem.SubJunkItem("Temporary Data", formatSize(size / 2), R.drawable.ic_file_document, 0));
-                }
-                item.setSubItems(subs);
-            }
-
-            adapter.notifyItemChanged(index);
-            scanSequential(index + 1);
-        }, delay);
-    }
-
-    private long getSimulatedSize(String name) {
-        // If cleaned in the last 1 hour, show very minimal or "No junk" for a realistic experience
-        boolean isCleaned = getSharedPreferences("junk_prefs", MODE_PRIVATE).getBoolean("is_cleaned", false);
-        long lastCleanTime = getSharedPreferences("junk_prefs", MODE_PRIVATE).getLong("last_clean_time", 0);
+    private void startRealScanning() {
+        if (isScanning) return;
+        isScanning = true;
+        totalJunkInBytes = 0;
         
-        if (isCleaned && (System.currentTimeMillis() - lastCleanTime) < 60 * 60 * 1000) {
-            // After cleaning, most apps show "No junk" or very tiny KB
-            if (name.equals("Residual junk") || name.equals("AD junk") || name.equals("System junk")) {
-                return 0; // Will show "No junk"
-            }
-            // Tiny leftovers for realism
-            if (name.equals("Empty folders")) return 12L * 1024; // 12 KB
-            if (name.equals("App cache")) return 8L * 1024 + 500; // 8.5 KB
-            return 0;
+        scanExecutor.execute(() -> {
+            File root = Environment.getExternalStorageDirectory();
+            scanDirectory(root);
+            
+            handler.post(() -> {
+                isScanning = false;
+                tvScanStatus.setText("Scan Complete");
+                tvCurrentPath.setText("Real junk files identified");
+                radarSweep.clearAnimation();
+                radarSweep.setVisibility(View.GONE);
+                btnCleanUp.setVisibility(View.VISIBLE);
+                updateButtonSize();
+            });
+        });
+    }
+
+    private void scanDirectory(File directory) {
+        if (directory == null || !directory.exists() || !directory.isDirectory()) return;
+
+        // --- SAFETY FILTER: Skip Important Personal Folders ---
+        String name = directory.getName();
+        if (name.equalsIgnoreCase("DCIM") || 
+            name.equalsIgnoreCase("Pictures") || 
+            name.equalsIgnoreCase("Documents") ||
+            name.equalsIgnoreCase("Movies") ||
+            name.equalsIgnoreCase("Music") ||
+            name.equalsIgnoreCase("Download") && !isScanningDownloadsForApks()) { // Only scan Downloads for APKs
+            return; 
         }
 
-        switch (name) {
-            case "App cache": return 255L * 1024 * 1024 + (700L * 1024);
-            case "Residual junk": return 33L * 1024 + 600;
-            case "Empty folders": return 51L * 1024 + 100;
-            case "System junk": return 120L * 1024 * 1024;
-            case "AD junk": return 45L * 1024;
-            case "Apks": return 88L * 1024 * 1024;
-            default: return 0;
+        File[] files = directory.listFiles();
+        if (files == null) return;
+
+        for (File file : files) {
+            final String path = file.getAbsolutePath();
+            handler.post(() -> tvCurrentPath.setText(path));
+
+            if (file.isDirectory()) {
+                // Check for Empty Folders (Truly empty)
+                File[] subFiles = file.listFiles();
+                if (subFiles != null && subFiles.length == 0) {
+                    addJunkItem("Empty folders", file);
+                } else {
+                    // Check for AD Junk folders
+                    if (isAdJunkFolder(file.getName())) {
+                        addJunkItem("AD junk", file);
+                    } else if (file.getName().equalsIgnoreCase("cache") || file.getName().equalsIgnoreCase(".cache")) {
+                        addJunkItem("App cache", file);
+                    }
+                    scanDirectory(file); // Recursive scan
+                }
+            } else {
+                // --- Safe File Type Selection ---
+                if (path.endsWith(".apk")) {
+                    addJunkItem("Apks", file);
+                } else if (path.endsWith(".log") || path.endsWith(".tmp") || path.endsWith(".temp")) {
+                    addJunkItem("System junk", file);
+                } else if (isKnownTrashFile(file)) {
+                    addJunkItem("Residual junk", file);
+                }
+            }
         }
     }
+
+    private boolean isScanningDownloadsForApks() {
+        // Allow scanning Downloads folder ONLY to find APK files
+        return true; 
+    }
+
+    private boolean isKnownTrashFile(File file) {
+        String name = file.getName().toLowerCase();
+        // Target only common system-generated trash names
+        return name.startsWith(".trash") || name.startsWith(".ostat") || name.endsWith(".bak");
+    }
+
+    private boolean isAdJunkFolder(String name) {
+        String lower = name.toLowerCase();
+        // Target specific known Ad SDK folders
+        return lower.contains(".exo") || lower.contains("adcache") || lower.contains("unityads") || lower.contains("mraid");
+    }
+
+    private void addJunkItem(String category, File file) {
+        long size = file.isDirectory() ? getFolderSize(file) : file.length();
+        if (size == 0) return;
+
+        handler.post(() -> {
+            for (JunkItem item : junkItems) {
+                if (item.getName().equals(category)) {
+                    totalJunkInBytes += size;
+                    
+                    // Update category size
+                    long currentCatSize = parseSizeToBytes(item.getSize()) + size;
+                    item.setSize(formatSize(currentCatSize));
+                    item.setChecked(true);
+
+                    // Add to sub-items
+                    int icon = R.drawable.ic_file_document;
+                    if (category.equals("Apks")) icon = R.drawable.ic_file_document; // Use generic for now
+                    if (category.equals("Empty folders")) icon = R.drawable.ic_root_folder;
+                    
+                    item.getSubItems().add(new JunkItem.SubJunkItem(file.getName(), formatSize(size), file.getAbsolutePath(), icon));
+                    
+                    tvTotalValue.setText(formatSizeOnlyNumber(totalJunkInBytes));
+                    tvTotalUnit.setText(formatSizeOnlyUnit(totalJunkInBytes));
+                    adapter.notifyDataSetChanged();
+                    break;
+                }
+            }
+        });
+    }
+
+    private long getFolderSize(File folder) {
+        long size = 0;
+        File[] files = folder.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isFile()) size += file.length();
+                else size += getFolderSize(file);
+            }
+        }
+        return size;
+    }
+
+
 
     private String formatSize(long bytes) {
         if (bytes < 1024) return bytes + " B";
@@ -235,17 +273,19 @@ public class JunkCleaningActivity extends AppCompatActivity {
     }
 
     private void performClean() {
+        final List<File> filesToDelete = new ArrayList<>();
         long selectedTotal = 0;
+        
         for (JunkItem item : junkItems) {
             if (item.isChecked()) {
-                if (item.getSubItems() != null && !item.getSubItems().isEmpty()) {
-                    for (JunkItem.SubJunkItem sub : item.getSubItems()) {
-                        if (sub.isChecked()) {
+                for (JunkItem.SubJunkItem sub : item.getSubItems()) {
+                    if (sub.isChecked()) {
+                        File file = new File(sub.getPath());
+                        if (file.exists()) {
+                            filesToDelete.add(file);
                             selectedTotal += parseSizeToBytes(sub.getSize());
                         }
                     }
-                } else {
-                    selectedTotal += parseSizeToBytes(item.getSize());
                 }
             }
         }
@@ -261,10 +301,28 @@ public class JunkCleaningActivity extends AppCompatActivity {
         // Start Broom Anim
         startBroomAnimation();
 
-        // Delay for simulation
-        handler.postDelayed(() -> {
-            showSuccessScreen(finalTotal);
-        }, 3000);
+        // Perform real deletion
+        scanExecutor.execute(() -> {
+            for (File file : filesToDelete) {
+                deleteFileRecursive(file);
+            }
+            
+            handler.postDelayed(() -> {
+                showSuccessScreen(finalTotal);
+            }, 3000);
+        });
+    }
+
+    private void deleteFileRecursive(File file) {
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            if (files != null) {
+                for (File child : files) {
+                    deleteFileRecursive(child);
+                }
+            }
+        }
+        file.delete();
     }
 
     private void startBroomAnimation() {
@@ -285,7 +343,7 @@ public class JunkCleaningActivity extends AppCompatActivity {
         String cleanedText = formatSize(cleanedBytes) + " cleaned";
         tvCleanedAmount.setText(cleanedText);
 
-        // Save cleaned state persistently so next scan shows 0 B
+        // Save cleaned state persistently
         getSharedPreferences("junk_prefs", MODE_PRIVATE)
                 .edit()
                 .putBoolean("is_cleaned", true)
@@ -298,5 +356,11 @@ public class JunkCleaningActivity extends AppCompatActivity {
             setResult(RESULT_OK);
             finish();
         }, 2500);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        scanExecutor.shutdownNow();
     }
 }

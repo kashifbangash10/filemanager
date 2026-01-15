@@ -44,25 +44,29 @@ public class JunkItem {
     public static class SubJunkItem {
         private String label;
         private String size;
+        private String path;
         private int iconResId;
         private boolean isChecked = true;
         private int tintColor = 0; // 0 means no tint
 
-        public SubJunkItem(String label, String size, int iconResId) {
+        public SubJunkItem(String label, String size, String path, int iconResId) {
             this.label = label;
             this.size = size;
+            this.path = path;
             this.iconResId = iconResId;
         }
 
-        public SubJunkItem(String label, String size, int iconResId, int tintColor) {
+        public SubJunkItem(String label, String size, String path, int iconResId, int tintColor) {
             this.label = label;
             this.size = size;
+            this.path = path;
             this.iconResId = iconResId;
             this.tintColor = tintColor;
         }
 
         public String getLabel() { return label; }
         public String getSize() { return size; }
+        public String getPath() { return path; }
         public int getIconResId() { return iconResId; }
         public boolean isChecked() { return isChecked; }
         public void setChecked(boolean checked) { isChecked = checked; }
