@@ -55,6 +55,16 @@ public class CleanTabFragment extends Fragment {
             Intent intent = new Intent(getContext(), JunkCleaningActivity.class);
             startActivityForResult(intent, REQUEST_CODE_CLEAN);
         });
+
+        // Optional: show state if cleaned, but keep button working
+        boolean isCleaned = getContext().getSharedPreferences("junk_prefs", Activity.MODE_PRIVATE)
+                .getBoolean("is_cleaned", false);
+        long lastCleanTime = getContext().getSharedPreferences("junk_prefs", Activity.MODE_PRIVATE)
+                .getLong("last_clean_time", 0);
+
+        if (isCleaned && (System.currentTimeMillis() - lastCleanTime) < 2 * 60 * 60 * 1000) {
+            showCleanedState(view);
+        }
     }
 
     @Override

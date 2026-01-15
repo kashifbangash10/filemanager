@@ -57,10 +57,22 @@ public class JunkCleanAdapter extends RecyclerView.Adapter<JunkCleanAdapter.View
             holder.tvScanPath.setText("Scanning: " + item.getScanPath());
         } else {
             holder.pbScanning.setVisibility(View.GONE);
-            holder.cbChecked.setVisibility(View.VISIBLE);
-            holder.tvSize.setVisibility(View.VISIBLE);
             holder.tvScanPath.setVisibility(View.GONE);
             holder.ivChevron.setVisibility(View.VISIBLE);
+            
+            // Handle "No junk" state
+            boolean hasJunk = !item.getSize().equals("0 B") && !item.getSize().equalsIgnoreCase("No junk");
+            if (hasJunk) {
+                holder.cbChecked.setVisibility(View.VISIBLE);
+                holder.tvSize.setVisibility(View.VISIBLE);
+                holder.tvSize.setTextColor(0xFF212121); // Darker
+            } else {
+                holder.cbChecked.setVisibility(View.GONE);
+                holder.tvSize.setVisibility(View.VISIBLE);
+                holder.tvSize.setText("No junk");
+                holder.tvSize.setTextColor(0xFF9E9E9E); // Gray
+                holder.ivChevron.setVisibility(View.GONE); // No sub-items for No Junk
+            }
         }
 
         // Handle Expansion - Reference app shows chevron up when expanded

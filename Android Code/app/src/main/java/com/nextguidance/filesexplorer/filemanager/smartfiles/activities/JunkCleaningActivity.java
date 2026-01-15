@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,7 +23,9 @@ public class JunkCleaningActivity extends AppCompatActivity {
 
     private TextView tvScanStatus, tvCurrentPath, tvBtnMain, tvTotalValue, tvTotalUnit;
     private RecyclerView recyclerView;
-    private View btnCleanUp, radarSweep;
+    private View btnCleanUp, radarSweep, cleaningOverlay, cleaningContainer, successContainer;
+    private ImageView ivBroom, ivSuccessCheck;
+    private TextView tvCleanedAmount;
     private JunkCleanAdapter adapter;
     private List<JunkItem> junkItems;
     private long totalJunkInBytes = 0;
@@ -43,7 +46,16 @@ public class JunkCleaningActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerViewJunk);
         btnCleanUp = findViewById(R.id.btnCleanUp);
 
+        // Overlay Views
+        cleaningOverlay = findViewById(R.id.cleaningOverlay);
+        cleaningContainer = findViewById(R.id.cleaningContainer);
+        successContainer = findViewById(R.id.successContainer);
+        ivBroom = findViewById(R.id.ivBroom);
+        ivSuccessCheck = findViewById(R.id.ivSuccessCheck);
+        tvCleanedAmount = findViewById(R.id.tvCleanedAmount);
+
         findViewById(R.id.btnBack).setOnClickListener(v -> onBackPressed());
+        findViewById(R.id.btnBackCleaning).setOnClickListener(v -> finish());
 
         setupList();
         startRadarAnimation();
@@ -81,20 +93,22 @@ public class JunkCleaningActivity extends AppCompatActivity {
     }
 
     private void updateButtonSize() {
-        long currentTotal = 0;
+        long selectedTotal = 0;
         for (JunkItem item : junkItems) {
-            if (item.isChecked() && item.getSubItems() != null) {
-                for (JunkItem.SubJunkItem sub : item.getSubItems()) {
-                    if (sub.isChecked()) {
-                        currentTotal += parseSizeToBytes(sub.getSize());
+            if (item.isChecked()) {
+                if (item.getSubItems() != null && !item.getSubItems().isEmpty()) {
+                    for (JunkItem.SubJunkItem sub : item.getSubItems()) {
+                        if (sub.isChecked()) {
+                            selectedTotal += parseSizeToBytes(sub.getSize());
+                        }
                     }
+                } else {
+                    // Category checked but no nested subitems
+                    selectedTotal += parseSizeToBytes(item.getSize());
                 }
             }
         }
-        totalJunkInBytes = currentTotal;
-        tvBtnMain.setText("Clean up " + formatSize(totalJunkInBytes));
-        tvTotalValue.setText(formatSizeOnlyNumber(totalJunkInBytes));
-        tvTotalUnit.setText(formatSizeOnlyUnit(totalJunkInBytes));
+        tvBtnMain.setText("Clean up " + formatSize(selectedTotal));
     }
 
     private long parseSizeToBytes(String sizeStr) {
@@ -118,7 +132,7 @@ public class JunkCleaningActivity extends AppCompatActivity {
             radarSweep.setVisibility(View.GONE);
             
             btnCleanUp.setVisibility(View.VISIBLE);
-            tvBtnMain.setText("Clean up " + formatSize(totalJunkInBytes));
+            updateButtonSize();
             return;
         }
 
@@ -131,14 +145,21 @@ public class JunkCleaningActivity extends AppCompatActivity {
         handler.postDelayed(() -> {
             long size = getSimulatedSize(item.getName());
             item.setScanning(false);
-            item.setSize(formatSize(size));
-            item.setChecked(size > 0);
-            totalJunkInBytes += size;
+            
+            if (size > 0) {
+                item.setSize(formatSize(size));
+                // Match reference: Empty folders scanned but NOT selected by default
+                item.setChecked(!item.getName().equals("Empty folders"));
+                totalJunkInBytes += size;
+            } else {
+                item.setSize("No junk");
+                item.setChecked(false);
+            }
             
             // Update the big counter in the radar center
             tvTotalValue.setText(formatSizeOnlyNumber(totalJunkInBytes));
             tvTotalUnit.setText(formatSizeOnlyUnit(totalJunkInBytes));
-            
+
             // Populate sub items (realistic data from reference)
             if (size > 0) {
                 List<JunkItem.SubJunkItem> subs = new ArrayList<>();
@@ -168,6 +189,21 @@ public class JunkCleaningActivity extends AppCompatActivity {
     }
 
     private long getSimulatedSize(String name) {
+        // If cleaned in the last 1 hour, show very minimal or "No junk" for a realistic experience
+        boolean isCleaned = getSharedPreferences("junk_prefs", MODE_PRIVATE).getBoolean("is_cleaned", false);
+        long lastCleanTime = getSharedPreferences("junk_prefs", MODE_PRIVATE).getLong("last_clean_time", 0);
+        
+        if (isCleaned && (System.currentTimeMillis() - lastCleanTime) < 60 * 60 * 1000) {
+            // After cleaning, most apps show "No junk" or very tiny KB
+            if (name.equals("Residual junk") || name.equals("AD junk") || name.equals("System junk")) {
+                return 0; // Will show "No junk"
+            }
+            // Tiny leftovers for realism
+            if (name.equals("Empty folders")) return 12L * 1024; // 12 KB
+            if (name.equals("App cache")) return 8L * 1024 + 500; // 8.5 KB
+            return 0;
+        }
+
         switch (name) {
             case "App cache": return 255L * 1024 * 1024 + (700L * 1024);
             case "Residual junk": return 33L * 1024 + 600;
@@ -199,13 +235,68 @@ public class JunkCleaningActivity extends AppCompatActivity {
     }
 
     private void performClean() {
-        btnCleanUp.setEnabled(false);
-        tvBtnMain.setText("Cleaning...");
+        long selectedTotal = 0;
+        for (JunkItem item : junkItems) {
+            if (item.isChecked()) {
+                if (item.getSubItems() != null && !item.getSubItems().isEmpty()) {
+                    for (JunkItem.SubJunkItem sub : item.getSubItems()) {
+                        if (sub.isChecked()) {
+                            selectedTotal += parseSizeToBytes(sub.getSize());
+                        }
+                    }
+                } else {
+                    selectedTotal += parseSizeToBytes(item.getSize());
+                }
+            }
+        }
         
+        final long finalTotal = selectedTotal;
+        btnCleanUp.setEnabled(false);
+        
+        // Show Overlay
+        cleaningOverlay.setVisibility(View.VISIBLE);
+        cleaningContainer.setVisibility(View.VISIBLE);
+        successContainer.setVisibility(View.GONE);
+        
+        // Start Broom Anim
+        startBroomAnimation();
+
+        // Delay for simulation
+        handler.postDelayed(() -> {
+            showSuccessScreen(finalTotal);
+        }, 3000);
+    }
+
+    private void startBroomAnimation() {
+        android.view.animation.Animation wiggle = new android.view.animation.RotateAnimation(-15, 15,
+                android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f,
+                android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f);
+        wiggle.setDuration(400);
+        wiggle.setRepeatMode(android.view.animation.Animation.REVERSE);
+        wiggle.setRepeatCount(android.view.animation.Animation.INFINITE);
+        ivBroom.startAnimation(wiggle);
+    }
+
+    private void showSuccessScreen(long cleanedBytes) {
+        ivBroom.clearAnimation();
+        cleaningContainer.setVisibility(View.GONE);
+        successContainer.setVisibility(View.VISIBLE);
+        
+        String cleanedText = formatSize(cleanedBytes) + " cleaned";
+        tvCleanedAmount.setText(cleanedText);
+
+        // Save cleaned state persistently so next scan shows 0 B
+        getSharedPreferences("junk_prefs", MODE_PRIVATE)
+                .edit()
+                .putBoolean("is_cleaned", true)
+                .putLong("last_clean_time", System.currentTimeMillis())
+                .apply();
+
+        // Auto finish after 2.5 seconds
         handler.postDelayed(() -> {
             Toast.makeText(this, "Cleaning completed successfully!", Toast.LENGTH_SHORT).show();
             setResult(RESULT_OK);
             finish();
-        }, 2000);
+        }, 2500);
     }
 }
