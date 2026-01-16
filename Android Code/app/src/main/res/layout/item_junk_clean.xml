@@ -29,13 +29,12 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_marginStart="6dp"
-            android:alpha="0.4"
-            android:src="@drawable/abc_ic_arrow_drop_right_black_24dp"
+            android:src="@drawable/expander_open"
             android:rotation="0"
             app:layout_constraintBottom_toBottomOf="@id/tvJunkName"
             app:layout_constraintStart_toEndOf="@id/tvJunkName"
             app:layout_constraintTop_toTopOf="@id/tvJunkName"
-            app:tint="#000000" />
+            app:tint="#2196F3" />
 
         <TextView
             android:id="@+id/tvScanPath"

@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Plain White Background to avoid flickering -->
     <item>
-        <color android:color="#FFFFFF"></color>
-    </item>
-    <item>
-        <bitmap
-            android:gravity="center_horizontal|center_vertical"
-            android:src="@drawable/logo_splash" />
+        <color android:color="#FFFFFF"/>
     </item>
 </layer-list>

@@ -13,12 +13,22 @@ import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.util.Log;
+import android.widget.Toast;
+
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.AdError;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
+import com.nextguidance.filesexplorer.filemanager.smartfiles.DocumentsActivity;
 import com.nextguidance.filesexplorer.filemanager.smartfiles.R;
 
 import java.io.File;
@@ -45,6 +55,8 @@ public class CleanerResultFragment extends Fragment {
     private View ivSparkles;
     private View rippleContainer;
     private ObjectAnimator pulseAnimator;
+    private InterstitialAd mInterstitialAd;
+    private int adRetryCount = 0;
 
     public static void show(FragmentManager fm, ArrayList<String> paths, String sizeDisplay, String title) {
         CleanerResultFragment fragment = new CleanerResultFragment();
@@ -102,6 +114,7 @@ public class CleanerResultFragment extends Fragment {
         if (activityToolbar != null) activityToolbar.setVisibility(View.GONE);
 
         startPulseAnimation();
+        loadInterstitialAd();
         startCleaning();
     }
 
@@ -164,9 +177,82 @@ public class CleanerResultFragment extends Fragment {
             }
 
             handler.post(() -> {
-                showSuccess();
+                showInterstitialThenSuccess();
             });
         });
+    }
+
+    private void loadInterstitialAd() {
+        if (getContext() == null) {
+            Log.e("CleanerResult", "Context is null, cannot load ad");
+            return;
+        }
+        Log.d("CleanerResult", "Starting to load interstitial ad");
+        // Toast.makeText(getContext(), "Loading Ad...", Toast.LENGTH_SHORT).show(); // Removed for production feel but kept in mind
+        AdRequest adRequest = new AdRequest.Builder().build();
+        InterstitialAd.load(getContext(), getString(R.string.admob_interadsid), adRequest,
+                new InterstitialAdLoadCallback() {
+                    @Override
+                    public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
+                        Log.d("CleanerResult", "Ad loaded successfully");
+                        mInterstitialAd = interstitialAd;
+                        // Toast.makeText(getContext(), "Ad Loaded", Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                        Log.e("CleanerResult", "Ad failed to load: " + loadAdError.getMessage());
+                        mInterstitialAd = null;
+                        // Toast.makeText(getContext(), "Ad Failed: " + loadAdError.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
+    }
+
+    private void showInterstitialThenSuccess() {
+        if (!isAdded()) return;
+        
+        InterstitialAd activityAd = null;
+        if (getActivity() instanceof DocumentsActivity) {
+            activityAd = ((DocumentsActivity) getActivity()).getHomeInterstitialAd();
+        }
+
+        final InterstitialAd adToShow = (activityAd != null) ? activityAd : mInterstitialAd;
+
+        if (adToShow != null) {
+            Log.d("CleanerResult", "Showing interstitial ad");
+            adToShow.setFullScreenContentCallback(new FullScreenContentCallback() {
+                @Override
+                public void onAdDismissedFullScreenContent() {
+                    Log.d("CleanerResult", "Ad dismissed");
+                    if (getActivity() instanceof DocumentsActivity) {
+                        ((DocumentsActivity) getActivity()).setHomeInterstitialAd(null);
+                        ((DocumentsActivity) getActivity()).loadHomeInterstitial(false);
+                    }
+                    showSuccess();
+                }
+
+                @Override
+                public void onAdFailedToShowFullScreenContent(AdError adError) {
+                    Log.e("CleanerResult", "Ad failed to show: " + adError.getMessage());
+                    if (getActivity() instanceof DocumentsActivity) {
+                        ((DocumentsActivity) getActivity()).setHomeInterstitialAd(null);
+                    }
+                    showSuccess();
+                }
+            });
+            adToShow.show(getActivity());
+        } else {
+            if (adRetryCount < 3) { // Reduced retries but kept it fast
+                adRetryCount++;
+                Log.d("CleanerResult", "Ad not ready yet, retrying... (" + adRetryCount + ")");
+                // Toast.makeText(getContext(), "Fetching ad...", Toast.LENGTH_SHORT).show();
+                new Handler(Looper.getMainLooper()).postDelayed(this::showInterstitialThenSuccess, 1000);
+            } else {
+                Log.d("CleanerResult", "Ad null after retries, skipping to success");
+                Toast.makeText(getContext(), "Ad not available, showing results", Toast.LENGTH_SHORT).show();
+                showSuccess();
+            }
+        }
     }
 
     private void deleteRecursive(File fileOrDirectory) {

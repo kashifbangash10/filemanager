@@ -20,6 +20,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.AdError;
+import androidx.annotation.NonNull;
 
 public class JunkCleaningActivity extends AppCompatActivity {
 
@@ -35,6 +42,7 @@ public class JunkCleaningActivity extends AppCompatActivity {
     private android.view.animation.Animation radarAnim;
     private ExecutorService scanExecutor = Executors.newSingleThreadExecutor();
     private boolean isScanning = false;
+    private InterstitialAd mInterstitialAd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +73,7 @@ public class JunkCleaningActivity extends AppCompatActivity {
         startRealScanning();
 
         btnCleanUp.setOnClickListener(v -> performClean());
+        loadInterstitialAd();
     }
 
 
@@ -223,12 +232,38 @@ public class JunkCleaningActivity extends AppCompatActivity {
                     item.setSize(formatSize(currentCatSize));
                     item.setChecked(true);
 
-                    // Add to sub-items
-                    int icon = R.drawable.ic_file_document;
-                    if (category.equals("Apks")) icon = R.drawable.ic_file_document; // Use generic for now
-                    if (category.equals("Empty folders")) icon = R.drawable.ic_root_folder;
+                    // Add to sub-items with proper icons and colors
+                    int icon = R.drawable.ic_root_document;
+                    int tint = 0;
                     
-                    item.getSubItems().add(new JunkItem.SubJunkItem(file.getName(), formatSize(size), file.getAbsolutePath(), icon));
+                    switch (category) {
+                        case "App cache":
+                            icon = R.drawable.ic_root_apps;
+                            tint = 0xFF2196F3; // Blue
+                            break;
+                        case "Residual junk":
+                            icon = R.drawable.ic_root_document;
+                            tint = 0xFFFF9800; // Orange
+                            break;
+                        case "System junk":
+                            icon = R.drawable.ic_root_document;
+                            tint = 0xFFF44336; // Red
+                            break;
+                        case "Empty folders":
+                            icon = R.drawable.ic_root_folder;
+                            tint = 0xFF9E9E9E; // Grey
+                            break;
+                        case "AD junk":
+                            icon = R.drawable.ic_root_archive;
+                            tint = 0xFF9C27B0; // Purple
+                            break;
+                        case "Apks":
+                            icon = R.drawable.ic_root_apps; // Android robot icon
+                            tint = 0xFF4CAF50; // Green
+                            break;
+                    }
+                    
+                    item.getSubItems().add(new JunkItem.SubJunkItem(file.getName(), formatSize(size), file.getAbsolutePath(), icon, tint));
                     
                     tvTotalValue.setText(formatSizeOnlyNumber(totalJunkInBytes));
                     tvTotalUnit.setText(formatSizeOnlyUnit(totalJunkInBytes));
@@ -308,9 +343,46 @@ public class JunkCleaningActivity extends AppCompatActivity {
             }
             
             handler.postDelayed(() -> {
-                showSuccessScreen(finalTotal);
+                showInterstitialThenSuccess(finalTotal);
             }, 3000);
         });
+    }
+
+    private void loadInterstitialAd() {
+        AdRequest adRequest = new AdRequest.Builder().build();
+        InterstitialAd.load(this, getString(R.string.admob_interadsid), adRequest,
+                new InterstitialAdLoadCallback() {
+                    @Override
+                    public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
+                        mInterstitialAd = interstitialAd;
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                        mInterstitialAd = null;
+                    }
+                });
+    }
+
+    private void showInterstitialThenSuccess(long cleanedBytes) {
+        if (mInterstitialAd != null) {
+            mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+                @Override
+                public void onAdDismissedFullScreenContent() {
+                    mInterstitialAd = null;
+                    showSuccessScreen(cleanedBytes);
+                }
+
+                @Override
+                public void onAdFailedToShowFullScreenContent(AdError adError) {
+                    mInterstitialAd = null;
+                    showSuccessScreen(cleanedBytes);
+                }
+            });
+            mInterstitialAd.show(this);
+        } else {
+            showSuccessScreen(cleanedBytes);
+        }
     }
 
     private void deleteFileRecursive(File file) {
@@ -352,7 +424,6 @@ public class JunkCleaningActivity extends AppCompatActivity {
 
         // Auto finish after 2.5 seconds
         handler.postDelayed(() -> {
-            Toast.makeText(this, "Cleaning completed successfully!", Toast.LENGTH_SHORT).show();
             setResult(RESULT_OK);
             finish();
         }, 2500);

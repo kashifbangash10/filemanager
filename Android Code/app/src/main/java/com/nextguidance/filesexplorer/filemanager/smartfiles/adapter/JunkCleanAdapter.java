@@ -58,7 +58,8 @@ public class JunkCleanAdapter extends RecyclerView.Adapter<JunkCleanAdapter.View
         } else {
             holder.pbScanning.setVisibility(View.GONE);
             holder.tvScanPath.setVisibility(View.GONE);
-            holder.ivChevron.setVisibility(View.VISIBLE);
+            boolean hasSubItems = item.getSubItems() != null && !item.getSubItems().isEmpty();
+            holder.ivChevron.setVisibility(hasSubItems ? View.VISIBLE : View.GONE);
             
             // Handle "No junk" state
             boolean hasJunk = !item.getSize().equals("0 B") && !item.getSize().equalsIgnoreCase("No junk");

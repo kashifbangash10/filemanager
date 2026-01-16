@@ -269,6 +269,11 @@ class AnalysisDetailFragment : Fragment() {
                 return true
             } else {
                 isInFolderNavigation = false
+                // If we were at Internal Storage root, go back to Home tab
+                if (title == "Internal Storage" || title == "Storage manager" || arguments?.getBoolean(ARG_AUTO_INTERNAL, false) == true) {
+                    (activity as? DocumentsActivity)?.selectHomeTab()
+                    return true
+                }
                 title = arguments?.getString(ARG_TITLE) ?: "Analysis"
                 updateToolbarTitle()
                 loadData()
@@ -277,7 +282,7 @@ class AnalysisDetailFragment : Fragment() {
         }
         
         // If we are at the root of "Internal Storage" or "Storage manager", go back to Home tab
-        if (title == "Internal Storage" || title == "Storage manager") {
+        if (title == "Internal Storage" || title == "Storage manager" || arguments?.getBoolean(ARG_AUTO_INTERNAL, false) == true) {
             (activity as? DocumentsActivity)?.selectHomeTab()
             return true
         }

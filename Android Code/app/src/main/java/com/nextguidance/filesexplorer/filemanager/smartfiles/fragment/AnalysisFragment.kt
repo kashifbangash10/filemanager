@@ -23,6 +23,11 @@ import com.nextguidance.filesexplorer.filemanager.smartfiles.BaseActivity
 import com.nextguidance.filesexplorer.filemanager.smartfiles.DocumentsActivity
 import com.nextguidance.filesexplorer.filemanager.smartfiles.R
 import com.nextguidance.filesexplorer.filemanager.smartfiles.misc.Utils
+import com.google.android.gms.ads.AdLoader
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.nativead.NativeAd
+import com.google.android.gms.ads.nativead.NativeAdView
+import android.widget.Button
 import kotlinx.coroutines.*
 import java.io.File
 import java.io.Serializable
@@ -266,6 +271,7 @@ class AnalysisFragment : Fragment() {
         
         // Show placeholders
         addItemToView(AnalysisItem(AnalysisItem.TYPE_STORAGE, R.drawable.ic_root_internal, "Internal storage", "Calculating...", 0, true))
+        loadNativeAd()
         addItemToView(AnalysisItem(AnalysisItem.TYPE_DUPLICATE, R.drawable.ic_root_document, "Duplicate files", "Scanning...", 0, true))
         addItemToView(AnalysisItem(AnalysisItem.TYPE_LARGE_FILES, R.drawable.ic_root_folder, "Large files", "Scanning...", 0, true))
         addItemToView(AnalysisItem(AnalysisItem.TYPE_APP_MANAGER, R.drawable.ic_root_apps, "App manager", "Loading...", 0, true))
@@ -300,6 +306,7 @@ class AnalysisFragment : Fragment() {
         containerLayout.removeAllViews()
         
         addItemToView(results.storage)
+        loadNativeAd()
         addItemToView(results.duplicates)
         addItemToView(results.largeFiles)
         addItemToView(results.apps)
@@ -617,6 +624,68 @@ class AnalysisFragment : Fragment() {
         }
     }
 
+    private fun loadNativeAd() {
+        if (!isAdded) return
+        val adUnitId = getString(R.string.admob_native)
+        val ctx = context ?: return
+        
+        // Check if ad already exists to avoid duplicates
+        if ((0 until containerLayout.childCount).any { containerLayout.getChildAt(it).tag == AnalysisItem.TYPE_AD }) return
+
+        val adLoader = AdLoader.Builder(ctx, adUnitId)
+            .forNativeAd { nativeAd ->
+                if (isAdded) {
+                    val adView = layoutInflater.inflate(R.layout.layout_native_ad_analysis, null) as NativeAdView
+                    populateNativeAdView(nativeAd, adView)
+                    adView.tag = AnalysisItem.TYPE_AD
+                    
+                    // Find Storage item to insert after it
+                    var insertIndex = containerLayout.childCount
+                    for (i in 0 until containerLayout.childCount) {
+                        if (containerLayout.getChildAt(i).tag == AnalysisItem.TYPE_STORAGE) {
+                            insertIndex = i + 1
+                            break
+                        }
+                    }
+                    containerLayout.addView(adView, insertIndex)
+                }
+            }
+            .build()
+        adLoader.loadAd(AdRequest.Builder().build())
+    }
+
+    private fun populateNativeAdView(nativeAd: NativeAd, adView: NativeAdView) {
+        adView.headlineView = adView.findViewById(R.id.ad_headline)
+        adView.bodyView = adView.findViewById(R.id.ad_body)
+        adView.callToActionView = adView.findViewById(R.id.ad_call_to_action)
+        adView.iconView = adView.findViewById(R.id.ad_app_icon)
+        adView.mediaView = adView.findViewById(R.id.ad_media)
+
+        (adView.headlineView as TextView).text = nativeAd.headline
+        if (nativeAd.body == null) {
+            adView.bodyView?.visibility = View.INVISIBLE
+        } else {
+            adView.bodyView?.visibility = View.VISIBLE
+            (adView.bodyView as TextView).text = nativeAd.body
+        }
+
+        if (nativeAd.callToAction == null) {
+            adView.callToActionView?.visibility = View.INVISIBLE
+        } else {
+            adView.callToActionView?.visibility = View.VISIBLE
+            (adView.callToActionView as Button).text = nativeAd.callToAction
+        }
+
+        if (nativeAd.icon == null) {
+            adView.iconView?.visibility = View.GONE
+        } else {
+            (adView.iconView as ImageView).setImageDrawable(nativeAd.icon?.drawable)
+            adView.iconView?.visibility = View.VISIBLE
+        }
+
+        adView.setNativeAd(nativeAd)
+    }
+
     // --- UI Helpers ---
 
     private fun addItemToView(item: AnalysisItem) {
@@ -815,6 +884,7 @@ class AnalysisFragment : Fragment() {
             const val TYPE_DUPLICATE = 2
             const val TYPE_LARGE_FILES = 3
             const val TYPE_APP_MANAGER = 4
+            const val TYPE_AD = 5
         }
     }
 

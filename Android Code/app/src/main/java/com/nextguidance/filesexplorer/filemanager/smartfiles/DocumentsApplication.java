@@ -46,6 +46,7 @@ import com.nextguidance.filesexplorer.filemanager.smartfiles.misc.Utils;
 import com.nextguidance.filesexplorer.filemanager.smartfiles.server.SimpleWebServer;
 
 import android.app.Application;
+import com.google.android.gms.ads.MobileAds;
 
 public class DocumentsApplication extends Application {
     private static final long PROVIDER_ANR_TIMEOUT = 20 * DateUtils.SECOND_IN_MILLIS;
@@ -108,6 +109,9 @@ public class DocumentsApplication extends Application {
         if (!BuildConfig.DEBUG) {
             AnalyticsManager.intialize(getApplicationContext());
         }
+        
+        MobileAds.initialize(this, initializationStatus -> {});
+        
         sInstance = this;
         final ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         final int memoryClassBytes = am.getMemoryClass() * 1024 * 1024;

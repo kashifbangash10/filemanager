@@ -46,7 +46,16 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import com.google.android.gms.ads.AdError;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
+import android.os.Looper;
 import android.text.TextUtils;
+import com.google.android.gms.ads.AdSize;
+import com.google.android.gms.ads.AdView;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -142,6 +151,12 @@ import java.util.Set;
 import com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.AnalysisDetailFragment;
 import com.nextguidance.filesexplorer.filemanager.smartfiles.fragment.CleanTabFragment;
 import java.util.concurrent.Executor;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.AdError;
 
 
 
@@ -199,11 +214,17 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     private List<File> mClipboardFiles = new ArrayList<>();
     private ArrayList<DocumentInfo> mClipboardDocs = new ArrayList<>();
     private boolean mIsMoveMode = false;
+    private Bundle mSavedInstanceState;
+    private InterstitialAd mHomeInterstitialAd;
+
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Override
     public void onCreate(Bundle icicle) {
         setTheme(R.style.DocumentsTheme_Document);
+        super.onCreate(icicle);
+        mSavedInstanceState = icicle;
+        
         if (Utils.hasLollipop()) {
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
         } else if (Utils.hasKitKat()) {
@@ -211,16 +232,11 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         }
         setUpStatusBar();
 
-
-        super.onCreate(icicle);
+        setContentView(R.layout.activity);
 
         mRoots = DocumentsApplication.getRootsCache(this);
         AnalysisFragment.startGlobalAnalysis(this);
-
         setResult(Activity.RESULT_CANCELED);
-        setContentView(R.layout.activity);
-
-
 
         final Context context = this;
         final Resources res = getResources();
@@ -258,10 +274,10 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
 
         initControls();
 
-        if (icicle != null) {
-            mState = icicle.getParcelable(EXTRA_STATE);
-            mAuthenticated = icicle.getBoolean(EXTRA_AUTHENTICATED);
-            mActionMode = icicle.getBoolean(EXTRA_ACTIONMODE);
+        if (mSavedInstanceState != null) {
+            mState = mSavedInstanceState.getParcelable(EXTRA_STATE);
+            mAuthenticated = mSavedInstanceState.getBoolean(EXTRA_AUTHENTICATED);
+            mActionMode = mSavedInstanceState.getBoolean(EXTRA_ACTIONMODE);
         } else {
             buildDefaultState();
         }
@@ -273,7 +289,6 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             mToolbar.setPadding(0, getStatusBarHeight(this), 0, 0);
         }
 
-
         mToolbarStack = (Spinner) findViewById(R.id.stack);
         mToolbarStack.setOnItemSelectedListener(mStackListener);
 
@@ -283,7 +298,6 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         mInfoContainer = findViewById(R.id.container_info);
 
         if (!mShowAsDialog) {
-
             mDrawerLayoutHelper = new DrawerLayoutHelper(findViewById(R.id.drawer_layout));
             View view = findViewById(R.id.drawer_layout);
             if (view instanceof DrawerLayout) {
@@ -298,7 +312,6 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         }
 
         changeActionBarColor();
-
 
         if (mState.action == ACTION_MANAGE) {
             if (mShowAsDialog) {
@@ -321,16 +334,21 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             moreApps.setComponent(null);
             moreApps.setPackage(null);
             RootsCommonFragment.show(getSupportFragmentManager(), moreApps);
-
-            Log.e(" moreApps", "moreApps");
         } else if (mState.action == ACTION_OPEN || mState.action == ACTION_CREATE
                 || mState.action == ACTION_GET_CONTENT || mState.action == ACTION_OPEN_TREE) {
             RootsCommonFragment.show(getSupportFragmentManager(), new Intent());
-
-            Log.e(" RootsCommon", "RootsCommonFragment");
         }
 
-        if (!mState.restored) {
+        boolean hasStoragePermission = PermissionUtil.isStorageAccess(this);
+        if (!hasStoragePermission) {
+            requestStoragePermissions();
+        } else {
+            if (mRoots != null) {
+                mRoots.updateAsync();
+            }
+        }
+
+        if (!mState.restored && hasStoragePermission) {
             if (mState.action == ACTION_MANAGE) {
                 final Uri rootUri = getIntent().getData();
                 new RestoreRootTask(rootUri).executeOnExecutor(getCurrentExecutor());
@@ -338,7 +356,7 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
                 if (isDownloadAuthority(getIntent())) {
                     onRootPicked(getDownloadRoot(), true);
                 } else if (ConnectionUtils.isServerAuthority(getIntent())
-                        || TransferHelper.isTransferAuthority(getIntent())) {
+                                || TransferHelper.isTransferAuthority(getIntent())) {
                     RootInfo root = getIntent().getExtras().getParcelable(EXTRA_ROOT);
                     onRootPicked(root, true);
                 } else if (Utils.isQSTile(getIntent())) {
@@ -353,31 +371,41 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
                     }
                 }
             }
-        } else {
+        } else if (mState.restored) {
             onCurrentDirectoryChanged(ANIM_NONE);
         }
-
-        if (!PermissionUtil.isStorageAccess(this)) {
-            requestStoragePermissions();
-        }
-
-        // Handle back button to close info drawer
-        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+        
+        updateActionBar();
+        
+        /*// 4 Sec Delay Ad
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
             @Override
-            public void handleOnBackPressed() {
-                // Check if info drawer is open
-                if (mDrawerLayoutHelper != null && mInfoContainer != null && 
-                    mDrawerLayoutHelper.isDrawerOpen(mInfoContainer)) {
-                    // Close the info drawer
-                    setInfoDrawerOpen(false);
-                } else {
-                    // Let the system handle back press
-                    setEnabled(false);
-                    getOnBackPressedDispatcher().onBackPressed();
-                }
+            public void run() {
+                loadHomeInterstitial();
             }
-        });
+        }, 4000);*/
+        
+        loadHomeInterstitial(false);
+        loadBannerAd();
+    }
+    
+    // removeSplashOverlay removed
 
+    private void loadBannerAd() {
+        try {
+            AdView adView = new AdView(this);
+            adView.setAdSize(AdSize.BANNER);
+            adView.setAdUnitId(getString(R.string.admob_bannerid));
+            
+            FrameLayout container = findViewById(R.id.banner_container);
+            if (container != null) {
+                container.addView(adView);
+                AdRequest adRequest = new AdRequest.Builder().build();
+                adView.loadAd(adRequest);
+            }
+        } catch (Exception e) {
+            Log.e("DocumentsActivity", "Error loading banner ad", e);
+        }
     }
 
     @Override
@@ -385,8 +413,6 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         Set<String> categories = intent.getCategories();
         if (null != categories && categories.contains(BROWSABLE)) {
             try {
-
-
                 CloudRail.setAuthenticationResponse(intent);
             } catch (Exception ignore) {
             }
@@ -420,6 +446,8 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             }, 500);
         }
     }
+
+
 
     private void lockInfoContainter() {
         if (mDrawerLayoutHelper.isDrawerOpen(mInfoContainer)) {
@@ -706,6 +734,49 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
                 mBottomNav.getMenu().findItem(R.id.nav_files).setChecked(true);
             }
         }
+    }
+
+    public void loadHomeInterstitial(final boolean showImmediately) {
+         AdRequest adRequest = new AdRequest.Builder().build();
+        InterstitialAd.load(this, getString(R.string.admob_interadsid), adRequest,
+            new InterstitialAdLoadCallback() {
+                @Override
+                public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
+                    mHomeInterstitialAd = interstitialAd;
+                    if (showImmediately) {
+                        showHomeInterstitial();
+                    }
+                    mHomeInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback(){
+                        @Override
+                        public void onAdDismissedFullScreenContent() {
+                             mHomeInterstitialAd = null;
+                        }
+                        @Override
+                        public void onAdFailedToShowFullScreenContent(AdError adError) {
+                            mHomeInterstitialAd = null;
+                        }
+                    });
+                }
+
+                @Override
+                public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                    mHomeInterstitialAd = null;
+                }
+            });
+    }
+
+    public void showHomeInterstitial() {
+        if (mHomeInterstitialAd != null) {
+            mHomeInterstitialAd.show(this);
+        }
+    }
+
+    public InterstitialAd getHomeInterstitialAd() {
+        return mHomeInterstitialAd;
+    }
+
+    public void setHomeInterstitialAd(InterstitialAd ad) {
+        this.mHomeInterstitialAd = ad;
     }
 
     public void updateActionBar() {

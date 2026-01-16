@@ -8,21 +8,23 @@
     </style>
 
 
-    <style name="DocumentsTheme.Splash">
+    <style name="DocumentsTheme.Splash" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="windowNoTitle">true</item>
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:windowBackground">@drawable/splash_background</item>
-        <item name="android:navigationBarColor" tools:targetApi="26">@android:color/transparent
-        </item>
+        <item name="android:navigationBarColor" tools:targetApi="26">@android:color/transparent</item>
+        <item name="android:windowOptOutEdgeToEdgeEnforcement" tools:targetApi="35">true</item>
     </style>
 
     <style name="DocumentsTheme.Document">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+        <item name="android:windowOptOutEdgeToEdgeEnforcement" tools:targetApi="35">true</item>
     </style>
 
     <style name="DocumentsTheme.Translucent" parent="DocumentsTheme.Document">
         <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:windowOptOutEdgeToEdgeEnforcement" tools:targetApi="35">true</item>
     </style>
 
     <style name="DocumentsTheme" parent="@style/Theme.AppCompat.DayNight">
@@ -58,6 +60,7 @@
         <item name="actionModeStyle">@style/Custom.Widget.ActionMode</item>
         <item name="actionModeCloseButtonStyle">@style/Custom.Widget.ActionButton.CloseMode</item>
         <item name="android:navigationBarColor" tools:targetApi="26">@color/navBarColor</item>
+        <item name="android:windowOptOutEdgeToEdgeEnforcement" tools:targetApi="35">true</item>
     </style>
 
     <style name="DocumentsTheme.DailogPIN">
