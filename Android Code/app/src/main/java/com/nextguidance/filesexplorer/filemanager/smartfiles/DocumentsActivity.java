@@ -395,7 +395,7 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         try {
             AdView adView = new AdView(this);
             adView.setAdSize(AdSize.BANNER);
-            adView.setAdUnitId(getString(R.string.admob_bannerid));
+            adView.setAdUnitId(getString(R.string.admob_banner));
             
             FrameLayout container = findViewById(R.id.banner_container);
             if (container != null) {
@@ -428,6 +428,7 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     @Override
     public void again() {
         if (Utils.hasMarshmallow()) {
+            AnalysisFragment.setCache(null);
             RootsCache.updateRoots(this);
             mRoots = DocumentsApplication.getRootsCache(this);
             final Handler handler = new Handler();
@@ -738,7 +739,7 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
 
     public void loadHomeInterstitial(final boolean showImmediately) {
          AdRequest adRequest = new AdRequest.Builder().build();
-        InterstitialAd.load(this, getString(R.string.admob_interadsid), adRequest,
+        InterstitialAd.load(this, getString(R.string.admob_interstitial), adRequest,
             new InterstitialAdLoadCallback() {
                 @Override
                 public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {

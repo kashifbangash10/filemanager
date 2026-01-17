@@ -101,12 +101,5 @@
     <string name="todo">TODO</string>
     <drawable name="dummy_icon">@drawable/ic_dummy_icon</drawable>
 
-    <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
-
-    <string name="bnr_admob" translatable="false">ca-app-pub-3940256099942544/6300978111</string>
-    <string name="native_admob" translatable="false">/6499/example/native</string>
-    <string name="int_admob" translatable="false">/6499/example/interstitial</string>
-    <string name="app_open_admob" translatable="false">ca-app-pub-3940256099942544/3419835294</string>
-    <string name="video_admob" translatable="false">ca-app-pub-3940256099942544/5224354917</string>
     <string name="root_analysis">Analysis</string>
 </resources>

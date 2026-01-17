@@ -350,7 +350,7 @@ public class JunkCleaningActivity extends AppCompatActivity {
 
     private void loadInterstitialAd() {
         AdRequest adRequest = new AdRequest.Builder().build();
-        InterstitialAd.load(this, getString(R.string.admob_interadsid), adRequest,
+        InterstitialAd.load(this, getString(R.string.admob_interstitial_junk), adRequest,
                 new InterstitialAdLoadCallback() {
                     @Override
                     public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {

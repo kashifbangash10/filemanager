@@ -17,11 +17,11 @@ android {
     ndkVersion "28.0.12433566"
 
     defaultConfig {
-        applicationId "com.nextguidance.filesexplorer.filemanager.smartfiles"
-        minSdkVersion 21
+        applicationId "com.nextguidance.filekalesexplorer.filemanager.smartfiles"
+        minSdkVersion 23
         targetSdkVersion 36
-        versionCode 2
-        versionName "0.2"
+        versionCode 5
+        versionName "0.5"
         vectorDrawables.useSupportLibrary = true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField "String", "LICENSE_KEY", "$props.LICENSE_KEY"
@@ -50,9 +50,32 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.release
+
+            // --- REAL ADMOB IDS FROM USER ---
+            resValue "string", "admob_app_id", "\"ca-app-pub-4829739773020339~3106234319\""
+            resValue "string", "admob_banner", "\"ca-app-pub-4829739773020339/4690778728\""
+            resValue "string", "admob_interstitial", "\"ca-app-pub-4829739773020339/5436884185\""
+            resValue "string", "admob_native", "\"ca-app-pub-4829739773020339/6272271940\""
+            resValue "string", "admob_app_open", "\"ca-app-pub-4829739773020339/8682812863\""
+            resValue "string", "admob_interstitial_junk", "\"ca-app-pub-4829739773020339/1901782095\""
+
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            // --- ALWAYS USE TEST IDS FOR DEBUG TO KEEP YOUR ACCOUNT SAFE ---
+            resValue "string", "admob_app_id", "\"ca-app-pub-3940256099942544~3347511713\""
+            resValue "string", "admob_banner", "\"ca-app-pub-3940256099942544/6300978111\""
+            resValue "string", "admob_interstitial", "\"ca-app-pub-3940256099942544/1033173712\""
+            resValue "string", "admob_native", "\"ca-app-pub-3940256099942544/2247696110\""
+            resValue "string", "admob_app_open", "\"ca-app-pub-3940256099942544/3419835294\""
+            resValue "string", "admob_interstitial_junk", "\"ca-app-pub-3940256099942544/1033173712\""
+
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
     packagingOptions {
@@ -107,5 +130,6 @@ dependencies {
     // Coroutines for faster file analysis
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.4.0'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.0"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:2.1.0"
+    implementation 'com.google.android.gms:play-services-ads:22.6.0'
 }

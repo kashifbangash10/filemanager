@@ -190,7 +190,7 @@ public class CleanerResultFragment extends Fragment {
         Log.d("CleanerResult", "Starting to load interstitial ad");
         // Toast.makeText(getContext(), "Loading Ad...", Toast.LENGTH_SHORT).show(); // Removed for production feel but kept in mind
         AdRequest adRequest = new AdRequest.Builder().build();
-        InterstitialAd.load(getContext(), getString(R.string.admob_interadsid), adRequest,
+        InterstitialAd.load(getContext(), getString(R.string.admob_interstitial_junk), adRequest,
                 new InterstitialAdLoadCallback() {
                     @Override
                     public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
