@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="admob_appid" translatable="false">ca-app-pub-3940256099942544~3347511713</string>
+    <string name="admob_bannerid" translatable="false">ca-app-pub-3940256099942544/6300978111</string>
+    <string name="admob_interadsid" translatable="false">ca-app-pub-3940256099942544/1033173712</string>
+    <string name="admob_rewardadsid" translatable="false">ca-app-pub-3940256099942544/5224354917</string>
+    <string name="admob_native" translatable="false">ca-app-pub-3940256099942544/2247696110</string>
+
+
+</resources>

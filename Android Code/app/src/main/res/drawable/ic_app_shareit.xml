@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    
+    <!-- Background circle -->
+    <path
+        android:fillColor="#1E88E5"
+        android:pathData="M24,4C12.95,4 4,12.95 4,24s8.95,20 20,20s20,-8.95 20,-20S35.05,4 24,4z"/>
+    
+    <!-- Share icon -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,28c-1.38,0 -2.63,0.56 -3.54,1.46L20.12,25.5c0.08,-0.33 0.12,-0.66 0.12,-1s-0.04,-0.67 -0.12,-1l6.34,-3.96C27.37,20.44 28.62,21 30,21c2.76,0 5,-2.24 5,-5s-2.24,-5 -5,-5s-5,2.24 -5,5c0,0.34 0.04,0.67 0.12,1l-6.34,3.96C17.87,19.06 16.62,18.5 15,18.5c-2.76,0 -5,2.24 -5,5s2.24,5 5,5c1.62,0 3.07,-0.56 4.22,-1.46l6.34,3.96c-0.08,0.33 -0.12,0.66 -0.12,1c0,2.76 2.24,5 5,5s5,-2.24 5,-5S32.76,28 30,28z"/>
+</vector>

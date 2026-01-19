@@ -1,0 +1,135 @@
+apply plugin: 'com.android.application'
+apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.firebase.crashlytics'
+apply plugin: 'kotlin-android'
+
+def props = new Properties()
+File keystoreProperties = rootProject.file("keystore.properties")
+if (keystoreProperties.exists()) {
+    props.load(new FileInputStream(keystoreProperties))
+} else {
+    props['keystorefile'] = 'none'
+}
+
+android {
+    compileSdkVersion 36
+    buildToolsVersion "35.0.0"
+    ndkVersion "28.0.12433566"
+
+    defaultConfig {
+        applicationId "com.nextguidance.filekalesexplorer.filemanager.smartfiles"
+        minSdkVersion 23
+        targetSdkVersion 36
+        versionCode 5
+        versionName "0.5"
+        vectorDrawables.useSupportLibrary = true
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField "String", "LICENSE_KEY", "$props.LICENSE_KEY"
+        buildConfigField "String", "DROPBOX_CLIENT_ID", "$props.DROPBOX_CLIENT_ID"
+        buildConfigField "String", "DROPBOX_CLIENT_KEY", "$props.DROPBOX_CLIENT_KEY"
+        buildConfigField "String", "GOOGLE_DRIVE_CLIENT_ID", "$props.GOOGLE_DRIVE_CLIENT_ID"
+
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+            }
+        }
+
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('D:\\nextguidance.jks')
+            storePassword 'nextguidance'
+            keyAlias 'nextguidance'
+            keyPassword 'nextguidance'
+            enableV1Signing true
+            enableV2Signing true
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+
+            // --- REAL ADMOB IDS FROM USER ---
+            resValue "string", "admob_app_id", "\"ca-app-pub-4829739773020339~3106234319\""
+            resValue "string", "admob_banner", "\"ca-app-pub-4829739773020339/4690778728\""
+            resValue "string", "admob_interstitial", "\"ca-app-pub-4829739773020339/5436884185\""
+            resValue "string", "admob_native", "\"ca-app-pub-4829739773020339/6272271940\""
+            resValue "string", "admob_app_open", "\"ca-app-pub-4829739773020339/8682812863\""
+            resValue "string", "admob_interstitial_junk", "\"ca-app-pub-4829739773020339/1901782095\""
+
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            // --- ALWAYS USE TEST IDS FOR DEBUG TO KEEP YOUR ACCOUNT SAFE ---
+            resValue "string", "admob_app_id", "\"ca-app-pub-3940256099942544~3347511713\""
+            resValue "string", "admob_banner", "\"ca-app-pub-3940256099942544/6300978111\""
+            resValue "string", "admob_interstitial", "\"ca-app-pub-3940256099942544/1033173712\""
+            resValue "string", "admob_native", "\"ca-app-pub-3940256099942544/2247696110\""
+            resValue "string", "admob_app_open", "\"ca-app-pub-3940256099942544/3419835294\""
+            resValue "string", "admob_interstitial_junk", "\"ca-app-pub-3940256099942544/1033173712\""
+
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    packagingOptions {
+        resources {
+            excludes += ['META-INF/LICENSE', 'META-INF/DEPENDENCIES']
+        }
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
+    namespace 'com.nextguidance.filesexplorer.filemanager.smartfiles'
+    lint {
+        abortOnError false
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+}
+
+dependencies {
+
+
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.1'
+    implementation 'com.google.firebase:firebase-analytics:17.5.0'
+    testImplementation 'junit:junit:4.13'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+
+    implementation 'com.jaredrummler:android-processes:1.1.1'
+    implementation 'com.github.mjdev:libaums:0.5.5'
+    implementation 'org.apache.ftpserver:ftpserver-core:1.1.1'
+    implementation 'commons-net:commons-net:3.6'
+    implementation 'com.zsoltsafrany:needle:1.0.0'
+    implementation 'com.cloudrail:cloudrail-si-android:2.22.4'
+    implementation 'androidx.cardview:cardview:1.0.0'
+    implementation 'com.google.android.material:material:1.3.0-alpha02'
+    implementation 'androidx.exifinterface:exifinterface:1.2.0'
+    implementation 'androidx.mediarouter:mediarouter:1.1.0'
+    implementation 'com.google.android.gms:play-services-cast-framework:19.0.0'
+    implementation 'com.github.javiersantos:AppUpdater:2.7'
+    implementation 'com.nanohttpd:nanohttpd:2.2.0'
+    implementation 'com.google.code.gson:gson:2.8.6'
+
+    implementation 'com.github.lykmapipo:local-burst:v0.2.0'
+    implementation 'com.google.firebase:firebase-analytics:21.0.0'
+    implementation 'com.google.firebase:firebase-crashlytics:18.2.11'
+    implementation group: 'io.fabric.sdk.android', name: 'fabric', version: '1.4.8'
+    debugImplementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
+
+    // Coroutines for faster file analysis
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.4.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:2.1.0"
+    implementation 'com.google.android.gms:play-services-ads:22.6.0'
+}

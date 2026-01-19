@@ -1,0 +1,179 @@
+﻿
+> Configure project :app
+WARNING: The option setting 'android.defaults.buildfeatures.buildconfig=true' is deprecated.
+The current default is 'false'.
+It will be removed in version 9.0 of the Android Gradle plugin.
+To keep using this feature, add the following to your module-level build.gradle files:
+    android.buildFeatures.buildConfig = true
+or from Android Studio, click: `Refactor` > `Migrate BuildConfig to Gradle Build Files`.
+
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:injectCrashlyticsMappingFileIdDebug UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:processDebugGoogleServices UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+
+> Task :app:compileDebugKotlin
+.\gradlew.bat : e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooo
+gle/fileexplorer/myfilemanagerx/fragment/AnalysisDetailFragment.kt:51:49 Unresolved reference: FolderItem
+At line:1 char:65
++ ...  Studio\jbr'; .\gradlew.bat compileDebugKotlin > build_error.log 2>&1
++                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (e: file:///D:/f...nce: FolderItem:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisDetailFragment.kt:52:52 Unresolved reference: DuplicateGroup
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisDetailFragment.kt:53:52 Unresolved reference: FileItem
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisDetailFragment.kt:54:46 Unresolved reference: AppItem
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisDetailFragment.kt:167:91 Unresolved reference: FolderItem
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisDetailFragment.kt:168:36 Cannot infer a type for this parameter. Please specify it 
+explicitly.
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisDetailFragment.kt:183:97 Unresolved reference: DuplicateGroup
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisDetailFragment.kt:187:34 Cannot infer a type for this parameter. Please specify it 
+explicitly.
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisDetailFragment.kt:190:41 Overload resolution ambiguity: 
+public inline fun <T> Iterable<TypeVariable(T)>.forEach(action: (TypeVariable(T)) -> Unit): Unit defined in 
+kotlin.collections
+public inline fun <K, V> Map<out TypeVariable(K), TypeVariable(V)>.forEach(action: (Map.Entry<TypeVariable(K), 
+TypeVariable(V)>) -> Unit): Unit defined in kotlin.collections
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisDetailFragment.kt:190:51 Cannot infer a type for this parameter. Please specify it 
+explicitly.
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisDetailFragment.kt:191:37 Overload resolution ambiguity: 
+public constructor File(p0: URI!) defined in java.io.File
+public constructor File(p0: String!) defined in java.io.File
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisDetailFragment.kt:210:98 Unresolved reference: FileItem
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisDetailFragment.kt:211:39 Cannot infer a type for this parameter. Please specify it 
+explicitly.
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisDetailFragment.kt:231:85 Unresolved reference: AppItem
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisDetailFragment.kt:232:33 Cannot infer a type for this parameter. Please specify it 
+explicitly.
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:669:2 Missing '}
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:314:49 Unresolved reference: FileItem
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:315:30 Unresolved reference: name
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:316:30 Unresolved reference: path
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:317:30 Unresolved reference: size
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:318:30 Unresolved reference: fullPath
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:329:45 Unresolved reference: FolderItem
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:330:22 Unresolved reference: name
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:331:22 Unresolved reference: path
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:332:22 Unresolved reference: size
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:333:22 Unresolved reference: itemCount
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:347:50 Unresolved reference: DuplicateGroup
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:348:21 Unresolved reference: fileName
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:349:26 Unresolved reference: size
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:350:21 Function invocation 'count(...)' expected
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:350:21 Unresolved reference. None of the following candidates is 
+applicable because of receiver type mismatch: 
+public inline fun <T> Array<out TypeVariable(T)>.count(): Int defined in kotlin.collections
+public inline fun <T> Array<out TypeVariable(T)>.count(predicate: (TypeVariable(T)) -> Boolean): Int defined in 
+kotlin.collections
+public inline fun BooleanArray.count(): Int defined in kotlin.collections
+public inline fun BooleanArray.count(predicate: (Boolean) -> Boolean): Int defined in kotlin.collections
+public inline fun ByteArray.count(): Int defined in kotlin.collections
+public inline fun ByteArray.count(predicate: (Byte) -> Boolean): Int defined in kotlin.collections
+public inline fun CharArray.count(): Int defined in kotlin.collections
+public inline fun CharArray.count(predicate: (Char) -> Boolean): Int defined in kotlin.collections
+public inline fun CharSequence.count(): Int defined in kotlin.text
+public inline fun CharSequence.count(predicate: (Char) -> Boolean): Int defined in kotlin.text
+public inline fun DoubleArray.count(): Int defined in kotlin.collections
+public inline fun DoubleArray.count(predicate: (Double) -> Boolean): Int defined in kotlin.collections
+public inline fun FloatArray.count(): Int defined in kotlin.collections
+public inline fun FloatArray.count(predicate: (Float) -> Boolean): Int defined in kotlin.collections
+public inline fun IntArray.count(): Int defined in kotlin.collections
+public inline fun IntArray.count(predicate: (Int) -> Boolean): Int defined in kotlin.collections
+public inline fun LongArray.count(): Int defined in kotlin.collections
+public inline fun LongArray.count(predicate: (Long) -> Boolean): Int defined in kotlin.collections
+public inline fun ShortArray.count(): Int defined in kotlin.collections
+public inline fun ShortArray.count(predicate: (Short) -> Boolean): Int defined in kotlin.collections
+public inline fun UByteArray.count(predicate: (UByte) -> Boolean): Int defined in kotlin.collections
+public inline fun UIntArray.count(predicate: (UInt) -> Boolean): Int defined in kotlin.collections
+public inline fun ULongArray.count(predicate: (ULong) -> Boolean): Int defined in kotlin.collections
+public inline fun UShortArray.count(predicate: (UShort) -> Boolean): Int defined in kotlin.collections
+public inline fun <T> Collection<TypeVariable(T)>.count(): Int defined in kotlin.collections
+public fun <T> Iterable<TypeVariable(T)>.count(): Int defined in kotlin.collections
+public inline fun <T> Iterable<TypeVariable(T)>.count(predicate: (TypeVariable(T)) -> Boolean): Int defined in 
+kotlin.collections
+public inline fun <K, V> Map<out TypeVariable(K), TypeVariable(V)>.count(): Int defined in kotlin.collections
+public inline fun <K, V> Map<out TypeVariable(K), TypeVariable(V)>.count(predicate: (Map.Entry<TypeVariable(K), 
+TypeVariable(V)>) -> Boolean): Int defined in kotlin.collections
+public fun <T> Sequence<TypeVariable(T)>.count(): Int defined in kotlin.sequences
+public inline fun <T> Sequence<TypeVariable(T)>.count(predicate: (TypeVariable(T)) -> Boolean): Int defined in 
+kotlin.sequences
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:351:21 Unresolved reference: filePaths
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:377:27 Unresolved reference: AppItem
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:378:17 Unresolved reference: name
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:379:17 Unresolved reference: packageName
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:381:17 Unresolved reference: size
+e: file:///D:/file%20manager%20Code%20(2)/Android%20Code/app/src/main/java/com/nextenglishapp/filesgooogle/fileexplorer
+/myfilemanagerx/fragment/AnalysisFragment.kt:400:9 'return' is not allowed here
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing 
+org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 11s
+
+> Task :app:compileDebugKotlin FAILED
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.7/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+15 actionable tasks: 1 executed, 14 up-to-date
