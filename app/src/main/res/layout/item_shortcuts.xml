@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="?selectableItemBackground"
+    android:focusable="true">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:baselineAligned="false"
+        android:gravity="center"
+        android:minHeight="@dimen/home_item_height"
+        android:orientation="vertical"
+        android:paddingTop="@dimen/home_item_padding"
+        android:paddingBottom="@dimen/home_item_padding">
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/shortcut_height"
+            android:duplicateParentState="true">
+
+            <com.nextguidance.filesexplorer.filemanager.smartfiles.ui.CircleImage
+                android:id="@+id/icon_background"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:duplicateParentState="true"
+                app:background="@color/primaryColor"/>
+
+            <ImageView
+                android:id="@android:id/icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:scaleType="centerInside"
+                android:contentDescription="@null"
+                android:duplicateParentState="true"
+                android:padding="5dp"
+                android:layout_gravity="center"
+                tools:src="@drawable/ic_root_server"/>
+
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="visible"
+            android:paddingTop="8dp" >
+
+            <TextView
+                android:id="@android:id/title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:textAlignment="center"
+                android:maxLines="2"
+                android:textSize="12sp"
+                android:textAppearance="@style/TextAppearance.AppCompat.Small"
+                android:textColor="?android:attr/textColorPrimary"
+                tools:text="Analysis" />
+
+            <TextView
+                android:id="@android:id/summary"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:textAlignment="center"
+                android:maxLines="1"
+                android:textSize="11sp"
+                android:textAppearance="@style/TextAppearance.AppCompat.Small"
+                android:textColor="?android:attr/textColorSecondary"
+                android:visibility="gone"
+                tools:text="98%" />
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>
