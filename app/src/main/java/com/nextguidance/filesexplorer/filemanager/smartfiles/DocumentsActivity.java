@@ -56,7 +56,9 @@ import android.os.Looper;
 import android.text.TextUtils;
 import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -216,6 +218,7 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     private boolean mIsMoveMode = false;
     private Bundle mSavedInstanceState;
     private InterstitialAd mHomeInterstitialAd;
+    private AdView mAdView;
 
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -393,19 +396,48 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
 
     private void loadBannerAd() {
         try {
-            AdView adView = new AdView(this);
-            adView.setAdSize(AdSize.BANNER);
-            adView.setAdUnitId(getString(R.string.admob_banner));
+            mAdView = new AdView(this);
+            mAdView.setAdUnitId(getString(R.string.admob_banner));
             
             FrameLayout container = findViewById(R.id.banner_container);
             if (container != null) {
-                container.addView(adView);
+                container.removeAllViews();
+                container.addView(mAdView);
+                
+                AdSize adSize = getAdSize();
+                mAdView.setAdSize(adSize);
+                
                 AdRequest adRequest = new AdRequest.Builder().build();
-                adView.loadAd(adRequest);
+                mAdView.setAdListener(new com.google.android.gms.ads.AdListener() {
+                    @Override
+                    public void onAdFailedToLoad(@NonNull com.google.android.gms.ads.LoadAdError loadAdError) {
+                        super.onAdFailedToLoad(loadAdError);
+                        Log.e("AdMob", "Banner Ad failed: " + loadAdError.getMessage());
+                    }
+
+                    @Override
+                    public void onAdLoaded() {
+                        super.onAdLoaded();
+                        Log.d("AdMob", "Banner Ad loaded successfully!");
+                    }
+                });
+                mAdView.loadAd(adRequest);
             }
         } catch (Exception e) {
             Log.e("DocumentsActivity", "Error loading banner ad", e);
         }
+    }
+
+    private AdSize getAdSize() {
+        Display display = getWindowManager().getDefaultDisplay();
+        DisplayMetrics outMetrics = new DisplayMetrics();
+        display.getMetrics(outMetrics);
+
+        float widthPixels = outMetrics.widthPixels;
+        float density = outMetrics.density;
+
+        int adWidth = (int) (widthPixels / density);
+        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, adWidth);
     }
 
     @Override
@@ -667,6 +699,9 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     @Override
     public void onResume() {
         super.onResume();
+        if (mAdView != null) {
+            mAdView.resume();
+        }
         changeActionBarColor();
         if (mState.action == ACTION_MANAGE) {
             mState.showSize = true;
@@ -682,6 +717,22 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         }
         }
         initProtection();
+    }
+
+    @Override
+    public void onPause() {
+        if (mAdView != null) {
+            mAdView.pause();
+        }
+        super.onPause();
+    }
+
+    @Override
+    public void onDestroy() {
+        if (mAdView != null) {
+            mAdView.destroy();
+        }
+        super.onDestroy();
     }
 
     @Override

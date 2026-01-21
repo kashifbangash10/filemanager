@@ -47,6 +47,7 @@ import com.nextguidance.filesexplorer.filemanager.smartfiles.server.SimpleWebSer
 
 import android.app.Application;
 import com.google.android.gms.ads.MobileAds;
+import com.google.firebase.FirebaseApp;
 
 public class DocumentsApplication extends Application {
     private static final long PROVIDER_ANR_TIMEOUT = 20 * DateUtils.SECOND_IN_MILLIS;
@@ -93,6 +94,9 @@ public class DocumentsApplication extends Application {
 
     public static ContentProviderClient acquireUnstableProviderOrThrow(
             ContentResolver resolver, String authority) throws RemoteException {
+        if (authority == null) {
+            throw new RemoteException("Authority is null");
+        }
         final ContentProviderClient client = ContentProviderClientCompat.acquireUnstableContentProviderClient(resolver, authority);
         if (client == null) {
             throw new RemoteException("Failed to acquire provider for " + authority);
@@ -105,6 +109,9 @@ public class DocumentsApplication extends Application {
     public void onCreate() {
         Utils.setAppThemeStyle(getBaseContext());
         super.onCreate();
+        if (FirebaseApp.getApps(this).isEmpty()) {
+            FirebaseApp.initializeApp(this);
+        }
 
         if (!BuildConfig.DEBUG) {
             AnalyticsManager.intialize(getApplicationContext());

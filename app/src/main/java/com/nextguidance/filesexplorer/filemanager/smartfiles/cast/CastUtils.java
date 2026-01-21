@@ -73,7 +73,7 @@ public class CastUtils {
     public static void clearQueue(Casty casty) {
         RemoteMediaClient client = casty.getRemoteMediaClient();
         if(null != client) {
-            casty.getMediaQueue().clear();
+            // casty.getMediaQueue().clear();
             client.stop();
         }
     }

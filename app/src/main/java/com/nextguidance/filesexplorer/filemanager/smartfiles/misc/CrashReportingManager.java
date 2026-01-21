@@ -1,27 +1,27 @@
 package com.nextguidance.filesexplorer.filemanager.smartfiles.misc;
 
 import android.content.Context;
-
-import com.crashlytics.android.Crashlytics;
-
 import com.nextguidance.filesexplorer.filemanager.smartfiles.BuildConfig;
-import io.fabric.sdk.android.Fabric;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 
 /**
  * Created by HaKr on 23/05/16.
+ * Updated to use Firebase Crashlytics.
  */
 
 public class CrashReportingManager {
 
     public static void enable(Context context, boolean enable) {
-        if (!enable) {
-            return;
+        try {
+            // Check if Firebase is initialized before accessing Crashlytics
+            if (FirebaseApp.getApps(context).isEmpty()) {
+                FirebaseApp.initializeApp(context);
+            }
+            FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(enable);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        final Fabric fabric = new Fabric.Builder(context)
-                .kits(new Crashlytics())
-                .debuggable(BuildConfig.DEBUG)
-                .build();
-        Fabric.with(fabric);
     }
 
     public static void logException(Exception e) {
@@ -32,15 +32,27 @@ public class CrashReportingManager {
         if (BuildConfig.DEBUG) {
             e.printStackTrace();
         } else if (log) {
-            Crashlytics.logException(e);
+            try {
+                FirebaseCrashlytics.getInstance().recordException(e);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
     public static void log(String s) {
-        Crashlytics.log(s);
+        try {
+            FirebaseCrashlytics.getInstance().log(s);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static void log(String tag, String s) {
-        Crashlytics.log(tag + ":" + s);
+        try {
+            FirebaseCrashlytics.getInstance().log(tag + ":" + s);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
