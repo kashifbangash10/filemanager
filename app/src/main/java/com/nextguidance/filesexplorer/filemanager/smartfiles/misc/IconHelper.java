@@ -170,7 +170,15 @@ public class IconHelper {
                 docId, mimeType, docIcon);
 
         if (subIconMime != null) {
-            setMimeBackground(subIconMime, getDocumentColor(mContext, docAuthority, docId, mimeType));
+            int color = getDocumentColor(mContext, docAuthority, docId, mimeType);
+            if (IconUtils.isPremiumMimeType(mimeType)) {
+                color = android.graphics.Color.TRANSPARENT;
+                iconMime.setPadding(0, 0, 0, 0);
+            } else {
+                int p = (int) (5 * mContext.getResources().getDisplayMetrics().density);
+                iconMime.setPadding(p, p, p, p);
+            }
+            setMimeBackground(subIconMime, color);
         }
 
         if (loadedThumbnail) {

@@ -304,6 +304,12 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                     
                     if (item.commonInfo.rootInfo.rootId.equals("clean")) {
                         cleanRAM();
+                    } else if (item.commonInfo.rootInfo.rootId.equals("more")) {
+                        // Open Nav Drawer
+                        DocumentsActivity activity = ((DocumentsActivity) getActivity());
+                        if (activity != null) {
+                            activity.setRootsDrawerOpen(true);
+                        }
                     } else {
                         // Proper root ko open karein
                         DocumentsActivity activity = ((DocumentsActivity) getActivity());
@@ -512,7 +518,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
 
             try {
                 // Optimized single query for all media categories
-                long downloadsSize = 0, videoSize = 0, audioSize = 0, imageSize = 0, documentsSize = 0;
+                long downloadsSize = 0, videoSize = 0, audioSize = 0, imageSize = 0, documentsSize = 0, archivesSize = 0;
                 
                 Uri externalUri = MediaStore.Files.getContentUri("external");
                 String[] projection = {
@@ -545,6 +551,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                             else if (mime.startsWith("audio/")) audioSize += size;
                             else if (mime.startsWith("image/")) imageSize += size;
                             else if (isDocumentMimeType(mime)) documentsSize += size;
+                            else if (isArchiveMimeType(mime)) archivesSize += size;
                         }
                     }
                     cursor.close();
@@ -612,9 +619,23 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                     calculatedShortcuts.add(CommonInfo.from(documentsRoot, TYPE_SHORTCUT));
                 }
 
+                // 8. Archives
+                RootInfo archivesRoot = roots.getRootInfo("archive_root", NonMediaDocumentsProvider.AUTHORITY);
+                if (archivesRoot != null) {
+                    archivesRoot = copyRootInfo(archivesRoot);
+                    archivesRoot.title = "Archives";
+                    archivesRoot.totalBytes = archivesSize;
+                    calculatedShortcuts.add(CommonInfo.from(archivesRoot, TYPE_SHORTCUT));
+                }
+
+                // 9. More
+                RootInfo moreRoot = new RootInfo();
+                moreRoot.rootId = "more";
+                moreRoot.title = "More";
+                calculatedShortcuts.add(CommonInfo.from(moreRoot, TYPE_SHORTCUT));
 
 
-                // 9. WiFi Share
+                /*// 10. WiFi Share
                 RootInfo transferRoot = roots.getTransferRoot();
                 if (transferRoot != null) {
                     transferRoot = copyRootInfo(transferRoot);
@@ -622,7 +643,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                     calculatedShortcuts.add(CommonInfo.from(transferRoot, TYPE_SHORTCUT));
                 }
 
-                // 10. Transfer to PC
+                // 11. Transfer to PC
                 RootInfo serverRoot = roots.getServerRoot();
                 if (serverRoot != null) {
                     serverRoot = copyRootInfo(serverRoot);
@@ -630,7 +651,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                     calculatedShortcuts.add(CommonInfo.from(serverRoot, TYPE_SHORTCUT));
                 }
 
-                // 11. Cast Queue
+                // 12. Cast Queue
                 RootInfo castRoot = roots.getCastRoot();
                 if (castRoot != null) {
                     castRoot = copyRootInfo(castRoot);
@@ -638,13 +659,14 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                     calculatedShortcuts.add(CommonInfo.from(castRoot, TYPE_SHORTCUT));
                 }
 
-                // 12. Connections
+                // 13. Connections
                 RootInfo connectionsRoot = roots.getConnectionsRoot();
                 if (connectionsRoot != null) {
                     connectionsRoot = copyRootInfo(connectionsRoot);
                     connectionsRoot.title = "Connections";
                     calculatedShortcuts.add(CommonInfo.from(connectionsRoot, TYPE_SHORTCUT));
-                }
+                }*/
+
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -658,6 +680,12 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
             return mime.contains("pdf") || mime.contains("word") || mime.contains("excel") || 
                    mime.contains("powerpoint") || mime.contains("text/plain") || 
                    mime.contains("rtf") || mime.contains("opendocument");
+        }
+
+        private boolean isArchiveMimeType(String mime) {
+            if (mime == null) return false;
+            return mime.contains("zip") || mime.contains("rar") || mime.contains("tar") || 
+                   mime.contains("7z") || mime.contains("gzip") || mime.contains("archive");
         }
 
         @Override

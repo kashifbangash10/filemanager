@@ -112,4 +112,5 @@
     <color name="item_transfer_pc">#3F51B5</color>
     <color name="item_cast_queue">#F44336</color>
     <color name="item_connections">#FFC107</color>
+    <color name="item_archives">#FFC107</color>
 </resources>

@@ -457,6 +457,23 @@ public class IconUtils {
         return applyTintList(context, drawableId, outValue.resourceId);
     }
 
+    public static boolean isPremiumMimeType(String mimeType) {
+        if (mimeType == null) return false;
+        return mimeType.startsWith("video/") ||
+                mimeType.startsWith("audio/") ||
+                mimeType.startsWith("image/") ||
+                mimeType.equals("application/vnd.android.package-archive") ||
+                mimeType.equals("application/zip") ||
+                mimeType.equals("application/rar") ||
+                mimeType.equals("application/x-7z-compressed") ||
+                mimeType.equals("application/gzip") ||
+                mimeType.equals("application/x-tar") ||
+                mimeType.equals("application/x-rar-compressed") ||
+                mimeType.equals("application/x-iso9660-image") ||
+                mimeType.equals("application/x-gtar") ||
+                mimeType.equals("application/x-deb");
+    }
+
     private static Drawable getDrawable(Context context, int drawableId){
         try {
             return ContextCompat.getDrawable(context, drawableId);

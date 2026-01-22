@@ -89,6 +89,7 @@
                     android:singleLine="true"
                     android:textAlignment="viewStart"
                     android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
+                    android:includeFontPadding="false"
                     android:textColor="?android:attr/textColorPrimary" />
 
                 <ImageView
@@ -122,6 +123,7 @@
                     android:singleLine="true"
                     android:textAlignment="viewStart"
                     android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                    android:includeFontPadding="false"
                     android:textColor="?android:attr/textColorSecondary" />
 
             </LinearLayout>
@@ -136,10 +138,10 @@
         android:layout_height="match_parent"
         android:layout_gravity="end"
         android:clickable="true"
+        android:scaleType="center"
         android:contentDescription="@string/abc_action_menu_overflow_description"
-        android:paddingBottom="10dp"
         android:paddingEnd="10dp"
-        android:paddingTop="10dp"
+        android:paddingRight="10dp"
         app:srcCompat="@drawable/ic_menu_moreoverflow_dark"
         android:focusable="true" />
 

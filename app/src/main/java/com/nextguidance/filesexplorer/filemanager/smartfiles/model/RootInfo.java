@@ -266,7 +266,7 @@ public class RootInfo implements Durable, Parcelable {
             derivedTag = "document";
         } else if (isArchive()) {
             derivedIcon = R.drawable.ic_root_archive;
-            derivedColor = R.color.item_doc_compressed;
+            derivedColor = R.color.item_archives;
             derivedTag = "archive";
         } else if (isApk()) {
             derivedIcon = R.drawable.ic_root_apk;
@@ -621,6 +621,9 @@ public class RootInfo implements Durable, Parcelable {
 
     public Drawable loadDrawerIcon(Context context) {
         if (derivedIcon != 0) {
+            if (isArchive() || isImages() || isVideos() || isAudio() || isDocument() || isApk() || isUserApp()) {
+                return ContextCompat.getDrawable(context, derivedIcon);
+            }
              return IconUtils.applyTint(context, derivedIcon,
                     ContextCompat.getColor(context, derivedColor));
         } else {
@@ -658,6 +661,9 @@ public class RootInfo implements Durable, Parcelable {
 
     public Drawable loadShortcutIcon(Context context) {
         if (derivedIcon != 0) {
+            if (isArchive() || isImages() || isVideos() || isAudio() || isDocument() || isApk() || isUserApp()) {
+                return ContextCompat.getDrawable(context, derivedIcon);
+            }
             return IconUtils.applyTint(context, derivedIcon,
                     ContextCompat.getColor(context, android.R.color.white));
         } else {

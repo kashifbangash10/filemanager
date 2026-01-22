@@ -255,8 +255,16 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
 
             // Icons aur background color set karein
             if (iconBackground instanceof com.nextguidance.filesexplorer.filemanager.smartfiles.ui.CircleImage) {
-                ((com.nextguidance.filesexplorer.filemanager.smartfiles.ui.CircleImage) iconBackground)
-                        .setColor(ContextCompat.getColor(mContext, root.derivedColor));
+                if (isPremiumCategory(rootTitle)) {
+                    iconBackground.setVisibility(View.GONE);
+                    icon.setPadding(0, 0, 0, 0);
+                } else {
+                    iconBackground.setVisibility(View.VISIBLE);
+                    int p = (int) (5 * mContext.getResources().getDisplayMetrics().density);
+                    icon.setPadding(p, p, p, p);
+                    ((com.nextguidance.filesexplorer.filemanager.smartfiles.ui.CircleImage) iconBackground)
+                            .setColor(ContextCompat.getColor(mContext, root.derivedColor));
+                }
             }
 
             // Click listener
@@ -292,7 +300,7 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
                     } else {
                         subtitle.setText("0%");
                     }
-                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_category_analysis, ContextCompat.getColor(mContext, root.derivedColor)));
+                    icon.setImageResource(R.drawable.ic_category_analysis);
                     break;
 
                 case "downloads":
@@ -301,7 +309,7 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
                     } else {
                         subtitle.setText("0 B");
                     }
-                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_category_downloads, ContextCompat.getColor(mContext, root.derivedColor)));
+                    icon.setImageResource(R.drawable.ic_category_downloads);
                     break;
 
                 case "video":
@@ -310,7 +318,7 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
                     } else {
                         subtitle.setText("0 B");
                     }
-                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_category_videos, ContextCompat.getColor(mContext, root.derivedColor)));
+                    icon.setImageResource(R.drawable.ic_category_videos);
                     break;
 
                 case "audio":
@@ -319,7 +327,7 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
                     } else {
                         subtitle.setText("0 B");
                     }
-                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_category_audio, ContextCompat.getColor(mContext, root.derivedColor)));
+                    icon.setImageResource(R.drawable.ic_category_audio);
                     break;
 
                 case "images":
@@ -328,7 +336,7 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
                     } else {
                         subtitle.setText("0 B");
                     }
-                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_category_images, ContextCompat.getColor(mContext, root.derivedColor)));
+                    icon.setImageResource(R.drawable.ic_category_images);
                     break;
 
                 case "apps":
@@ -337,7 +345,7 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
                     } else {
                         subtitle.setText("0 B");
                     }
-                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_category_apps, ContextCompat.getColor(mContext, root.derivedColor)));
+                    icon.setImageResource(R.drawable.ic_category_apps);
                     break;
 
                 case "documents":
@@ -346,7 +354,21 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
                     } else {
                         subtitle.setText("0 B");
                     }
-                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_category_documents, ContextCompat.getColor(mContext, root.derivedColor)));
+                    icon.setImageResource(R.drawable.ic_category_documents);
+                    break;
+
+                case "archives":
+                    if (root.totalBytes > 0) {
+                        subtitle.setText(Formatter.formatShortFileSize(mContext, root.totalBytes));
+                    } else {
+                        subtitle.setText("0 B");
+                    }
+                    icon.setImageResource(R.drawable.ic_category_archives);
+                    break;
+
+                case "more":
+                    subtitle.setText("");
+                    icon.setImageResource(R.drawable.ic_category_more);
                     break;
 
                 case "cleaner":
@@ -431,6 +453,18 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
         } else {
             return CommonInfo.from(recentCursor);
         }
+    }
+
+    private boolean isPremiumCategory(String rootTitle) {
+        if (rootTitle == null) return false;
+        return rootTitle.equals("downloads") ||
+                rootTitle.equals("video") ||
+                rootTitle.equals("audio") ||
+                rootTitle.equals("images") ||
+                rootTitle.equals("apps") ||
+                rootTitle.equals("documents") ||
+                rootTitle.equals("archives") ||
+                rootTitle.equals("more");
     }
 
     private void animateProgress(final NumberProgressBar item, RootInfo root) {
