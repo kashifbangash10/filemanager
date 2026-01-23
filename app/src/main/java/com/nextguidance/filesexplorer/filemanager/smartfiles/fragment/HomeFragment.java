@@ -305,11 +305,7 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
                     if (item.commonInfo.rootInfo.rootId.equals("clean")) {
                         cleanRAM();
                     } else if (item.commonInfo.rootInfo.rootId.equals("more")) {
-                        // Open Nav Drawer
-                        DocumentsActivity activity = ((DocumentsActivity) getActivity());
-                        if (activity != null) {
-                            activity.setRootsDrawerOpen(true);
-                        }
+                        CategoryMoreFragment.show(getFragmentManager());
                     } else {
                         // Proper root ko open karein
                         DocumentsActivity activity = ((DocumentsActivity) getActivity());

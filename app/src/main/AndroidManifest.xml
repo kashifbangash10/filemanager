@@ -164,7 +164,35 @@
         </activity>
         <activity
             android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.StandaloneActivity"
+            android:exported="true"
             android:theme="@style/DocumentsTheme.Document">
+            <!-- For 'Extract to' suggestion on archives -->
+            <intent-filter android:label="File Manager - Extract">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+                <data android:mimeType="application/x-rar-compressed" />
+                <data android:mimeType="application/x-7z-compressed" />
+                <data android:mimeType="application/x-tar" />
+                <data android:mimeType="application/gzip" />
+            </intent-filter>
+
+            <!-- For 'Copy to' / 'Move to' suggestion -->
+            <intent-filter android:label="File Manager - Copy to">
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+
+            <!-- General 'Open with' suggestion -->
+            <intent-filter android:label="File Manager - Open with">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+
             <meta-data
                 android:name="WindowManagerPreference:SuppressWindowControlNavigationButton"
                 android:value="true" />

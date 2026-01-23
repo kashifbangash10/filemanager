@@ -3,26 +3,12 @@
     android:height="48dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <!-- Blue Rounded Squares with smoother corners -->
-    <!-- Top Left -->
+    <!-- Premium Rounded Square Background -->
     <path
-        android:fillColor="#4285F4"
-        android:pathData="M7.5,6.5h2.5c0.8,0 1.5,0.7 1.5,1.5v2.5c0,0.8 -0.7,1.5 -1.5,1.5h-2.5c-0.8,0 -1.5,-0.7 -1.5,-1.5v-2.5c0,-0.8 0.7,-1.5 1.5,-1.5z" />
-    <!-- Bottom Left -->
+        android:fillColor="#0288D1"
+        android:pathData="M6,3h12c1.66,0 3,1.34 3,3v12c0,1.66 -1.34,3 -3,3H6c-1.66,0 -3,-1.34 -3,-3V6C3,4.34 4.34,3 6,3z" />
+    <!-- White 2x2 Grid Icon -->
     <path
-        android:fillColor="#4285F4"
-        android:pathData="M7.5,13.5h2.5c0.8,0 1.5,0.7 1.5,1.5v2.5c0,0.8 -0.7,1.5 -1.5,1.5h-2.5c-0.8,0 -1.5,-0.7 -1.5,-1.5v-2.5c0,-0.8 0.7,-1.5 1.5,-1.5z" />
-    <!-- Bottom Right -->
-    <path
-        android:fillColor="#4285F4"
-        android:pathData="M14.5,13.5h2.5c0.8,0 1.5,0.7 1.5,1.5v2.5c0,0.8 -0.7,1.5 -1.5,1.5h-2.5c-0.8,0 -1.5,-0.7 -1.5,-1.5v-2.5c0,-0.8 0.7,-1.5 1.5,-1.5z" />
-    <!-- Top Right (Rotated) -->
-    <group
-        android:pivotX="15.75"
-        android:pivotY="9.25"
-        android:rotation="25">
-        <path
-            android:fillColor="#4285F4"
-            android:pathData="M14.5,7.75h2.5c0.8,0 1.5,0.7 1.5,1.5v2.5c0,0.8 -0.7,1.5 -1.5,1.5h-2.5c-0.8,0 -1.5,-0.7 -1.5,-1.5v-2.5c0,-0.8 0.7,-1.5 1.5,-1.5z" />
-    </group>
+        android:fillColor="#FFFFFF"
+        android:pathData="M8,8h3c0.55,0 1,0.45 1,1v3c0,0.55 -0.45,1 -1,1h-3c-0.55,0 -1,-0.45 -1,-1v-3c0,-0.55 0.45,-1 1,-1z M13,8h3c0.55,0 1,0.45 1,1v3c0,0.55 -0.45,1 -1,1h-3c-0.55,0 -1,-0.45 -1,-1v-3c0,-0.55 0.45,-1 1,-1z M8,13h3c0.55,0 1,0.45 1,1v3c0,0.55 -0.45,1 -1,1h-3c-0.55,0 -1,-0.45 -1,-1v-3c0,-0.55 0.45,-1 1,-1z M13,13h3c0.55,0 1,0.45 1,1v3c0,0.55 -0.45,1 -1,1h-3c-0.55,0 -1,-0.45 -1,-1v-3c0,-0.55 0.45,-1 1,-1z" />
 </vector>

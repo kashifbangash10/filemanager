@@ -378,22 +378,22 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
 
                 case "wifi share":
                     subtitle.setText("Transfer");
-                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_root_transfer, ContextCompat.getColor(mContext, root.derivedColor)));
+                    icon.setImageResource(R.drawable.ic_category_wifi_share);
                     break;
 
                 case "transfer to pc":
                     subtitle.setText("FTP Server");
-                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_root_server, ContextCompat.getColor(mContext, root.derivedColor)));
+                    icon.setImageResource(R.drawable.ic_category_transfer_pc);
                     break;
 
                 case "cast queue":
                     subtitle.setText("Chromecast");
-                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_root_cast, ContextCompat.getColor(mContext, root.derivedColor)));
+                    icon.setImageResource(R.drawable.ic_category_cast);
                     break;
 
                 case "connections":
                     subtitle.setText("Cloud & FTP");
-                    icon.setImageDrawable(IconUtils.applyTint(mContext, R.drawable.ic_root_connections, ContextCompat.getColor(mContext, root.derivedColor)));
+                    icon.setImageResource(R.drawable.ic_category_connections);
                     break;
 
                 default:
@@ -464,6 +464,10 @@ public class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.ViewHolder> {
                 rootTitle.equals("apps") ||
                 rootTitle.equals("documents") ||
                 rootTitle.equals("archives") ||
+                rootTitle.equals("wifi share") ||
+                rootTitle.equals("transfer to pc") ||
+                rootTitle.equals("cast queue") ||
+                rootTitle.equals("connections") ||
                 rootTitle.equals("more");
     }
 
