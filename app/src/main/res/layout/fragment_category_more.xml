@@ -14,21 +14,7 @@
         android:background="?attr/colorPrimary"
         android:elevation="4dp"
         app:titleTextColor="@android:color/white"
-        app:title="Shortcut">
-        
-        <TextView
-            android:id="@+id/manage_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:layout_marginEnd="16dp"
-            android:text="Manage"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:clickable="true"
-            android:focusable="true"
-            android:padding="8dp" />
-    </androidx.appcompat.widget.Toolbar>
+        app:title="Shortcut" />
 
     <ScrollView
         android:layout_width="match_parent"

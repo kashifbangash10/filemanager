@@ -45,6 +45,7 @@ public class QueueFragment extends RecyclerFragment implements OnItemClickListen
         final QueueFragment fragment = new QueueFragment();
         final FragmentTransaction ft = fm.beginTransaction();
         ft.replace(R.id.container_directory, fragment, TAG);
+        ft.addToBackStack(null);
         ft.commitAllowingStateLoss();
     }
 

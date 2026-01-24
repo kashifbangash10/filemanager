@@ -67,6 +67,7 @@ public class ServerFragment extends BaseFragment implements View.OnClickListener
         fragment.setArguments(args);
         final FragmentTransaction ft = fm.beginTransaction();
         ft.replace(R.id.container_directory, fragment, TAG);
+        ft.addToBackStack(null);
         ft.commitAllowingStateLoss();
     }
 

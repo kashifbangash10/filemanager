@@ -189,9 +189,15 @@ public class HomeFragment extends RecyclerFragment implements HomeAdapter.OnItem
         showData();
         registerReceiver();
         if (getActivity() != null) {
-            getActivity().setTitle("Home");
             if (getActivity() instanceof DocumentsActivity) {
-                ((DocumentsActivity) getActivity()).setAnalysisMode(false);
+                DocumentsActivity activity = (DocumentsActivity) getActivity();
+                activity.setAnalysisMode(false);
+                // Force root back to Home if we are in HomeFragment
+                if (roots == null) roots = DocumentsApplication.getRootsCache(activity);
+                activity.getDisplayState().stack.root = roots.getHomeRoot();
+                activity.updateActionBar();
+            } else {
+                getActivity().setTitle("Home");
             }
         }
     }

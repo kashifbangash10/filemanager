@@ -1298,18 +1298,24 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         if (size > 1) {
             mState.stack.pop();
             onCurrentDirectoryChanged(ANIM_UP);
-        } else if (size == 1 && !isRootsDrawerOpen()) {
-
-            if (null != mParentRoot) {
-                onRootPicked(mParentRoot, true);
-                mParentRoot = null;
+        } else if (size <= 1 && !isRootsDrawerOpen()) {
+            if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+                getSupportFragmentManager().popBackStack();
                 return;
             }
 
-            final RootInfo current = getCurrentRoot();
-            if (current != null && !current.isHome()) {
-                onRootPicked(mRoots.getHomeRoot(), true);
-                return;
+            if (size == 1) {
+                if (null != mParentRoot) {
+                    onRootPicked(mParentRoot, true);
+                    mParentRoot = null;
+                    return;
+                }
+
+                final RootInfo current = getCurrentRoot();
+                if (current != null && !current.isHome()) {
+                    onRootPicked(mRoots.getHomeRoot(), true);
+                    return;
+                }
             }
 
             super.onBackPressed();

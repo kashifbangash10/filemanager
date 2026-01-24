@@ -199,15 +199,19 @@ class AnalysisFragment : Fragment() {
             try {
                 val pm = ctx.packageManager
                 val pkgs = pm.getInstalledPackages(0)
+                val addedPackageNames = mutableSetOf<String>()
                 pkgs.forEach { pkg ->
                     pkg.applicationInfo?.let { appInfo ->
-                        val appItem = AppItem().apply {
-                            name = pm.getApplicationLabel(appInfo).toString()
-                            packageName = pkg.packageName
-                            val apk = File(appInfo.sourceDir)
-                            size = if (apk.exists()) apk.length() else 0
+                        if (!addedPackageNames.contains(pkg.packageName)) {
+                            val appItem = AppItem().apply {
+                                name = pm.getApplicationLabel(appInfo).toString()
+                                packageName = pkg.packageName
+                                val apk = File(appInfo.sourceDir)
+                                size = if (apk.exists()) apk.length() else 0
+                            }
+                            cache.apps.add(appItem)
+                            addedPackageNames.add(pkg.packageName)
                         }
-                        cache.apps.add(appItem)
                     }
                 }
                 cache.apps.sortByDescending { it.size }
@@ -576,18 +580,22 @@ class AnalysisFragment : Fragment() {
                 val pkgs = pm.getInstalledPackages(0)
                 var totalAppSize = 0L
                 cachedData?.apps?.clear()
+                val addedPackageNames = mutableSetOf<String>()
                 pkgs.forEach { pkg ->
                     yield()
                     try {
                         pkg.applicationInfo?.let { appInfo ->
-                            val appItem = AppItem().apply {
-                                name = pm.getApplicationLabel(appInfo).toString()
-                                packageName = pkg.packageName
-                                val apk = File(appInfo.sourceDir)
-                                size = if (apk.exists()) apk.length() else 0
+                            if (!addedPackageNames.contains(pkg.packageName)) {
+                                val appItem = AppItem().apply {
+                                    name = pm.getApplicationLabel(appInfo).toString()
+                                    packageName = pkg.packageName
+                                    val apk = File(appInfo.sourceDir)
+                                    size = if (apk.exists()) apk.length() else 0
+                                }
+                                totalAppSize += appItem.size
+                                cachedData?.apps?.add(appItem)
+                                addedPackageNames.add(pkg.packageName)
                             }
-                            totalAppSize += appItem.size
-                            cachedData?.apps?.add(appItem)
                         }
                     } catch (e: Exception) {
                         // Skip individual app error

@@ -60,19 +60,12 @@ public class CategoryMoreFragment extends Fragment implements HomeAdapter.OnItem
 
         toolbar = view.findViewById(R.id.toolbar);
         recyclerView = view.findViewById(R.id.more_recycler_view);
-        TextView manageButton = view.findViewById(R.id.manage_button);
-        
         // Setup toolbar back button
         toolbar.setNavigationIcon(R.drawable.ic_arrow_back);
         toolbar.setNavigationOnClickListener(v -> {
             if (getFragmentManager() != null) {
                 getFragmentManager().popBackStack();
             }
-        });
-
-        // Setup manage button (optional - can be implemented later)
-        manageButton.setOnClickListener(v -> {
-            // TODO: Implement manage functionality
         });
 
         recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 3));
@@ -130,6 +123,22 @@ public class CategoryMoreFragment extends Fragment implements HomeAdapter.OnItem
         }
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (getActivity() instanceof DocumentsActivity) {
+            DocumentsActivity activity = (DocumentsActivity) getActivity();
+            activity.getDisplayState().stack.root = DocumentsApplication.getRootsCache(activity).getHomeRoot();
+            activity.updateActionBar();
+        }
+
+        // Hide Activity toolbar to avoid duplicate
+        View activityToolbar = getActivity().findViewById(R.id.toolbar);
+        if (activityToolbar != null) {
+            activityToolbar.setVisibility(View.GONE);
+        }
+    }
+
     private RootInfo copyRootInfo(RootInfo rootInfo) {
         RootInfo copy = new RootInfo();
         copy.authority = rootInfo.authority;
@@ -148,7 +157,7 @@ public class CategoryMoreFragment extends Fragment implements HomeAdapter.OnItem
     public void onItemClick(HomeAdapter.ViewHolder item, View view, int position) {
         if (getActivity() instanceof DocumentsActivity) {
             DocumentsActivity activity = (DocumentsActivity) getActivity();
-            activity.onRootPicked(item.commonInfo.rootInfo, mHomeRoot);
+            activity.onRootPicked(item.commonInfo.rootInfo, null);
         }
     }
 

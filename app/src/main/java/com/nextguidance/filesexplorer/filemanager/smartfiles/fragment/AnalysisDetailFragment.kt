@@ -591,23 +591,23 @@ private fun startAnalysisScan() {
     }
 }
     private fun handleItemClick(item: DetailAdapter.DetailItem) {
-        if (isCleanerMode) {
+        if (isSelectionMode) {
             adapter?.toggleSelection(item)
             return
         }
         item.packageName?.let { openAppInfo(it) } ?: run {
             if (item.isFolder) {
-                openFolderInternally(item.file)
-            } else if (item.file != null && !item.isSelectable) {
+                if (item.file != null) openFolderInternally(item.file!!)
+            } else if (item.file != null) {
                 openFileDirect(item.file!!)
             }
         }
     }
 
     private fun handleItemLongClick(item: DetailAdapter.DetailItem) {
-        if (isCleanerMode) {
+        if (isCleanerMode || isSelectionMode) {
             adapter?.toggleSelection(item)
-        } else if (!isSelectionMode) {
+        } else {
             startSelectionMode(item)
         }
     }
@@ -1481,29 +1481,21 @@ private fun startAnalysisScan() {
             val isChecked = selectedPositions.contains(position)
             holder.bind(item, showCheckboxes, isChecked, scope)
 
-            if (!showCheckboxes) {
-                holder.itemView.setOnClickListener { clickListener(item) }
-                holder.itemView.setOnLongClickListener { 
-                    longClickListener(item)
-                    true
-                }
-            } else {
-                // Remove old listener first to prevent double firing
-                holder.checkbox?.setOnCheckedChangeListener(null)
-                
-                holder.checkbox?.setOnCheckedChangeListener { _, checked ->
-                    val currentPosition = holder.adapterPosition
-                    if (currentPosition != RecyclerView.NO_POSITION) {
-                        if (checked) {
-                            selectedPositions.add(currentPosition)
-                        } else {
-                            selectedPositions.remove(currentPosition)
-                        }
-                        updateSelection()
-                    }
-                }
-                holder.itemView.setOnClickListener { 
-                    holder.checkbox?.let { cb -> cb.isChecked = !cb.isChecked }
+            // Always allow clicking the item to trigger clickListener (e.g., to open file)
+            holder.itemView.setOnClickListener { clickListener(item) }
+            
+            // Long click always toggles selection
+            holder.itemView.setOnLongClickListener { 
+                longClickListener(item)
+                true
+            }
+
+            if (showCheckboxes) {
+                // In cleaner/selection mode, checkbox click specifically toggles selection
+                // Use setOnClickListener on RadioButton/CheckBox instead of onCheckedChangeListener 
+                // to avoid loops and unexpected behavior during recycling
+                holder.checkbox?.setOnClickListener {
+                    toggleSelection(item)
                 }
             }
         }

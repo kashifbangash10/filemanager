@@ -49,6 +49,7 @@ public class TransferFragment extends RecyclerFragment
         final TransferFragment fragment = new TransferFragment();
         final FragmentTransaction ft = fm.beginTransaction();
         ft.replace(R.id.container_directory, fragment, TAG);
+        ft.addToBackStack(null);
         ft.commitAllowingStateLoss();
     }
 
