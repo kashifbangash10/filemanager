@@ -5,6 +5,25 @@
     android:orientation="vertical"
     android:background="?android:attr/windowBackground">
 
+    <!-- Header summary at the top -->
+    <LinearLayout
+        android:id="@+id/header_summary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#F5F5F5"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="8dp"
+        android:visibility="visible">
+
+        <TextView
+            android:id="@+id/summary_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Duplicate files: 0  Size: 0 B"
+            android:textColor="#9E9E9E"
+            android:textSize="12sp" />
+    </LinearLayout>
+
     <!-- RecyclerView for items -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerview"
@@ -12,44 +31,9 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:clipToPadding="false"
-        android:padding="6dp" />
+        android:padding="4dp" />
 
-    <!-- Bottom action bar -->
-    <LinearLayout
-        android:id="@+id/bottom_bar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp"
-        android:gravity="center_vertical"
-        android:background="?android:attr/colorBackground"
-        android:elevation="8dp"
-        android:visibility="gone">
-
-        <ImageView
-            android:id="@+id/btn_select_all"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@android:drawable/checkbox_off_background"
-            android:contentDescription="Select all" />
-
-        <TextView
-            android:id="@+id/summary_text"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="12dp"
-            android:textAppearance="?android:attr/textAppearanceSmall"
-            android:text="0 selected" />
-
-        <Button
-            android:id="@+id/btn_cleanup"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Clean up"
-            android:enabled="false" />
-
-    </LinearLayout>
+    <!-- Old bottom bar removed as it overlaps with cleaner bar -->
 
     <!-- Cleaner Mode Bottom Bar -->
     <LinearLayout
