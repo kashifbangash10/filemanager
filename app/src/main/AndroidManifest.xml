@@ -166,8 +166,104 @@
             android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.StandaloneActivity"
             android:exported="true"
             android:theme="@style/DocumentsTheme.Document">
-            <!-- For 'Extract to' suggestion on archives -->
-            <intent-filter android:label="File Manager - Extract">
+            
+            <!-- For 'Copy to' / 'Move to' suggestion (Shared content) -->
+            <intent-filter android:label="File Manager - Copy to">
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+
+            <meta-data
+                android:name="WindowManagerPreference:SuppressWindowControlNavigationButton"
+                android:value="true" />
+        </activity>
+
+        <activity
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.VideoPlayerActivity"
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:maxAspectRatio="2.4"
+            android:resizeableActivity="true"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout" 
+            android:exported="false" />
+
+        <activity
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.ImageViewerActivity"
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:exported="false" />
+
+        <!-- Video Player Alias -->
+        <activity-alias
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.VideoPlayerAlias"
+            android:label="File Manager - Video Player"
+            android:icon="@drawable/ic_launcher"
+            android:targetActivity="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.VideoPlayerActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Image Viewer Alias -->
+        <activity-alias
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.ImageViewerAlias"
+            android:label="File Manager - Image Viewer"
+            android:icon="@drawable/ic_launcher"
+            android:targetActivity="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.ImageViewerActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Audio Player Alias (Using Video Player for now) -->
+        <activity-alias
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.AudioPlayerAlias"
+            android:label="File Manager - Audio Player"
+            android:icon="@drawable/ic_launcher"
+            android:targetActivity="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.VideoPlayerActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Document Viewer Alias -->
+        <activity-alias
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.DocumentViewerAlias"
+            android:label="File Manager - Viewer"
+            android:icon="@drawable/ic_launcher"
+            android:targetActivity="com.nextguidance.filesexplorer.filemanager.smartfiles.StandaloneActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/msword" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="application/vnd.ms-powerpoint" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Archive Extractor Alias -->
+        <activity-alias
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.ArchiveExtractorAlias"
+            android:label="File Manager - Extract"
+            android:icon="@drawable/ic_launcher"
+            android:targetActivity="com.nextguidance.filesexplorer.filemanager.smartfiles.StandaloneActivity"
+            android:exported="true">
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/zip" />
@@ -177,26 +273,7 @@
                 <data android:mimeType="application/x-tar" />
                 <data android:mimeType="application/gzip" />
             </intent-filter>
-
-            <!-- For 'Copy to' / 'Move to' suggestion -->
-            <intent-filter android:label="File Manager - Copy to">
-                <action android:name="android.intent.action.SEND" />
-                <action android:name="android.intent.action.SEND_MULTIPLE" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="*/*" />
-            </intent-filter>
-
-            <!-- General 'Open with' suggestion -->
-            <intent-filter android:label="File Manager - Open with">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="*/*" />
-            </intent-filter>
-
-            <meta-data
-                android:name="WindowManagerPreference:SuppressWindowControlNavigationButton"
-                android:value="true" />
-        </activity>
+        </activity-alias>
 
 
         <activity
@@ -485,7 +562,17 @@
 
                 <category android:name="android.intent.category.DEFAULT" />
 
-                <data android:mimeType="*/*" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/msword" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="application/vnd.ms-powerpoint" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+                <data android:mimeType="text/plain" />
             </intent-filter>
             <meta-data
                 android:name="WindowManagerPreference:SuppressWindowControlNavigationButton"

@@ -3,6 +3,7 @@
 
     <color name="primaryColor">#0288D1</color>
     <color name="primaryDarkColor">#025f91</color>
+    <color name="blue">#2196F3</color>
     <color name="accentColor">#EF3A0F</color>
     <color name="colorAccent">#EF3A0F</color>
 

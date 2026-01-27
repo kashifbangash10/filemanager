@@ -381,7 +381,7 @@ public abstract class BaseActivity extends ActionBarActivity {
                 casty.addMiniController();
             }
         }
-        if ((null != root && RootInfo.isChromecastFeature(root))) {
+        if ((null != root && RootInfo.isChromecastFeature(root) && !root.isHome())) {
             try {
                 casty.addMediaRouteMenuItem(menu);
             } catch (Exception ignored) {

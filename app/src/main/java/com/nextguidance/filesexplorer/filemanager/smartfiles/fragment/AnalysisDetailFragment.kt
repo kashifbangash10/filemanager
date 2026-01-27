@@ -197,10 +197,21 @@ class AnalysisDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         title = arguments?.getString(ARG_TITLE)
-        isCleanerMode = arguments?.getBoolean(ARG_IS_CLEANER, false) == true
-        setHasOptionsMenu(title == "Duplicate files")
         
-        if (isCleanerMode) {
+        // Enable cleaner UI for Duplicates and Large Files automatically
+        isCleanerMode = arguments?.getBoolean(ARG_IS_CLEANER, false) == true || 
+                       title.equals("Duplicate files", ignoreCase = true) || 
+                       title.equals("Large files", ignoreCase = true)
+                       
+        setHasOptionsMenu(title.equals("Duplicate files", ignoreCase = true))
+        
+        updateToolbarTitle()
+        loadData()
+
+        val act = activity as? DocumentsActivity
+        val isInPasteMode = act != null && act.mClipboardFiles.isNotEmpty()
+
+        if (isCleanerMode && !isInPasteMode) {
              val path = Environment.getExternalStorageDirectory()
              try {
                 val stat = android.os.StatFs(path.path)
@@ -215,9 +226,6 @@ class AnalysisDetailFragment : Fragment() {
              cleanerBottomBar?.visibility = View.GONE
         }
 
-        updateToolbarTitle()
-        loadData()
-
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : androidx.activity.OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (!this@AnalysisDetailFragment.handleBackPressed()) {
@@ -228,7 +236,37 @@ class AnalysisDetailFragment : Fragment() {
     }
 
     private fun updateToolbarTitle() {
-        (activity as? DocumentsActivity)?.setAnalysisMode(true, title)
+        var displayTitle = title
+        val act = activity as? DocumentsActivity
+        val isInPasteMode = act != null && act.mClipboardFiles.isNotEmpty()
+        
+        if (isInPasteMode) {
+            displayTitle = "Paste to"
+            view?.findViewById<View>(R.id.path_indicator_container)?.visibility = View.VISIBLE
+            
+            // Update path name
+            val currentFolder = if (isInFolderNavigation && folderStack.isNotEmpty()) folderStack.peek() else Environment.getExternalStorageDirectory()
+            val rootPath = Environment.getExternalStorageDirectory().absolutePath
+            view?.findViewById<TextView>(R.id.tv_path_name)?.text = if (currentFolder.absolutePath == rootPath) "Internal storage" else currentFolder.name
+            
+            // Update storage percentage
+            val percent = getStorageUsagePercent()
+            view?.findViewById<TextView>(R.id.tv_storage_percent)?.text = "$percent%"
+        } else {
+            view?.findViewById<View>(R.id.path_indicator_container)?.visibility = View.GONE
+        }
+        
+        act?.setAnalysisMode(true, displayTitle)
+    }
+
+    private fun getStorageUsagePercent(): Int {
+        return try {
+            val stat = android.os.StatFs(Environment.getExternalStorageDirectory().path)
+            val total = stat.blockCountLong * stat.blockSizeLong
+            val available = stat.availableBlocksLong * stat.blockSizeLong
+            val used = total - available
+            if (total > 0) ((used * 100) / total).toInt() else 0
+        } catch (e: Exception) { 0 }
     }
 
     override fun onResume() {
@@ -240,7 +278,12 @@ class AnalysisDetailFragment : Fragment() {
         if (isSelectionMode) {
             (activity as? DocumentsActivity)?.setActionMode(false)
         }
-        (activity as? DocumentsActivity)?.setAnalysisMode(false)
+        (activity as? DocumentsActivity)?.let { act ->
+            act.setAnalysisMode(false)
+            if (act.mClipboardFiles.isNotEmpty()) {
+                act.setPasteMode(false, null, null, false)
+            }
+        }
         super.onDestroy()
     }
 
@@ -573,16 +616,18 @@ class AnalysisDetailFragment : Fragment() {
             }
         }
 
+        val act = activity as? DocumentsActivity
+        val isInPasteMode = act != null && act.mClipboardFiles.isNotEmpty()
+        val shouldShowSelection = !isInPasteMode && (isSelectionMode || isCleanerMode || title == "Duplicate files" || title == "Large files")
+        
         val currentAdapter = adapter
         if (currentAdapter != null) {
             currentAdapter.updateItems(items)
-            val shouldShowSelection = isSelectionMode || isCleanerMode || title == "Duplicate files" || title == "Large files"
             currentAdapter.setSelectionMode(shouldShowSelection)
-            if (isSelectionMode) {
+            if (isSelectionMode && !isInPasteMode) {
                 currentAdapter.setSelectedItems(selectedItems)
             }
         } else {
-            val shouldShowSelection = isSelectionMode || isCleanerMode || title == "Duplicate files" || title == "Large files"
             adapter = DetailAdapter(items, shouldShowSelection, lifecycleScope,
                 this::handleItemClick, this::handleSelectionChanged, this::handleItemLongClick, isCleanerMode)
             recyclerView.adapter = adapter
@@ -871,42 +916,45 @@ private fun startAnalysisScan() {
         val selected = adapter?.getSelectedItemsList() ?: return
         if (selected.isEmpty()) return
 
-        if (isCleanerMode) {
-             android.app.AlertDialog.Builder(context)
-                .setTitle("Clean up")
-                .setMessage("Clean up files from device?")
-                .setPositiveButton("Clean up") { _, _ ->
-                     val paths = ArrayList<String>()
-                     var totalSelectedSize = 0L
-                     selected.forEach { 
-                         it.file?.absolutePath?.let { p -> paths.add(p) }
-                         totalSelectedSize += it.sizeBytes
-                     }
-                     
-                     val sizeDisplay = Formatter.formatFileSize(context, totalSelectedSize)
-                     
-                     // Remove from adapter immediately to update UI underneath
-                     val itemsToDelete = selected.toSet()
-                     adapter?.removeItems(itemsToDelete)
-                     exitSelectionMode()
-
-                      CleanerResultFragment.show(parentFragmentManager, paths, sizeDisplay, title)
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
-             return
-        }
+        val title = if (isCleanerMode) "Clean up" else "Delete"
+        val message = if (isCleanerMode) "Clean up files from device?" else "Delete ${selected.size} items?"
+        val buttonText = if (isCleanerMode) "Clean up" else "Delete"
 
         android.app.AlertDialog.Builder(context)
-            .setTitle("Delete")
-            .setMessage("Delete ${selected.size} items?")
-            .setPositiveButton("Delete") { _, _ ->
-                 val itemsToDelete = selected.toSet()
-                 adapter?.removeItems(itemsToDelete)
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton(buttonText) { _, _ ->
+                 // Show Loading Overlay
+                 val loadingOverlay = view?.findViewById<View>(R.id.loading_overlay)
+                 loadingOverlay?.visibility = View.VISIBLE
+
                  lifecycleScope.launch(Dispatchers.IO) {
-                     itemsToDelete.forEach { it.file?.deleteRecursively() }
+                     var deletedCount = 0
+                     // Copy list to avoid concurrent modification issues during iteration
+                     val filesToDelete = ArrayList(selected)
+                     
+                     filesToDelete.forEach { item ->
+                         try {
+                             if (item.file != null && item.file!!.exists()) {
+                                 if (item.file!!.deleteRecursively()) {
+                                     deletedCount++
+                                 }
+                             }
+                         } catch (e: Exception) {}
+                     }
+                     
                      withContext(Dispatchers.Main) {
+                         loadingOverlay?.visibility = View.GONE
+                         
+                         // Update Adapter
+                         val itemsToDelete = selected.toSet()
+                         adapter?.removeItems(itemsToDelete)
                          exitSelectionMode()
+                         
+                         // Clear analysis group cache if needed so it rescans later
+                         // AnalysisFragment.setCache(null) 
+                         
+                         Toast.makeText(context, "$deletedCount files deleted", Toast.LENGTH_SHORT).show()
                      }
                  }
             }
@@ -950,7 +998,7 @@ private fun startAnalysisScan() {
             }
         }
         
-        if (isCleanerMode || title == "Duplicate files" || title == "Large files") {
+        if (isCleanerMode || title.equals("Duplicate files", ignoreCase = true) || title.equals("Large files", ignoreCase = true)) {
             btnCleanerAction?.let { btn ->
                 if (selectedCount > 0) {
                     try {
@@ -1037,9 +1085,14 @@ private fun startAnalysisScan() {
                     val items = withContext(Dispatchers.IO) {
                         val result = mutableListOf<DetailAdapter.DetailItem>()
                         
+                        val act = activity as? DocumentsActivity
+                        val isInPasteMode = act != null && act.mClipboardFiles.isNotEmpty()
+                        
                         // Direct file system access - FAST!
                         folder.listFiles()?.filter { !it.name.startsWith(".") }?.forEach { file ->
                             try {
+                                if (isInPasteMode && !file.isDirectory) return@forEach
+                                
                                 val absPath = file.absolutePath
                                 result.add(DetailAdapter.DetailItem().apply {
                                     name = file.name
@@ -1047,18 +1100,25 @@ private fun startAnalysisScan() {
                                     this.file = file
                                     if (file.isDirectory) {
                                         isFolder = true
-                                        icon = R.drawable.ic_root_folder
+                                        icon = getFolderIcon(name ?: "")
                                         iconColor = getFolderIconColor(name ?: "")
-                                        // Try to get cached size, otherwise quick estimate
-                                        val cachedFolder = cache?.allFoldersMap?.get(absPath)
-                                        if (cachedFolder != null) {
-                                            size = Formatter.formatFileSize(context, cachedFolder.size)
-                                            subtitle = "${cachedFolder.itemCount} items"
+                                        
+                                        if (isInPasteMode) {
+                                            subtitle = getFileDate(file)
+                                            val count = file.listFiles()?.size ?: 0
+                                            size = if (count == 1) "1 item" else "$count items"
                                         } else {
-                                            // Quick count without deep scan
-                                            val fileCount = file.listFiles()?.size ?: 0
-                                            subtitle = "$fileCount items"
-                                            size = "" // Don't calculate size for speed
+                                            // Try to get cached size, otherwise quick estimate
+                                            val cachedFolder = cache?.allFoldersMap?.get(absPath)
+                                            if (cachedFolder != null) {
+                                                size = Formatter.formatFileSize(context, cachedFolder.size)
+                                                subtitle = "${cachedFolder.itemCount} items"
+                                            } else {
+                                                // Quick count without deep scan
+                                                val fileCount = file.listFiles()?.size ?: 0
+                                                subtitle = "$fileCount items"
+                                                size = "" // Don't calculate size for speed
+                                            }
                                         }
                                     } else {
                                         isFolder = false
@@ -1084,7 +1144,9 @@ private fun startAnalysisScan() {
                         updateToolbarTitle()
                         summaryText?.parent?.let { (it as? View)?.visibility = View.GONE }
                         
-                        val shouldShowSelection = isSelectionMode || isCleanerMode || title == "Duplicate files" || title == "Large files"
+                        val act = activity as? DocumentsActivity
+                        val isInPasteMode = act != null && act.mClipboardFiles.isNotEmpty()
+                        val shouldShowSelection = !isInPasteMode && (isSelectionMode || isCleanerMode || title == "Duplicate files" || title == "Large files")
                         adapter = DetailAdapter(items, shouldShowSelection, lifecycleScope, this@AnalysisDetailFragment::handleItemClick, this@AnalysisDetailFragment::handleSelectionChanged, this@AnalysisDetailFragment::handleItemLongClick)
                         recyclerView.adapter = adapter
                     }
@@ -1109,8 +1171,21 @@ private fun startAnalysisScan() {
             val uri = getFileUri(file)
             val fileName = file.name.lowercase()
 
-            if (isVideoFile(fileName)) {
-                openVideoDirectly(uri, file)
+            // Internal Video/Audio Player
+            if (isVideoFile(fileName) || fileName.endsWith(".mp3") || fileName.endsWith(".wav") || fileName.endsWith(".m4a")) {
+                val intent = Intent(contextSafe, com.nextguidance.filesexplorer.filemanager.smartfiles.activities.VideoPlayerActivity::class.java)
+                intent.data = uri
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                startActivity(intent)
+                return
+            }
+
+            // Internal Image Viewer
+            if (mimeType.startsWith("image/")) {
+                val intent = Intent(contextSafe, com.nextguidance.filesexplorer.filemanager.smartfiles.activities.ImageViewerActivity::class.java)
+                intent.data = uri
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                startActivity(intent)
                 return
             }
 
@@ -1125,8 +1200,18 @@ private fun startAnalysisScan() {
             val resolveInfo = pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
 
             if (resolveInfo?.activityInfo != null) {
-                intent.component = ComponentName(resolveInfo.activityInfo.packageName, resolveInfo.activityInfo.name)
-                startActivity(intent)
+                val pkgName = resolveInfo.activityInfo.packageName
+                val clsName = resolveInfo.activityInfo.name
+                
+                // Avoid recursive call to self if it's StandaloneActivity or NoteActivity
+                if (pkgName == requireContext().packageName && 
+                   (clsName.contains("StandaloneActivity") || clsName.contains("NoteActivity"))) {
+                    // It's ourselves, let's try fallback or show error if we can't handle it
+                    Toast.makeText(context, "Cannot open this file internally", Toast.LENGTH_SHORT).show()
+                } else {
+                    intent.component = ComponentName(pkgName, clsName)
+                    startActivity(intent)
+                }
             } else {
                 val fallback = Intent(Intent.ACTION_VIEW).apply {
                     setDataAndType(uri, mimeType)
@@ -1225,6 +1310,38 @@ private fun startAnalysisScan() {
         }
     }
 
+    fun createNewFolder() {
+        val currentFolder = if (isInFolderNavigation && folderStack.isNotEmpty()) folderStack.peek() else Environment.getExternalStorageDirectory()
+        val context = context ?: return
+        
+        val input = EditText(context)
+        input.hint = "Folder name"
+        
+        android.app.AlertDialog.Builder(context)
+            .setTitle("Create New Folder")
+            .setView(input)
+            .setPositiveButton("Create") { _, _ ->
+                val name = input.text.toString().trim()
+                if (name.isNotEmpty()) {
+                    val newFolder = File(currentFolder, name)
+                    if (newFolder.exists()) {
+                        Toast.makeText(context, "Folder already exists", Toast.LENGTH_SHORT).show()
+                    } else if (newFolder.mkdirs()) {
+                        Toast.makeText(context, "Folder created", Toast.LENGTH_SHORT).show()
+                        if (isInFolderNavigation) {
+                            openFolderInternally(currentFolder)
+                        } else {
+                            loadData(resetNavigation = false)
+                        }
+                    } else {
+                        Toast.makeText(context, "Failed to create folder", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
     private fun getShortPath(fullPath: String?): String? {
         if (fullPath == null) return null
         return if (fullPath.contains("/storage/emulated/0/")) fullPath.replace("/storage/emulated/0/", "/") else fullPath
@@ -1251,6 +1368,19 @@ private fun startAnalysisScan() {
             name.endsWith(".pdf") || name.endsWith(".doc") || name.endsWith(".docx") || name.endsWith(".txt") || name.endsWith(".xls") || name.endsWith(".xlsx") -> R.drawable.ic_root_document
             name.endsWith(".apk") -> R.drawable.ic_root_apps
             else -> R.drawable.ic_root_document
+        }
+    }
+
+    private fun getFolderIcon(folderName: String): Int {
+        val name = folderName.lowercase()
+        return when {
+            name == "android" -> R.drawable.ic_menu_settings
+            name == "dcim" || name == "pictures" || name == "camera" -> R.drawable.ic_root_image
+            name == "downloads" || name == "download" -> R.drawable.ic_root_download
+            name == "documents" -> R.drawable.ic_root_document
+            name == "music" || name == "audio" -> R.drawable.ic_root_audio
+            name == "movies" || name == "video" || name == "movies" -> R.drawable.ic_root_video
+            else -> R.drawable.ic_root_folder
         }
     }
 
@@ -1304,10 +1434,14 @@ private fun startAnalysisScan() {
             name.endsWith(".m4a") -> "audio/mp4"
             name.endsWith(".pdf") -> "application/pdf"
             name.endsWith(".zip") -> "application/zip"
+            name.endsWith(".7z") -> "application/x-7z-compressed"
+            name.endsWith(".rar") -> "application/x-rar-compressed"
+            name.endsWith(".tar") -> "application/x-tar"
             name.endsWith(".apk") -> "application/vnd.android.package-archive"
             name.endsWith(".txt") -> "text/plain"
             name.endsWith(".doc") || name.endsWith(".docx") -> "application/msword"
             name.endsWith(".xls") || name.endsWith(".xlsx") -> "application/vnd.ms-excel"
+            name.endsWith(".ppt") || name.endsWith(".pptx") -> "application/vnd.ms-powerpoint"
             else -> "*/*"
         }
     }
@@ -1330,13 +1464,16 @@ private fun startAnalysisScan() {
             this.itemsList = newItems.toMutableList()
             this.items = newItems
             notifyDataSetChanged()
+            updateSelection()
         }
 
         fun removeItems(itemsToRemove: Set<DetailItem>) {
             itemsList.removeAll(itemsToRemove)
             items = itemsList.toList()
             selectedPositions.clear()
+            totalSelectedSize = 0L
             notifyDataSetChanged()
+            updateSelection()
         }
         
         fun setSelectionMode(show: Boolean) {
@@ -1346,6 +1483,7 @@ private fun startAnalysisScan() {
                 totalSelectedSize = 0L
             }
             notifyDataSetChanged()
+            updateSelection()
         }
         
         fun getAllItems(): List<DetailItem> = itemsList

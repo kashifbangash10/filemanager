@@ -213,7 +213,7 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     private BottomNavigationView mBottomNav;
     private View mSelectionBar;
     private View mPasteBar;
-    private List<File> mClipboardFiles = new ArrayList<>();
+    public List<File> mClipboardFiles = new ArrayList<>();
     private ArrayList<DocumentInfo> mClipboardDocs = new ArrayList<>();
     private boolean mIsMoveMode = false;
     private Bundle mSavedInstanceState;
@@ -271,8 +271,12 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         mSelectionBar = findViewById(R.id.selection_actions);
         mPasteBar = findViewById(R.id.paste_actions);
         if (mPasteBar != null) {
-            mPasteBar.findViewById(R.id.action_paste_cancel).setOnClickListener(v -> setPasteMode(false, null, null, false));
+            mPasteBar.findViewById(R.id.action_paste_cancel).setOnClickListener(v -> {
+                setPasteMode(false, null, null, false);
+                onBackPressed();
+            });
             mPasteBar.findViewById(R.id.action_paste_execute).setOnClickListener(v -> executePaste());
+
         }
 
         initControls();
@@ -351,15 +355,15 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             }
         }
 
-        if (!mState.restored && hasStoragePermission) {
-            if (mState.action == ACTION_MANAGE) {
-                final Uri rootUri = getIntent().getData();
-                new RestoreRootTask(rootUri).executeOnExecutor(getCurrentExecutor());
-            } else {
-                if (isDownloadAuthority(getIntent())) {
+        if (!mState.restored) {
+            if (hasStoragePermission) {
+                if (mState.action == ACTION_MANAGE) {
+                    final Uri rootUri = getIntent().getData();
+                    new RestoreRootTask(rootUri).executeOnExecutor(getCurrentExecutor());
+                } else if (isDownloadAuthority(getIntent())) {
                     onRootPicked(getDownloadRoot(), true);
                 } else if (ConnectionUtils.isServerAuthority(getIntent())
-                                || TransferHelper.isTransferAuthority(getIntent())) {
+                        || TransferHelper.isTransferAuthority(getIntent())) {
                     RootInfo root = getIntent().getExtras().getParcelable(EXTRA_ROOT);
                     onRootPicked(root, true);
                 } else if (Utils.isQSTile(getIntent())) {
@@ -373,6 +377,9 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
                         CrashReportingManager.logException(e);
                     }
                 }
+            } else {
+                // If no permission, show default state (Home) instead of staying blank
+                onCurrentDirectoryChanged(ANIM_NONE);
             }
         } else if (mState.restored) {
             onCurrentDirectoryChanged(ANIM_NONE);
@@ -469,11 +476,12 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
                 public void run() {
                     mRoots.updateAsync();
                     final RootInfo root = getCurrentRoot();
-                    if (root.isHome()) {
-                        HomeFragment homeFragment = HomeFragment.get(getSupportFragmentManager());
-                        if (null != homeFragment) {
-                            homeFragment.reloadData();
-                        }
+                    HomeFragment homeFragment = HomeFragment.get(getSupportFragmentManager());
+                    if (null != homeFragment) {
+                        homeFragment.reloadData();
+                    } else if (getSupportFragmentManager().findFragmentById(R.id.container_directory) == null) {
+                        // If no fragment is shown, show the default one now that we have permissions
+                        onCurrentDirectoryChanged(ANIM_NONE);
                     }
                 }
             }, 500);
@@ -615,21 +623,23 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         protected Void doInBackground(Void... params) {
 
             final String packageName = getCallingPackageMaybeExtra();
-            final Cursor cursor = getContentResolver()
-                    .query(RecentsProvider.buildResume(packageName), null, null, null, null);
-            try {
-                if (null != cursor && cursor.moveToFirst()) {
-                    mExternal = cursor.getInt(cursor.getColumnIndex(ResumeColumns.EXTERNAL)) != 0;
-                    final byte[] rawStack = cursor.getBlob(
-                            cursor.getColumnIndex(ResumeColumns.STACK));
-                    DurableUtils.readFromArray(rawStack, mState.stack);
-                    mRestoredStack = true;
+            if (packageName != null) {
+                final Cursor cursor = getContentResolver()
+                        .query(RecentsProvider.buildResume(packageName), null, null, null, null);
+                try {
+                    if (null != cursor && cursor.moveToFirst()) {
+                        mExternal = cursor.getInt(cursor.getColumnIndex(ResumeColumns.EXTERNAL)) != 0;
+                        final byte[] rawStack = cursor.getBlob(
+                                cursor.getColumnIndex(ResumeColumns.STACK));
+                        DurableUtils.readFromArray(rawStack, mState.stack);
+                        mRestoredStack = true;
+                    }
+                } catch (IOException e) {
+                    Log.w(TAG, "Failed to resume: " + e);
+                    CrashReportingManager.logException(e);
+                } finally {
+                    IoUtils.closeQuietly(cursor);
                 }
-            } catch (IOException e) {
-                Log.w(TAG, "Failed to resume: " + e);
-                CrashReportingManager.logException(e);
-            } finally {
-                IoUtils.closeQuietly(cursor);
             }
 
             if (mRestoredStack) {
@@ -1274,12 +1284,12 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
 
     @Override
     public void onBackPressed() {
-        if (mPasteBar != null && mPasteBar.getVisibility() == View.VISIBLE) {
-            setPasteMode(false, null, null, false);
-            return;
-        }
         if (mInAnalysis) {
             super.onBackPressed();
+            return;
+        }
+        if (mPasteBar != null && mPasteBar.getVisibility() == View.VISIBLE) {
+            setPasteMode(false, null, null, false);
             return;
         }
         if (isRootsDrawerOpen() && !mShowAsDialog) {
@@ -1653,6 +1663,8 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             return;
         }
         try {
+            getSupportFragmentManager().popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+
             if (null == root) {
                 return;
             }
@@ -1926,6 +1938,18 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             if (mClipboardDocs != null) mClipboardDocs.clear();
             if (mPasteBar != null) mPasteBar.setVisibility(View.GONE);
             if (mBottomNav != null) mBottomNav.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void executePasteCreate() {
+        FragmentManager fm = getSupportFragmentManager();
+        Fragment fragment = fm.findFragmentByTag(AnalysisDetailFragment.TAG);
+        if (fragment == null) {
+            fragment = fm.findFragmentById(R.id.container_directory);
+        }
+        
+        if (fragment instanceof AnalysisDetailFragment) {
+            ((AnalysisDetailFragment) fragment).createNewFolder();
         }
     }
 

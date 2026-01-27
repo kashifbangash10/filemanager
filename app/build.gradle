@@ -146,4 +146,10 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'  // Updated
     implementation "org.jetbrains.kotlin:kotlin-stdlib:2.1.0"
     implementation 'com.google.android.gms:play-services-ads:23.0.0'  // Updated
+
+    // Media Viewers
+    implementation "androidx.media3:media3-exoplayer:1.2.0"
+    implementation "androidx.media3:media3-ui:1.2.0"
+    implementation 'com.github.chrisbanes:PhotoView:2.3.0'
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
 }

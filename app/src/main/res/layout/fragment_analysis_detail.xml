@@ -1,73 +1,190 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="?android:attr/windowBackground">
 
-    <!-- Header summary at the top -->
     <LinearLayout
-        android:id="@+id/header_summary"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#F5F5F5"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="8dp"
-        android:visibility="visible">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/summary_text"
+        <!-- Path and Storage Indicator for Paste Mode -->
+        <RelativeLayout
+            android:id="@+id/path_indicator_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Duplicate files: 0  Size: 0 B"
-            android:textColor="#9E9E9E"
-            android:textSize="12sp" />
+            android:background="#FFFFFF"
+            android:padding="12dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/iv_path_home"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_centerVertical="true"
+                android:src="@drawable/ic_root_home"
+                app:tint="#bdbdbd" />
+
+            <ImageView
+                android:id="@+id/iv_path_arrow"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_centerVertical="true"
+                android:layout_toEndOf="@id/iv_path_home"
+                android:layout_marginStart="4dp"
+                android:src="@drawable/ic_chevron_right"
+                app:tint="#bdbdbd" />
+
+            <TextView
+                android:id="@+id/tv_path_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toEndOf="@id/iv_path_arrow"
+                android:layout_marginStart="8dp"
+                android:text="Internal storage"
+                android:textColor="#757575"
+                android:textSize="14sp" />
+
+            <LinearLayout
+                android:id="@+id/storage_usage_pill"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:background="@drawable/bg_storage_pill"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="4dp">
+
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/ic_storage_pie"
+                    app:tint="#2196F3" />
+
+                <TextView
+                    android:id="@+id/tv_storage_percent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="97%"
+                    android:textColor="#2196F3"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_marginStart="4dp"
+                    android:src="@drawable/ic_chevron_right"
+                    app:tint="#2196F3" />
+            </LinearLayout>
+        </RelativeLayout>
+
+        <!-- Header summary at the top -->
+        <LinearLayout
+            android:id="@+id/header_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#F5F5F5"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="8dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/summary_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Duplicate files: 0  Size: 0 B"
+                android:textColor="#9E9E9E"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- RecyclerView for items -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerview"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:padding="4dp" />
+
+        <!-- Old bottom bar removed as it overlaps with cleaner bar -->
+
+        <!-- Cleaner Mode Bottom Bar -->
+        <LinearLayout
+            android:id="@+id/cleaner_bottom_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:background="#FFFFFF"
+            android:elevation="16dp">
+
+            <TextView
+                android:id="@+id/storage_info_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="8dp"
+                android:paddingBottom="4dp"
+                android:gravity="center"
+                android:text="Available: --  Total: --"
+                android:textSize="12sp"
+                android:textColor="#757575"
+                android:background="#F5F5F5"/>
+
+            <Button
+                android:id="@+id/btn_cleaner_action"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginVertical="12dp"
+                android:text="Clean up 0 B"
+                android:backgroundTint="#E0E0E0"
+                android:textColor="#757575"
+                android:textStyle="bold"
+                android:enabled="false"/>
+        </LinearLayout>
     </LinearLayout>
-
-    <!-- RecyclerView for items -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerview"
+    <!-- Loading Overlay -->
+    <RelativeLayout
+        android:id="@+id/loading_overlay"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:padding="4dp" />
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
 
-    <!-- Old bottom bar removed as it overlaps with cleaner bar -->
-
-    <!-- Cleaner Mode Bottom Bar -->
-    <LinearLayout
-        android:id="@+id/cleaner_bottom_bar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:visibility="gone"
-        android:background="#FFFFFF"
-        android:elevation="16dp">
-
-        <TextView
-            android:id="@+id/storage_info_text"
-            android:layout_width="match_parent"
+        <LinearLayout
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingTop="8dp"
-            android:paddingBottom="4dp"
+            android:layout_centerInParent="true"
+            android:background="#FFFFFF"
+            android:elevation="8dp"
             android:gravity="center"
-            android:text="Available: --  Total: --"
-            android:textSize="12sp"
-            android:textColor="#757575"
-            android:background="#F5F5F5"/>
+            android:orientation="horizontal"
+            android:padding="24dp">
 
-        <Button
-            android:id="@+id/btn_cleaner_action"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginHorizontal="16dp"
-            android:layout_marginVertical="12dp"
-            android:text="Clean up 0 B"
-            android:backgroundTint="#E0E0E0"
-            android:textColor="#757575"
-            android:textStyle="bold"
-            android:enabled="false"/>
-    </LinearLayout>
+            <ProgressBar
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:indeterminate="true"
+                android:indeterminateTint="#2196F3" />
 
-</LinearLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="Loading..."
+                android:textColor="#000000"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </RelativeLayout>
+
+</FrameLayout>

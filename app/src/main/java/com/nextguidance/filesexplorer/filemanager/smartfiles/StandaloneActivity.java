@@ -40,6 +40,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
@@ -125,6 +126,16 @@ public class StandaloneActivity extends BaseActivity {
                     android.R.style.TextAppearance_DeviceDefault_Widget_ActionBar_Title);
         }
         setSupportActionBar(mToolbar);
+        
+        // Handle incoming file from external apps
+        final Intent intent = getIntent();
+        if (intent != null && (Intent.ACTION_VIEW.equals(intent.getAction()) || 
+                               Intent.ACTION_SEND.equals(intent.getAction()) ||
+                               Intent.ACTION_SEND_MULTIPLE.equals(intent.getAction()))) {
+            handleExternalFileIntent(intent);
+            return;
+        }
+        
         RootsCommonFragment.show(getSupportFragmentManager(), null);
         if (!mState.restored) {
             new RestoreStackTask().execute();
@@ -144,7 +155,7 @@ public class StandaloneActivity extends BaseActivity {
         mState.action = State.ACTION_MANAGE_ALL;
         mState.acceptMimes = new String[] { "*/*" };
         mState.allowMultiple = true;
-        mState.acceptMimes = new String[] { intent.getType() };
+        mState.acceptMimes = new String[] { intent.getType() != null ? intent.getType() : "*/*" };
         mState.localOnly = intent.getBooleanExtra(Intent.EXTRA_LOCAL_ONLY, false);
         mState.forceAdvanced = intent.getBooleanExtra(DocumentsContract.EXTRA_SHOW_ADVANCED, false);
         mState.showAdvanced = mState.forceAdvanced
@@ -179,22 +190,23 @@ public class StandaloneActivity extends BaseActivity {
         @SuppressLint("Range")
         @Override
         protected Void doInBackground(Void... params) {
-
             final String packageName = getCallingPackageMaybeExtra();
-            final Cursor cursor = getContentResolver()
-                    .query(RecentsProvider.buildResume(packageName), null, null, null, null);
-            try {
-                if (cursor.moveToFirst()) {
-                    mExternal = cursor.getInt(cursor.getColumnIndex(ResumeColumns.EXTERNAL)) != 0;
-                    final byte[] rawStack = cursor.getBlob(
-                            cursor.getColumnIndex(ResumeColumns.STACK));
-                    DurableUtils.readFromArray(rawStack, mState.stack);
-                    mRestoredStack = true;
+            if (packageName != null) {
+                final Cursor cursor = getContentResolver()
+                        .query(RecentsProvider.buildResume(packageName), null, null, null, null);
+                try {
+                    if (null != cursor && cursor.moveToFirst()) {
+                        mExternal = cursor.getInt(cursor.getColumnIndex(ResumeColumns.EXTERNAL)) != 0;
+                        final byte[] rawStack = cursor.getBlob(
+                                cursor.getColumnIndex(ResumeColumns.STACK));
+                        DurableUtils.readFromArray(rawStack, mState.stack);
+                        mRestoredStack = true;
+                    }
+                } catch (IOException e) {
+                    Log.w(TAG, "Failed to resume: " + e);
+                } finally {
+                    IoUtils.closeQuietly(cursor);
                 }
-            } catch (IOException e) {
-                Log.w(TAG, "Failed to resume: " + e);
-            } finally {
-                IoUtils.closeQuietly(cursor);
             }
             if (mRestoredStack) {
 
@@ -856,6 +868,255 @@ public class StandaloneActivity extends BaseActivity {
             Log.d(TAG, " +-- " + doc);
         }
     }
+    
+    private void handleExternalFileIntent(Intent intent) {
+        try {
+            Uri fileUri = null;
+            
+            if (Intent.ACTION_VIEW.equals(intent.getAction())) {
+                fileUri = intent.getData();
+            } else if (Intent.ACTION_SEND.equals(intent.getAction())) {
+                fileUri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+            }
+            
+            if (fileUri != null) {
+                // Get the file path from URI
+                String filePath = getFilePathFromUri(fileUri);
+                if (filePath != null) {
+                    File file = new File(filePath);
+                    if (file.exists()) {
+                        openFileDirectly(file);
+                        return;
+                    }
+                }
+                
+                // If we can't get file path, try to open URI directly
+                openUriDirectly(fileUri);
+            } else {
+                Toast.makeText(this, "Cannot open file", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error handling external file intent", e);
+            Toast.makeText(this, "Error opening file", Toast.LENGTH_SHORT).show();
+            finish();
+        }
+    }
+    
+    private String getFilePathFromUri(Uri uri) {
+        if (uri == null) return null;
+        
+        // Handle file:// URIs
+        if ("file".equalsIgnoreCase(uri.getScheme())) {
+            return uri.getPath();
+        }
+        
+        // Handle content:// URIs
+        if ("content".equalsIgnoreCase(uri.getScheme())) {
+            try {
+                String[] projection = {android.provider.MediaStore.MediaColumns.DATA};
+                android.database.Cursor cursor = getContentResolver().query(uri, projection, null, null, null);
+                if (cursor != null) {
+                    try {
+                        if (cursor.moveToFirst()) {
+                            int columnIndex = cursor.getColumnIndexOrThrow(android.provider.MediaStore.MediaColumns.DATA);
+                            return cursor.getString(columnIndex);
+                        }
+                    } finally {
+                        cursor.close();
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error getting file path from content URI", e);
+            }
+        }
+        
+        return null;
+    }
+    
+    private void openFileDirectly(File file) {
+        try {
+            String fileName = file.getName().toLowerCase();
+            Uri fileUri = androidx.core.content.FileProvider.getUriForFile(
+                this, 
+                getPackageName() + ".provider", 
+                file
+            );
+            
+            // Determine mime type
+            String mimeType = getMimeTypeFromFile(fileName);
+            
+            // Internal Player Routing (Video/Audio)
+            if (isVideoFile(fileName) || mimeType.startsWith("video/") || mimeType.startsWith("audio/") || fileName.endsWith(".mp3") || fileName.endsWith(".wav")) {
+                 Intent intent = new Intent(this, com.nextguidance.filesexplorer.filemanager.smartfiles.activities.VideoPlayerActivity.class);
+                 intent.setData(fileUri);
+                 intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                 startActivity(intent);
+                 finish();
+                 return;
+            }
+            
+            // Internal Image Viewer
+            if (mimeType.startsWith("image/")) {
+                 Intent intent = new Intent(this, com.nextguidance.filesexplorer.filemanager.smartfiles.activities.ImageViewerActivity.class);
+                 intent.setData(fileUri);
+                 intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                 startActivity(intent);
+                 finish();
+                 return;
+            }
+            
+            // Open with appropriate app, excluding ourselves
+            Intent viewIntent = new Intent(Intent.ACTION_VIEW);
+            viewIntent.setDataAndType(fileUri, mimeType);
+            viewIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            
+            String myPackage = getPackageName();
+            List<ResolveInfo> resInfo = getPackageManager().queryIntentActivities(viewIntent, 0);
+            
+            if (!resInfo.isEmpty()) {
+                    java.util.List<Intent> targetedIntents = new java.util.ArrayList<>();
+                    for (ResolveInfo info : resInfo) {
+                        if (!info.activityInfo.packageName.equals(myPackage)) {
+                            Intent i = new Intent(viewIntent);
+                            i.setPackage(info.activityInfo.packageName);
+                            targetedIntents.add(i);
+                        }
+                    }
+
+                    if (!targetedIntents.isEmpty()) {
+                        Intent chooserIntent = Intent.createChooser(targetedIntents.remove(0), "Open with");
+                        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, targetedIntents.toArray(new Intent[0]));
+                        startActivity(chooserIntent);
+                        finish();
+                    } else {
+                        Toast.makeText(this, "No external app found to open this file", Toast.LENGTH_SHORT).show();
+                        finish();
+                    }
+            } else {
+                Toast.makeText(this, "No app found to open this file", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error opening file directly", e);
+            Toast.makeText(this, "Error opening file", Toast.LENGTH_SHORT).show();
+            finish();
+        }
+    }
+    
+    private void openUriDirectly(Uri uri) {
+        try {
+            Intent viewIntent = new Intent(Intent.ACTION_VIEW);
+            viewIntent.setData(uri);
+            viewIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            viewIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            
+            if (viewIntent.resolveActivity(getPackageManager()) != null) {
+                startActivity(viewIntent);
+            } else {
+                Toast.makeText(this, "No app found to open this file", Toast.LENGTH_SHORT).show();
+            }
+            finish();
+        } catch (Exception e) {
+            Log.e(TAG, "Error opening URI directly", e);
+            Toast.makeText(this, "Error opening file", Toast.LENGTH_SHORT).show();
+            finish();
+        }
+    }
+    
+    private void openVideoWithExternalPlayer(Uri uri, File file) {
+        // Try popular video players first
+        String[] videoPlayers = {
+            "com.mxtech.videoplayer.ad",
+            "com.mxtech.videoplayer.pro", 
+            "org.videolan.vlc",
+            "com.brouken.player"
+        };
+        
+        for (String packageName : videoPlayers) {
+            try {
+                getPackageManager().getPackageInfo(packageName, 0);
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setDataAndType(uri, "video/*");
+                intent.setPackage(packageName);
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                finish();
+                return;
+            } catch (Exception e) {
+                // Player not installed, try next
+            }
+        }
+        
+        // No specific player found, exclude ourselves and show chooser
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(uri, "video/*");
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            
+            // Exclude our own package to prevent loop if we are the default
+            String myPackage = getPackageName();
+            List<ResolveInfo> resInfo = getPackageManager().queryIntentActivities(intent, 0);
+            
+            if (!resInfo.isEmpty()) {
+                java.util.List<Intent> targetedIntents = new java.util.ArrayList<>();
+                for (ResolveInfo info : resInfo) {
+                    if (!info.activityInfo.packageName.equals(myPackage)) {
+                        Intent i = new Intent(intent);
+                        i.setPackage(info.activityInfo.packageName);
+                        targetedIntents.add(i);
+                    }
+                }
+                
+                if (!targetedIntents.isEmpty()) {
+                    Intent chooserIntent = Intent.createChooser(targetedIntents.remove(0), "Open Video");
+                    chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, targetedIntents.toArray(new Intent[0]));
+                    startActivity(chooserIntent);
+                    finish();
+                } else {
+                    Toast.makeText(this, "No external video player found", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+            } else {
+                Toast.makeText(this, "No video player found", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "No video player found", Toast.LENGTH_SHORT).show();
+            finish();
+        }
+    }
+    
+    private boolean isVideoFile(String fileName) {
+        return fileName.endsWith(".mp4") || fileName.endsWith(".avi") || 
+               fileName.endsWith(".mkv") || fileName.endsWith(".mov") ||
+               fileName.endsWith(".wmv") || fileName.endsWith(".flv") ||
+               fileName.endsWith(".webm") || fileName.endsWith(".3gp") ||
+               fileName.endsWith(".m4v") || fileName.endsWith(".ts");
+    }
+    
+    private String getMimeTypeFromFile(String fileName) {
+        if (fileName.endsWith(".mp4")) return "video/mp4";
+        if (fileName.endsWith(".avi")) return "video/x-msvideo";
+        if (fileName.endsWith(".mkv")) return "video/x-matroska";
+        if (fileName.endsWith(".mov")) return "video/quicktime";
+        if (fileName.endsWith(".webm")) return "video/webm";
+        if (fileName.endsWith(".3gp")) return "video/3gpp";
+        if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) return "image/jpeg";
+        if (fileName.endsWith(".png")) return "image/png";
+        if (fileName.endsWith(".gif")) return "image/gif";
+        if (fileName.endsWith(".mp3")) return "audio/mpeg";
+        if (fileName.endsWith(".wav")) return "audio/wav";
+        if (fileName.endsWith(".m4a")) return "audio/mp4";
+        if (fileName.endsWith(".pdf")) return "application/pdf";
+        if (fileName.endsWith(".zip")) return "application/zip";
+        if (fileName.endsWith(".txt")) return "text/plain";
+        if (fileName.endsWith(".doc") || fileName.endsWith(".docx")) return "application/msword";
+        if (fileName.endsWith(".xls") || fileName.endsWith(".xlsx")) return "application/vnd.ms-excel";
+        return "*/*";
+    }
+    
     public static BaseActivity get(Fragment fragment) {
         return (BaseActivity) fragment.getActivity();
     }
