@@ -32,7 +32,7 @@ public class JunkCleaningActivity extends AppCompatActivity {
 
     private TextView tvScanStatus, tvCurrentPath, tvBtnMain, tvTotalValue, tvTotalUnit;
     private RecyclerView recyclerView;
-    private View btnCleanUp, radarSweep, cleaningOverlay, cleaningContainer, successContainer;
+    private View btnCleanUp, btnCleanUpContainer, radarSweep, cleaningOverlay, cleaningContainer, successContainer;
     private ImageView ivBroom, ivSuccessCheck;
     private TextView tvCleanedAmount;
     private JunkCleanAdapter adapter;
@@ -57,6 +57,7 @@ public class JunkCleaningActivity extends AppCompatActivity {
         radarSweep = findViewById(R.id.radarSweep);
         recyclerView = findViewById(R.id.recyclerViewJunk);
         btnCleanUp = findViewById(R.id.btnCleanUp);
+        btnCleanUpContainer = findViewById(R.id.btnCleanUpContainer);
 
         cleaningOverlay = findViewById(R.id.cleaningOverlay);
         cleaningContainer = findViewById(R.id.cleaningContainer);
@@ -147,7 +148,7 @@ public class JunkCleaningActivity extends AppCompatActivity {
                 tvCurrentPath.setText("Real junk files identified");
                 radarSweep.clearAnimation();
                 radarSweep.setVisibility(View.GONE);
-                btnCleanUp.setVisibility(View.VISIBLE);
+                btnCleanUpContainer.setVisibility(View.VISIBLE);
                 updateButtonSize();
             });
         });

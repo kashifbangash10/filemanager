@@ -12,16 +12,20 @@ if (keystoreProperties.exists()) {
 }
 
 android {
-    compileSdkVersion 36
+    compileSdkVersion 35
     buildToolsVersion "35.0.0"
-    ndkVersion "28.0.12433566"
+    ndkVersion "27.0.12077973"  // Updated for 16 KB support
 
+    buildFeatures {
+        buildConfig = true
+    }
+    
     defaultConfig {
-        applicationId "com.nextguidance.filekalesexplorer.filemanager.smartfiles"
-        minSdkVersion 23
-        targetSdkVersion 36
-        versionCode 5
-        versionName "0.5"
+        applicationId "com.nextguidance.filesexplorer.filemanager.smartfiles"
+        minSdkVersion 21
+        targetSdkVersion 35
+        versionCode 16
+        versionName "1.0.6"
         vectorDrawables.useSupportLibrary = true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField "String", "LICENSE_KEY", "$props.LICENSE_KEY"
@@ -32,9 +36,13 @@ android {
         externalNativeBuild {
             cmake {
                 arguments "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+                cppFlags "-Wl,-z,max-page-size=16384"
             }
         }
 
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
     }
 
     signingConfigs {
@@ -63,6 +71,9 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            ndk {
+                debugSymbolLevel 'FULL'
+            }
         }
         debug {
             // --- ALWAYS USE TEST IDS FOR DEBUG TO KEEP YOUR ACCOUNT SAFE ---
@@ -70,7 +81,7 @@ android {
             resValue "string", "admob_banner", "\"ca-app-pub-3940256099942544/6300978111\""
             resValue "string", "admob_interstitial", "\"ca-app-pub-3940256099942544/1033173712\""
             resValue "string", "admob_native", "\"ca-app-pub-3940256099942544/2247696110\""
-            resValue "string", "admob_app_open", "\"ca-app-pub-3940256099942544/3419835294\""
+            resValue "string", "admob_app_open", "\"ca-app-pub-4829739773020339/8682812863\""
             resValue "string", "admob_interstitial_junk", "\"ca-app-pub-3940256099942544/1033173712\""
 
             minifyEnabled false
@@ -78,18 +89,23 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    
     packagingOptions {
         resources {
             excludes += ['META-INF/LICENSE', 'META-INF/DEPENDENCIES']
         }
         jniLibs {
             useLegacyPackaging = false
+            pickFirsts += ['**/liberrno-lib.so']  // Fix for 16 KB page size
         }
     }
+    
     namespace 'com.nextguidance.filesexplorer.filemanager.smartfiles'
+    
     lint {
         abortOnError false
     }
+    
     kotlinOptions {
         jvmTarget = '1.8'
     }
@@ -97,39 +113,46 @@ android {
 
 dependencies {
 
+    implementation 'androidx.appcompat:appcompat:1.6.1'  // Updated
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'  // Updated
+    implementation 'com.google.firebase:firebase-analytics:21.5.0'  // Updated
+    testImplementation 'junit:junit:4.13.2'  // Updated
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'  // Updated
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'  // Updated
 
-    implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.1'
-    implementation 'com.google.firebase:firebase-analytics:17.5.0'
-    testImplementation 'junit:junit:4.13'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
-
-    implementation 'com.jaredrummler:android-processes:1.1.1'
+    // Updated library for 16 KB support
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'  // Replaces android-processes
+    
     implementation 'com.github.mjdev:libaums:0.5.5'
     implementation 'org.apache.ftpserver:ftpserver-core:1.1.1'
-    implementation 'commons-net:commons-net:3.6'
+    implementation 'commons-net:commons-net:3.9.0'  // Updated
     implementation 'com.zsoltsafrany:needle:1.0.0'
     implementation 'com.cloudrail:cloudrail-si-android:2.22.4'
     implementation 'androidx.cardview:cardview:1.0.0'
-    implementation 'com.google.android.material:material:1.3.0-alpha02'
-    implementation 'androidx.exifinterface:exifinterface:1.2.0'
-    implementation 'androidx.mediarouter:mediarouter:1.1.0'
-    implementation 'com.google.android.gms:play-services-cast-framework:19.0.0'
+    implementation 'com.google.android.material:material:1.11.0'  // Updated
+    implementation 'androidx.exifinterface:exifinterface:1.3.7'  // Updated
+    implementation 'androidx.mediarouter:mediarouter:1.7.0'  // Updated
+    implementation 'com.google.android.gms:play-services-cast-framework:21.4.0'  // Updated
     implementation 'com.github.javiersantos:AppUpdater:2.7'
-    implementation 'com.nanohttpd:nanohttpd:2.2.0'
-    implementation 'com.google.code.gson:gson:2.8.6'
+    implementation 'org.nanohttpd:nanohttpd:2.3.1'  // Updated
+    implementation 'com.google.code.gson:gson:2.10.1'  // Updated
 
     implementation 'com.github.lykmapipo:local-burst:v0.2.0'
-    implementation 'com.google.firebase:firebase-analytics:21.0.0'
-    implementation 'com.google.firebase:firebase-crashlytics:18.2.11'
-    implementation group: 'io.fabric.sdk.android', name: 'fabric', version: '1.4.8'
+    implementation 'com.google.firebase:firebase-crashlytics:18.6.1'  // Updated
     debugImplementation 'androidx.multidex:multidex:2.0.1'
-    implementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
 
     // Coroutines for faster file analysis
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.4.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'  // Updated
+    implementation 'androidx.lifecycle:lifecycle-process:2.7.0'  // For App Open Ads
     implementation "org.jetbrains.kotlin:kotlin-stdlib:2.1.0"
-    implementation 'com.google.android.gms:play-services-ads:22.6.0'
+    implementation 'com.google.android.gms:play-services-ads:23.0.0'  // Updated
+
+    // Media Viewers
+    implementation "androidx.media3:media3-exoplayer:1.2.0"
+    implementation "androidx.media3:media3-ui:1.2.0"
+    implementation 'com.github.chrisbanes:PhotoView:2.3.0'
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+    implementation 'androidx.viewpager2:viewpager2:1.0.0'
+    implementation project(':cc_ads')
 }

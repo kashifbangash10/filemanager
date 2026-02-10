@@ -15,7 +15,7 @@
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
@@ -23,16 +23,32 @@
         tools:ignore="ProtectedPermissions"/>
 
     <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
+    <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="false" />
-
+    <uses-feature
+        android:name="android.hardware.screen.portrait"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.screen.landscape"
+        android:required="false" />
     <uses-feature
         android:name="android.hardware.usb.host"
         android:required="false" />
     <uses-feature
         android:name="android.hardware.wifi"
         android:required="false" />
-
+    <uses-feature
+        android:name="android.hardware.bluetooth"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.microphone"
+        android:required="false" />
     <uses-feature
         android:name="android.hardware.type.pc"
         android:required="false" />
@@ -51,6 +67,10 @@
         android:usesCleartextTraffic="true"
         tools:replace="android:label">
 
+        <property
+            android:name="android.adservices.AD_SERVICES_CONFIG"
+            android:resource="@xml/gma_ad_services_config"
+            tools:replace="android:resource" />
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
@@ -144,11 +164,162 @@
         </activity>
         <activity
             android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.StandaloneActivity"
+            android:exported="true"
             android:theme="@style/DocumentsTheme.Document">
+            
+            <!-- For 'Copy to' / 'Move to' suggestion (Shared content) -->
+            <intent-filter android:label="File Manager - Copy to">
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+
             <meta-data
                 android:name="WindowManagerPreference:SuppressWindowControlNavigationButton"
                 android:value="true" />
         </activity>
+
+        <activity
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.VideoPlayerActivity"
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:maxAspectRatio="2.4"
+            android:resizeableActivity="true"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout" 
+            android:exported="false" />
+
+        <activity
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.ImageViewerActivity"
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:exported="false" />
+
+        <activity
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.DocumentViewerActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:exported="true" />
+
+        <activity
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.VideosActivity"
+            android:theme="@style/DocumentsTheme"
+            android:exported="false" />
+
+        <activity
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.FolderDetailActivity"
+            android:theme="@style/DocumentsTheme"
+            android:exported="false" />
+
+        <activity
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.ImagesActivity"
+            android:theme="@style/DocumentsTheme"
+            android:exported="false" />
+
+        <activity
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.AlbumImagesActivity"
+            android:theme="@style/DocumentsTheme"
+            android:exported="false" />
+
+        <activity
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.AudioActivity"
+            android:theme="@style/DocumentsTheme"
+            android:exported="false" />
+
+        <activity
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.AlbumAudioActivity"
+            android:theme="@style/DocumentsTheme"
+            android:exported="false" />
+
+        <activity
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.FileDocumentsActivity"
+            android:theme="@style/DocumentsTheme"
+            android:exported="false" />
+
+        <activity
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.PdfViewerActivity"
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:exported="false" />
+
+        <!-- Video Player Alias -->
+        <activity-alias
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.VideoPlayerAlias"
+            android:label="File Manager - Video Player"
+            android:icon="@drawable/ic_launcher"
+            android:targetActivity="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.VideoPlayerActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Image Viewer Alias -->
+        <activity-alias
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.ImageViewerAlias"
+            android:label="File Manager - Image Viewer"
+            android:icon="@drawable/ic_launcher"
+            android:targetActivity="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.ImageViewerActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Audio Player Alias (Using Video Player for now) -->
+        <activity-alias
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.AudioPlayerAlias"
+            android:label="File Manager - Audio Player"
+            android:icon="@drawable/ic_launcher"
+            android:targetActivity="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.VideoPlayerActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Document Viewer Alias -->
+        <activity-alias
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.DocumentViewerAlias"
+            android:label="File Manager - Viewer"
+            android:icon="@drawable/ic_launcher"
+            android:targetActivity="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.DocumentViewerActivity"
+            android:exported="true">
+            <intent-filter android:priority="100">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/msword" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="application/vnd.ms-powerpoint" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Archive Extractor Alias -->
+        <activity-alias
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.ArchiveExtractorAlias"
+            android:label="File Manager - Extract"
+            android:icon="@drawable/ic_launcher"
+            android:targetActivity="com.nextguidance.filesexplorer.filemanager.smartfiles.StandaloneActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+                <data android:mimeType="application/x-rar-compressed" />
+                <data android:mimeType="application/x-7z-compressed" />
+                <data android:mimeType="application/x-tar" />
+                <data android:mimeType="application/gzip" />
+            </intent-filter>
+        </activity-alias>
 
 
         <activity
@@ -231,6 +402,7 @@
         <service
             android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.service.ConnectionsService"
             android:enabled="true"
+            android:foregroundServiceType="dataSync"
             android:exported="true" />
         <service
             android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.service.ServerTileService"
@@ -436,7 +608,17 @@
 
                 <category android:name="android.intent.category.DEFAULT" />
 
-                <data android:mimeType="*/*" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/msword" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="application/vnd.ms-powerpoint" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+                <data android:mimeType="text/plain" />
             </intent-filter>
             <meta-data
                 android:name="WindowManagerPreference:SuppressWindowControlNavigationButton"
@@ -456,6 +638,12 @@
             android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.activities.JunkCleaningActivity"
             android:screenOrientation="portrait"
             android:theme="@style/DocumentsTheme.Document" />
+
+        <service
+            android:name="com.nextguidance.filesexplorer.filemanager.smartfiles.service.TransferService"
+            android:enabled="true"
+            android:foregroundServiceType="dataSync"
+            android:exported="true" />
 
     </application>
 </manifest>

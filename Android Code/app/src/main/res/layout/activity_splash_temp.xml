@@ -76,7 +76,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:fontFamily="sans-serif-medium"
-            android:text="Advanced AI Technology"
+            android:text="Next Salution"
             android:textColor="#2196F3"
             android:textSize="15sp" />
     </LinearLayout>

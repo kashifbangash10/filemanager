@@ -341,7 +341,7 @@ public class GoogleAds {
                                     new AdListener() {
                                         @Override
                                         public void onAdFailedToLoad(LoadAdError loadAdError) {
-
+                                            Log.e("Google Ads => ", "Native ad failed to load: " + loadAdError.getMessage());
                                         }
                                     })
                             .build();

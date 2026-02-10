@@ -9,33 +9,7 @@
     android:paddingBottom="4dp"
     android:visibility="gone">
 
-    <LinearLayout
-        android:id="@+id/action_paste_cancel"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:background="?selectableItemBackground"
-        android:gravity="center"
-        android:clickable="true"
-        android:focusable="true"
-        android:orientation="vertical"
-        android:padding="8dp">
-
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_action_close"
-            android:tint="#FFFFFF" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Cancel"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp" />
-    </LinearLayout>
-
+    <!-- Paste Button (Left) -->
     <LinearLayout
         android:id="@+id/action_paste_execute"
         android:layout_width="0dp"
@@ -59,6 +33,34 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:text="Paste"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- Cancel Button (Right) -->
+    <LinearLayout
+        android:id="@+id/action_paste_cancel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:background="?selectableItemBackground"
+        android:gravity="center"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_action_close"
+            android:tint="#FFFFFF" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Cancel"
             android:textColor="#FFFFFF"
             android:textSize="12sp" />
     </LinearLayout>

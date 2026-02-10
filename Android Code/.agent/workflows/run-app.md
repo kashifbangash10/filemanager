@@ -12,5 +12,5 @@ $env:ANDROID_HOME="C:\Users\USER\AppData\Local\Android\Sdk"
 
 2. Launch the main activity using ADB.
 ```powershell
-& "C:\Users\USER\AppData\Local\Android\Sdk\platform-tools\adb.exe" shell am start -n com.nextguidance.filesexplorer.filemanager.smartfiles/com.nextguidance.filesexplorer.filemanager.smartfiles.DocumentsActivity
+& "C:\Users\USER\AppData\Local\Android\Sdk\platform-tools\adb.exe" shell am start -n com.nextguidance.filesexplorer.filemanager.smartfiles/.SplashActivity
 ```

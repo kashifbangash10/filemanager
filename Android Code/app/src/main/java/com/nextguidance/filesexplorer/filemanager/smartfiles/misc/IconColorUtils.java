@@ -101,7 +101,7 @@ public class IconColorUtils {
         add("application/x-javascript", icon);
 
 
-        icon = R.color.item_audio;
+        icon = R.color.item_archives;
         add("application/mac-binhex40", icon);
         add("application/rar", icon);
         add("application/zip", icon);
@@ -230,7 +230,7 @@ public class IconColorUtils {
                     return ContextCompat.getColor(context, R.color.item_apps);
                 }
                 else if(docId.startsWith(NonMediaDocumentsProvider.TYPE_ARCHIVE_ROOT)){
-                    return ContextCompat.getColor(context, R.color.item_audio);
+                    return ContextCompat.getColor(context, R.color.item_archives);
                 }
                 else if(docId.startsWith(NonMediaDocumentsProvider.TYPE_DOCUMENT_ROOT)){
                     return ContextCompat.getColor(context, R.color.item_documents);

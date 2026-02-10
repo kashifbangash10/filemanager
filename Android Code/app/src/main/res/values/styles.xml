@@ -65,4 +65,9 @@
     <style name="ButtonTheme" parent="@style/Widget.AppCompat.Button">
     </style>
 
+    <style name="CustomPopupMenuDark" parent="ThemeOverlay.AppCompat.Dark">
+        <item name="android:colorBackground">#333333</item>
+        <item name="android:textColor">#FFFFFF</item>
+    </style>
+
 </resources>

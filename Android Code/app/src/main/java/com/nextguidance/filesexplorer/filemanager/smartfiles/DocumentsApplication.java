@@ -46,7 +46,20 @@ import com.nextguidance.filesexplorer.filemanager.smartfiles.misc.Utils;
 import com.nextguidance.filesexplorer.filemanager.smartfiles.server.SimpleWebServer;
 
 import android.app.Application;
+import android.os.Bundle;
+import android.util.Log;
 import com.google.android.gms.ads.MobileAds;
+import com.google.firebase.FirebaseApp;
+import com.google.android.gms.ads.appopen.AppOpenAd;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.AdError;
+import androidx.annotation.NonNull;
+import androidx.lifecycle.ProcessLifecycleOwner;
+import androidx.lifecycle.DefaultLifecycleObserver;
+import androidx.lifecycle.LifecycleOwner;
+import java.util.Date;
 
 public class DocumentsApplication extends Application {
     private static final long PROVIDER_ANR_TIMEOUT = 20 * DateUtils.SECOND_IN_MILLIS;
@@ -64,6 +77,10 @@ public class DocumentsApplication extends Application {
 
     private SimpleWebServer simpleWebServer;
     private boolean isStarted;
+    private AppOpenAd appOpenAd = null;
+    private Activity currentActivity;
+    private static boolean isShowingAd = false;
+    private long loadTime = 0;
     private Casty mCasty;
 
     public static RootsCache getRootsCache(Context context) {
@@ -93,6 +110,9 @@ public class DocumentsApplication extends Application {
 
     public static ContentProviderClient acquireUnstableProviderOrThrow(
             ContentResolver resolver, String authority) throws RemoteException {
+        if (authority == null) {
+            throw new RemoteException("Authority is null");
+        }
         final ContentProviderClient client = ContentProviderClientCompat.acquireUnstableContentProviderClient(resolver, authority);
         if (client == null) {
             throw new RemoteException("Failed to acquire provider for " + authority);
@@ -105,12 +125,18 @@ public class DocumentsApplication extends Application {
     public void onCreate() {
         Utils.setAppThemeStyle(getBaseContext());
         super.onCreate();
+        if (FirebaseApp.getApps(this).isEmpty()) {
+            FirebaseApp.initializeApp(this);
+        }
 
         if (!BuildConfig.DEBUG) {
             AnalyticsManager.intialize(getApplicationContext());
         }
         
-        MobileAds.initialize(this, initializationStatus -> {});
+        MobileAds.initialize(this, initializationStatus -> {
+            // Initialize App Open Ads after MobileAds is ready
+            initializeAppOpenAds();
+        });
         
         sInstance = this;
         final ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
@@ -173,4 +199,128 @@ public class DocumentsApplication extends Application {
             }
         }
     };
+    
+    private void initializeAppOpenAds() {
+        registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
+            @Override
+            public void onActivityCreated(@NonNull Activity activity, Bundle savedInstanceState) {}
+            
+            @Override
+            public void onActivityStarted(@NonNull Activity activity) {
+                currentActivity = activity;
+            }
+            
+            @Override
+            public void onActivityResumed(@NonNull Activity activity) {
+                currentActivity = activity;
+            }
+            
+            @Override
+            public void onActivityPaused(@NonNull Activity activity) {}
+            
+            @Override
+            public void onActivityStopped(@NonNull Activity activity) {}
+            
+            @Override
+            public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull Bundle outState) {}
+            
+            @Override
+            public void onActivityDestroyed(@NonNull Activity activity) {
+                if (currentActivity == activity) {
+                    currentActivity = null;
+                }
+            }
+        });
+        
+        ProcessLifecycleOwner.get().getLifecycle().addObserver(new DefaultLifecycleObserver() {
+            @Override
+            public void onStart(@NonNull LifecycleOwner owner) {
+                showAppOpenAd();
+            }
+        });
+        
+        fetchAppOpenAd();
+    }
+    
+    public void fetchAppOpenAd() {
+        if (isAdAvailable()) {
+            return;
+        }
+        
+        AppOpenAd.AppOpenAdLoadCallback loadCallback = new AppOpenAd.AppOpenAdLoadCallback() {
+            @Override
+            public void onAdLoaded(@NonNull AppOpenAd ad) {
+                appOpenAd = ad;
+                loadTime = (new Date()).getTime();
+                Log.d("AppOpenAd", "App Open Ad loaded successfully");
+            }
+            
+            @Override
+            public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                Log.e("AppOpenAd", "Failed to load App Open Ad: " + loadAdError.getMessage());
+            }
+        };
+        
+        AdRequest request = new AdRequest.Builder().build();
+        String adUnitId = getString(R.string.admob_app_open);
+        Log.d("AppOpenAd", "Fetching App Open Ad with ID: " + adUnitId);
+        
+        AppOpenAd.load(
+            this,
+            adUnitId,
+            request,
+            AppOpenAd.APP_OPEN_AD_ORIENTATION_PORTRAIT,
+            loadCallback
+        );
+    }
+    
+    private boolean isAdAvailable() {
+        return appOpenAd != null && wasLoadTimeLessThanNHoursAgo(4);
+    }
+    
+    private boolean wasLoadTimeLessThanNHoursAgo(long numHours) {
+        long dateDifference = (new Date()).getTime() - loadTime;
+        long numMilliSecondsPerHour = 3600000;
+        return (dateDifference < (numMilliSecondsPerHour * numHours));
+    }
+    
+    public void showAppOpenAd() {
+        if (isShowingAd) {
+            return;
+        }
+
+        if (!isAdAvailable()) {
+            fetchAppOpenAd();
+            return;
+        }
+        
+        if (currentActivity == null || currentActivity instanceof SplashActivity) {
+            return;
+        }
+        
+        appOpenAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+            @Override
+            public void onAdDismissedFullScreenContent() {
+                appOpenAd = null;
+                isShowingAd = false;
+                fetchAppOpenAd();
+            }
+            
+            @Override
+            public void onAdFailedToShowFullScreenContent(@NonNull com.google.android.gms.ads.AdError adError) {
+                appOpenAd = null;
+                isShowingAd = false;
+                Log.e("AppOpenAd", "Failed to show: " + adError.getMessage());
+                fetchAppOpenAd();
+            }
+            
+            @Override
+            public void onAdShowedFullScreenContent() {
+                isShowingAd = true;
+                Log.d("AppOpenAd", "App Open Ad shown");
+            }
+        });
+        
+        appOpenAd.show(currentActivity);
+    }
 }

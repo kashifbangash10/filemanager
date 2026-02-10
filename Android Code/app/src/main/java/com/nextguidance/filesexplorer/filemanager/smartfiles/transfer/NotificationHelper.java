@@ -358,23 +358,13 @@ public class NotificationHelper {
         }
 
         try {
-
-
-
-            if (SDK_INT >= 33) {
-
-//                mService.startForeground(NOTIFICATION_ID, mBuilder.build());
-            } else if (SDK_INT >= 30) {
-                mService.startForeground(NOTIFICATION_ID, mBuilder.build());
+            if (SDK_INT >= 34) {
+                mService.startForeground(NOTIFICATION_ID, mBuilder.build(), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
             } else {
                 mService.startForeground(NOTIFICATION_ID, mBuilder.build());
             }
-
-
-
-//            mService.startForeground(NOTIFICATION_ID, mBuilder.build());
         } catch (SecurityException e) {
-            Log.e(TAG, "Failed to start foreground service: Missing foregroundServiceType in manifest or missing permissions.", e);
+            Log.e(TAG, "Failed to start foreground service", e);
         }
     }
 //    @SuppressLint("ForegroundServiceType")

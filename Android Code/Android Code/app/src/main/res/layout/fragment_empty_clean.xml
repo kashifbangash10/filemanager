@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_clean_premium"
+    android:clipChildren="false">
+
+    <!-- Floating Background Orbs -->
+    <View
+        android:id="@+id/orb1"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:layout_marginStart="-100dp"
+        android:layout_marginTop="-50dp"
+        android:background="@drawable/orb_glow"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <View
+        android:id="@+id/orb2"
+        android:layout_width="250dp"
+        android:layout_height="250dp"
+        android:layout_marginEnd="-80dp"
+        android:layout_marginTop="200dp"
+        android:background="@drawable/orb_glow"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <View
+        android:id="@+id/orb3"
+        android:layout_width="350dp"
+        android:layout_height="350dp"
+        android:layout_marginStart="50dp"
+        android:layout_marginBottom="-100dp"
+        android:background="@drawable/orb_glow"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Particles Container (Placeholder for dynamic addition) -->
+    <FrameLayout
+        android:id="@+id/particlesContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Title with Glow -->
+    <TextView
+        android:id="@+id/titleText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="40dp"
+        android:fontFamily="sans-serif-light"
+        android:letterSpacing="0.1"
+        android:text="PHONE CLEANER"
+        android:textColor="@android:color/white"
+        android:textSize="26sp"
+        android:shadowColor="#80FFFFFF"
+        android:shadowDx="0"
+        android:shadowDy="0"
+        android:shadowRadius="10"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+
+
+    <!-- Main Central Animation Area -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/mainContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clipChildren="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.45">
+
+        <!-- Triple Glow Layers -->
+        <View
+            android:id="@+id/pulseGlow3"
+            android:layout_width="380dp"
+            android:layout_height="380dp"
+            android:alpha="0.1"
+            android:background="@drawable/glow_outer"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <View
+            android:id="@+id/pulseGlow2"
+            android:layout_width="340dp"
+            android:layout_height="340dp"
+            android:alpha="0.2"
+            android:background="@drawable/glow_middle"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <View
+            android:id="@+id/pulseGlow1"
+            android:layout_width="300dp"
+            android:layout_height="300dp"
+            android:alpha="0.3"
+            android:background="@drawable/glow_inner"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Triple Spinner Arcs -->
+        <ProgressBar
+            android:id="@+id/spinnerOuter"
+            android:layout_width="320dp"
+            android:layout_height="320dp"
+            android:indeterminate="true"
+            android:indeterminateDrawable="@drawable/spinner_outer"
+            android:indeterminateDuration="3000"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ProgressBar
+            android:id="@+id/spinnerMiddle"
+            android:layout_width="290dp"
+            android:layout_height="290dp"
+            android:indeterminate="true"
+            android:indeterminateDrawable="@drawable/spinner_middle"
+            android:indeterminateDuration="2000"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ProgressBar
+            android:id="@+id/spinnerInner"
+            android:layout_width="260dp"
+            android:layout_height="260dp"
+            android:indeterminate="true"
+            android:indeterminateDrawable="@drawable/spinner_inner"
+            android:indeterminateDuration="1000"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Center Glassmorphism Card -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/centerCard"
+            android:layout_width="220dp"
+            android:layout_height="220dp"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="110dp"
+            app:cardElevation="20dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/glassmorphism_background"
+                android:padding="20dp">
+
+                <TextView
+                    android:id="@+id/junkTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="Junk Files"
+                    android:textColor="@android:color/white"
+                    android:textSize="32sp"
+                    android:visibility="visible"
+                    app:layout_constraintBottom_toTopOf="@id/cleanButtonContainer"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_chainStyle="packed" />
+
+
+                <FrameLayout
+                    android:id="@+id/cleanButtonContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/junkTitle">
+
+                    <TextView
+                        android:id="@+id/cleanButton"
+                        android:layout_width="120dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/ic_clean_button_bg"
+                        android:gravity="center"
+                        android:text="CLEAN"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <!-- Shimmer View -->
+                    <View
+                        android:id="@+id/shimmerView"
+                        android:layout_width="60dp"
+                        android:layout_height="44dp"
+                        android:layout_marginStart="-60dp"
+                        android:alpha="0.4"
+                        android:background="@drawable/shimmer_gradient" />
+                </FrameLayout>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.cardview.widget.CardView>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Scanning Info -->
+    <LinearLayout
+        android:id="@+id/scanInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="40dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <TextView
+            android:id="@+id/scanStatusText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:text="REMOVABLE JUNK"
+            android:textColor="@android:color/white"
+            android:textSize="12sp"
+            android:letterSpacing="0.2" />
+
+        <TextView
+            android:id="@+id/scanDetailText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:alpha="0.6"
+            android:text="Analyzing cache files..."
+            android:textColor="@android:color/white"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

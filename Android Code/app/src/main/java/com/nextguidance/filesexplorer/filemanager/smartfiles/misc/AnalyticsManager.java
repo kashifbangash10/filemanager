@@ -20,6 +20,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.analytics.FirebaseAnalytics;
 
 import com.nextguidance.filesexplorer.filemanager.smartfiles.BuildConfig;
@@ -42,10 +43,17 @@ public class AnalyticsManager {
 
     public static synchronized void intialize(Context context) {
         sAppContext = context;
-        mFirebaseAnalytics = FirebaseAnalytics.getInstance(context);
+        try {
+            if (FirebaseApp.getApps(context).isEmpty()) {
+                FirebaseApp.initializeApp(context);
+            }
+            mFirebaseAnalytics = FirebaseAnalytics.getInstance(context);
 
-        setProperty("DeviceType", Utils.getDeviceType(context));
-        setProperty("Rooted", Boolean.toString(Utils.isRooted()));
+            setProperty("DeviceType", Utils.getDeviceType(context));
+            setProperty("Rooted", Boolean.toString(Utils.isRooted()));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static void setProperty(String propertyName, String propertyValue){

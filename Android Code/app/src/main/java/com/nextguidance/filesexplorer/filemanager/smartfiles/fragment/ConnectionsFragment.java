@@ -15,6 +15,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
+import androidx.appcompat.view.ContextThemeWrapper;
 
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -74,6 +75,7 @@ public class ConnectionsFragment extends RecyclerFragment
         final ConnectionsFragment fragment = new ConnectionsFragment();
         final FragmentTransaction ft = fm.beginTransaction();
         ft.replace(R.id.container_directory, fragment, TAG);
+        ft.addToBackStack(null);
         ft.commitAllowingStateLoss();
     }
 
@@ -192,6 +194,11 @@ public class ConnectionsFragment extends RecyclerFragment
         setListShown(false);
 
         LoaderManager.getInstance(getActivity()).restartLoader(mLoaderId, null, mCallbacks);
+        
+        // Update action bar to show proper title and back arrow
+        if (getActivity() instanceof com.nextguidance.filesexplorer.filemanager.smartfiles.DocumentsActivity) {
+            ((com.nextguidance.filesexplorer.filemanager.smartfiles.DocumentsActivity) getActivity()).updateActionBar();
+        }
 
     }
 
@@ -223,7 +230,8 @@ public class ConnectionsFragment extends RecyclerFragment
     }
 
     private void showPopupMenu(View view, final int position) {
-        PopupMenu popup = new PopupMenu(getActivity(), view);
+        ContextThemeWrapper wrapper = new ContextThemeWrapper(getActivity(), R.style.CustomPopupMenuDark);
+        PopupMenu popup = new PopupMenu(wrapper, view);
 
         popup.getMenuInflater().inflate(R.menu.popup_connections, popup.getMenu());
         popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {

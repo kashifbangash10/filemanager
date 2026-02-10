@@ -132,6 +132,10 @@ public class DocumentsAdapter extends RecyclerView.Adapter<BaseHolder> {
                 return new GridDocumentHolder(mEnv.getContext(), parent, mOnItemClickListener,
                         mEnv);
             }
+            case ITEM_TYPE_AD_LIST:
+            case ITEM_TYPE_AD_GRID: {
+                return new AdHolder(mEnv.getContext(), parent);
+            }
             case ITEM_TYPE_LOADING: {
                 return new LoadingHolder(mEnv, mEnv.getContext(), parent);
             }
@@ -148,6 +152,14 @@ public class DocumentsAdapter extends RecyclerView.Adapter<BaseHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull BaseHolder holder, int position) {
+        int viewType = getItemViewType(position);
+        if (viewType == ITEM_TYPE_AD_LIST || viewType == ITEM_TYPE_AD_GRID) {
+            if (holder instanceof AdHolder) {
+                ((AdHolder) holder).loadAd(mEnv.getContext());
+            }
+            return;
+        }
+
         if(position == 0 && mShowHeader){
             holder.setData(mHeader.mMessage, mHeader.mIcon);
             holder.itemView.setEnabled(false);
@@ -156,7 +168,10 @@ public class DocumentsAdapter extends RecyclerView.Adapter<BaseHolder> {
             Cursor cursor = getItem(position);
             String authority = getCursorString(cursor, RootCursorWrapper.COLUMN_AUTHORITY);
             if (TextUtils.isEmpty(authority)){
-                holder.setData(cursor, position);
+                // This case should be handled by viewType check above, but for safety:
+                if (holder instanceof AdHolder) {
+                    ((AdHolder) holder).loadAd(mEnv.getContext());
+                }
             } else {
                 holder.setData(cursor, position);
             }
@@ -168,7 +183,6 @@ public class DocumentsAdapter extends RecyclerView.Adapter<BaseHolder> {
 
             holder.itemView.setEnabled(false);
         }
-
     }
 
     @Override

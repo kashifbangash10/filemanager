@@ -12,3 +12,8 @@
 /captures
 .externalNativeBuild
 .cxx
+*.log
+*.apk
+*.aab
+*.txt
+.kotlin/

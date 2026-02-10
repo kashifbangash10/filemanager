@@ -18,7 +18,9 @@
 
     <style name="DocumentsTheme.Document">
         <item name="windowActionBar">false</item>
+        <item name="android:windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+        <item name="android:windowNoTitle">true</item>
         <item name="android:windowOptOutEdgeToEdgeEnforcement" tools:targetApi="35">true</item>
     </style>
 
@@ -41,8 +43,10 @@
         <!--<item name="android:listDivider">@drawable/list_divider_material</item>-->
 
         <item name="windowActionBar">false</item>
+        <item name="android:windowActionBar">false</item>
         <item name="windowActionModeOverlay">true</item>
         <item name="android:windowNoTitle">true</item>
+        <item name="windowNoTitle">true</item>
         <item name="*android:windowFixedWidthMajor">@null</item>
         <item name="*android:windowFixedWidthMinor">@null</item>
         <item name="*android:windowMinWidthMajor">@null</item>
@@ -71,10 +75,12 @@
         <item name="colorControlActivated">@color/accentColor</item>
         <item name="windowActionBar">true</item>
         <item name="android:preferenceCategoryStyle">@style/PreferenceCategoryStyle</item>
+        <item name="android:windowOptOutEdgeToEdgeEnforcement" tools:targetApi="35">true</item>
     </style>
 
     <style name="DocumentsTheme.Note">
         <item name="windowActionBar">true</item>
+        <item name="android:windowOptOutEdgeToEdgeEnforcement" tools:targetApi="35">true</item>
     </style>
 
     <style name="EditTextAppTheme" parent="DocumentsTheme">

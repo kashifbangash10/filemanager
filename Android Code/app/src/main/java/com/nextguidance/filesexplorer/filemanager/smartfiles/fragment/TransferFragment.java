@@ -49,6 +49,7 @@ public class TransferFragment extends RecyclerFragment
         final TransferFragment fragment = new TransferFragment();
         final FragmentTransaction ft = fm.beginTransaction();
         ft.replace(R.id.container_directory, fragment, TAG);
+        ft.addToBackStack(null);
         ft.commitAllowingStateLoss();
     }
 
@@ -108,6 +109,11 @@ public class TransferFragment extends RecyclerFragment
         });
         setListAdapter(mAdapter);
         showRecyclerView();
+        
+        // Update action bar to show proper title and back arrow
+        if (getActivity() instanceof com.nextguidance.filesexplorer.filemanager.smartfiles.DocumentsActivity) {
+            ((com.nextguidance.filesexplorer.filemanager.smartfiles.DocumentsActivity) getActivity()).updateActionBar();
+        }
 
     }
 

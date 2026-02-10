@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#FFFFFF">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="View"
+        android:textColor="#000000"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp"/>
+
+    <RadioGroup
+        android:id="@+id/rg_view_mode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <RadioButton
+            android:id="@+id/rb_list"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="List"
+            android:drawableStart="@drawable/ic_menu_view_list"
+            android:drawablePadding="16dp"
+            android:paddingStart="0dp"
+            android:buttonTint="#0288D1"
+            android:textSize="16sp"/>
+
+        <RadioButton
+            android:id="@+id/rb_grid"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Grid"
+            android:drawableStart="@drawable/ic_menu_view_grid"
+            android:drawablePadding="16dp"
+            android:paddingStart="0dp"
+            android:buttonTint="#0288D1"
+            android:textSize="16sp"/>
+    </RadioGroup>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#EEEEEE"
+        android:layout_marginVertical="16dp"/>
+
+    <RadioGroup
+        android:id="@+id/rg_icon_size"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <RadioButton
+            android:id="@+id/rb_small"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Smaller icon"
+            android:buttonTint="#0288D1"
+            android:textSize="16sp"/>
+
+        <RadioButton
+            android:id="@+id/rb_large"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Larger icon"
+            android:buttonTint="#0288D1"
+            android:textSize="16sp"/>
+    </RadioGroup>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:layout_marginTop="24dp">
+
+        <Button
+            android:id="@+id/btn_cancel"
+            style="?attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cancel"
+            android:textColor="#0288D1"
+            android:textStyle="bold"/>
+
+        <Button
+            android:id="@+id/btn_ok"
+            style="?attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="OK"
+            android:textColor="#0288D1"
+            android:textStyle="bold"
+            android:layout_marginStart="8dp"/>
+    </LinearLayout>
+
+</LinearLayout>

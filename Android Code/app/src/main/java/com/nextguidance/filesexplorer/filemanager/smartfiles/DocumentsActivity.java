@@ -56,7 +56,9 @@ import android.os.Looper;
 import android.text.TextUtils;
 import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -173,7 +175,7 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
 
     private boolean mInAnalysis = false;
     private String mAnalysisTitle = "Analysis";
-    private static final boolean SHOW_NATIVE_ADS = false;
+    private static final boolean SHOW_NATIVE_ADS = true;
 
     private boolean mShowAsDialog;
 
@@ -211,11 +213,12 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     private BottomNavigationView mBottomNav;
     private View mSelectionBar;
     private View mPasteBar;
-    private List<File> mClipboardFiles = new ArrayList<>();
+    public List<File> mClipboardFiles = new ArrayList<>();
     private ArrayList<DocumentInfo> mClipboardDocs = new ArrayList<>();
     private boolean mIsMoveMode = false;
     private Bundle mSavedInstanceState;
     private InterstitialAd mHomeInterstitialAd;
+    private AdView mAdView;
 
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -231,6 +234,12 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             setTheme(R.style.DocumentsTheme_Translucent);
         }
         setUpStatusBar();
+
+        // Initialize Ad IDs
+        vocsy.ads.AdsHandler.getInstance(this);
+        vocsy.ads.AdsHandler.bannerId = getString(R.string.admob_banner);
+        vocsy.ads.AdsHandler.nativeId = getString(R.string.admob_native);
+        vocsy.ads.AdsHandler.interstitialId = getString(R.string.admob_interstitial);
 
         setContentView(R.layout.activity);
 
@@ -263,13 +272,25 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
                 return false;
             }
         });
-        mBottomNav.setSelectedItemId(R.id.nav_home);
+        if (getIntent().getBooleanExtra("SHOW_CLEAN", false)) {
+            mBottomNav.setSelectedItemId(R.id.nav_clean);
+            CleanTabFragment.show(getSupportFragmentManager());
+        } else if (getIntent().getBooleanExtra("SHOW_FILES", false)) {
+            mBottomNav.setSelectedItemId(R.id.nav_files);
+            AnalysisDetailFragment.showInternalStorage(getSupportFragmentManager());
+        } else {
+            mBottomNav.setSelectedItemId(R.id.nav_home);
+        }
 
         mSelectionBar = findViewById(R.id.selection_actions);
         mPasteBar = findViewById(R.id.paste_actions);
         if (mPasteBar != null) {
-            mPasteBar.findViewById(R.id.action_paste_cancel).setOnClickListener(v -> setPasteMode(false, null, null, false));
+            mPasteBar.findViewById(R.id.action_paste_cancel).setOnClickListener(v -> {
+                setPasteMode(false, null, null, false);
+                onBackPressed();
+            });
             mPasteBar.findViewById(R.id.action_paste_execute).setOnClickListener(v -> executePaste());
+
         }
 
         initControls();
@@ -348,15 +369,15 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             }
         }
 
-        if (!mState.restored && hasStoragePermission) {
-            if (mState.action == ACTION_MANAGE) {
-                final Uri rootUri = getIntent().getData();
-                new RestoreRootTask(rootUri).executeOnExecutor(getCurrentExecutor());
-            } else {
-                if (isDownloadAuthority(getIntent())) {
+        if (!mState.restored) {
+            if (hasStoragePermission) {
+                if (mState.action == ACTION_MANAGE) {
+                    final Uri rootUri = getIntent().getData();
+                    new RestoreRootTask(rootUri).executeOnExecutor(getCurrentExecutor());
+                } else if (isDownloadAuthority(getIntent())) {
                     onRootPicked(getDownloadRoot(), true);
                 } else if (ConnectionUtils.isServerAuthority(getIntent())
-                                || TransferHelper.isTransferAuthority(getIntent())) {
+                        || TransferHelper.isTransferAuthority(getIntent())) {
                     RootInfo root = getIntent().getExtras().getParcelable(EXTRA_ROOT);
                     onRootPicked(root, true);
                 } else if (Utils.isQSTile(getIntent())) {
@@ -370,6 +391,9 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
                         CrashReportingManager.logException(e);
                     }
                 }
+            } else {
+                // If no permission, show default state (Home) instead of staying blank
+                onCurrentDirectoryChanged(ANIM_NONE);
             }
         } else if (mState.restored) {
             onCurrentDirectoryChanged(ANIM_NONE);
@@ -386,26 +410,70 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         }, 4000);*/
         
         loadHomeInterstitial(false);
+        
+        // Initialize Ad IDs
         loadBannerAd();
+        
+        if (getIntent().getBooleanExtra("SHOW_FILES", false)) {
+            if (mBottomNav != null) {
+                mBottomNav.setSelectedItemId(R.id.nav_files);
+            }
+        } else if (getIntent().getBooleanExtra("SHOW_CLEAN", false)) {
+            if (mBottomNav != null) {
+                mBottomNav.setSelectedItemId(R.id.nav_clean);
+            }
+        }
     }
     
     // removeSplashOverlay removed
 
     private void loadBannerAd() {
         try {
-            AdView adView = new AdView(this);
-            adView.setAdSize(AdSize.BANNER);
-            adView.setAdUnitId(getString(R.string.admob_banner));
+            mAdView = new AdView(this);
+            mAdView.setAdUnitId(getString(R.string.admob_banner));
             
             FrameLayout container = findViewById(R.id.banner_container);
             if (container != null) {
-                container.addView(adView);
+                container.removeAllViews();
+                container.addView(mAdView);
+                
+                AdSize adSize = getAdSize();
+                mAdView.setAdSize(adSize);
+                
                 AdRequest adRequest = new AdRequest.Builder().build();
-                adView.loadAd(adRequest);
+                Log.d("AdMob", "Loading Banner Ad with ID: " + getString(R.string.admob_banner));
+                mAdView.setAdListener(new com.google.android.gms.ads.AdListener() {
+                    @Override
+                    public void onAdFailedToLoad(@NonNull com.google.android.gms.ads.LoadAdError loadAdError) {
+                        super.onAdFailedToLoad(loadAdError);
+                        Log.e("AdMob", "Banner Ad failed to load: " + loadAdError.getMessage() + " (Code: " + loadAdError.getCode() + ")");
+                    }
+
+                    @Override
+                    public void onAdLoaded() {
+                        super.onAdLoaded();
+                        Log.d("AdMob", "Banner Ad loaded successfully!");
+                    }
+                });
+                mAdView.loadAd(adRequest);
+            } else {
+                Log.e("AdMob", "banner_container not found!");
             }
         } catch (Exception e) {
             Log.e("DocumentsActivity", "Error loading banner ad", e);
         }
+    }
+
+    private AdSize getAdSize() {
+        Display display = getWindowManager().getDefaultDisplay();
+        DisplayMetrics outMetrics = new DisplayMetrics();
+        display.getMetrics(outMetrics);
+
+        float widthPixels = outMetrics.widthPixels;
+        float density = outMetrics.density;
+
+        int adWidth = (int) (widthPixels / density);
+        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, adWidth);
     }
 
     @Override
@@ -418,6 +486,16 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             }
         }
         super.onNewIntent(intent);
+        
+        if (intent.getBooleanExtra("SHOW_FILES", false)) {
+            if (mBottomNav != null) {
+                mBottomNav.setSelectedItemId(R.id.nav_files);
+            }
+        } else if (intent.getBooleanExtra("SHOW_CLEAN", false)) {
+            if (mBottomNav != null) {
+                mBottomNav.setSelectedItemId(R.id.nav_clean);
+            }
+        }
     }
 
     @Override
@@ -437,11 +515,12 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
                 public void run() {
                     mRoots.updateAsync();
                     final RootInfo root = getCurrentRoot();
-                    if (root.isHome()) {
-                        HomeFragment homeFragment = HomeFragment.get(getSupportFragmentManager());
-                        if (null != homeFragment) {
-                            homeFragment.reloadData();
-                        }
+                    HomeFragment homeFragment = HomeFragment.get(getSupportFragmentManager());
+                    if (null != homeFragment) {
+                        homeFragment.reloadData();
+                    } else if (getSupportFragmentManager().findFragmentById(R.id.container_directory) == null) {
+                        // If no fragment is shown, show the default one now that we have permissions
+                        onCurrentDirectoryChanged(ANIM_NONE);
                     }
                 }
             }, 500);
@@ -583,21 +662,23 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         protected Void doInBackground(Void... params) {
 
             final String packageName = getCallingPackageMaybeExtra();
-            final Cursor cursor = getContentResolver()
-                    .query(RecentsProvider.buildResume(packageName), null, null, null, null);
-            try {
-                if (null != cursor && cursor.moveToFirst()) {
-                    mExternal = cursor.getInt(cursor.getColumnIndex(ResumeColumns.EXTERNAL)) != 0;
-                    final byte[] rawStack = cursor.getBlob(
-                            cursor.getColumnIndex(ResumeColumns.STACK));
-                    DurableUtils.readFromArray(rawStack, mState.stack);
-                    mRestoredStack = true;
+            if (packageName != null) {
+                final Cursor cursor = getContentResolver()
+                        .query(RecentsProvider.buildResume(packageName), null, null, null, null);
+                try {
+                    if (null != cursor && cursor.moveToFirst()) {
+                        mExternal = cursor.getInt(cursor.getColumnIndex(ResumeColumns.EXTERNAL)) != 0;
+                        final byte[] rawStack = cursor.getBlob(
+                                cursor.getColumnIndex(ResumeColumns.STACK));
+                        DurableUtils.readFromArray(rawStack, mState.stack);
+                        mRestoredStack = true;
+                    }
+                } catch (IOException e) {
+                    Log.w(TAG, "Failed to resume: " + e);
+                    CrashReportingManager.logException(e);
+                } finally {
+                    IoUtils.closeQuietly(cursor);
                 }
-            } catch (IOException e) {
-                Log.w(TAG, "Failed to resume: " + e);
-                CrashReportingManager.logException(e);
-            } finally {
-                IoUtils.closeQuietly(cursor);
             }
 
             if (mRestoredStack) {
@@ -667,6 +748,9 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     @Override
     public void onResume() {
         super.onResume();
+        if (mAdView != null) {
+            mAdView.resume();
+        }
         changeActionBarColor();
         if (mState.action == ACTION_MANAGE) {
             mState.showSize = true;
@@ -682,6 +766,22 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         }
         }
         initProtection();
+    }
+
+    @Override
+    public void onPause() {
+        if (mAdView != null) {
+            mAdView.pause();
+        }
+        super.onPause();
+    }
+
+    @Override
+    public void onDestroy() {
+        if (mAdView != null) {
+            mAdView.destroy();
+        }
+        super.onDestroy();
     }
 
     @Override
@@ -814,7 +914,7 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         } else {
             if (mState.stack.size() <= 1) {
                 if (null != root) {
-                    if (root.isHome()) {
+                    if (root.isHome() && "Home".equals(root.title)) {
                         setTitle("Home");
                         if (mDrawerToggle != null) {
                             mDrawerToggle.setDrawerIndicatorEnabled(true);
@@ -1223,12 +1323,12 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
 
     @Override
     public void onBackPressed() {
-        if (mPasteBar != null && mPasteBar.getVisibility() == View.VISIBLE) {
-            setPasteMode(false, null, null, false);
-            return;
-        }
         if (mInAnalysis) {
             super.onBackPressed();
+            return;
+        }
+        if (mPasteBar != null && mPasteBar.getVisibility() == View.VISIBLE) {
+            setPasteMode(false, null, null, false);
             return;
         }
         if (isRootsDrawerOpen() && !mShowAsDialog) {
@@ -1247,18 +1347,24 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
         if (size > 1) {
             mState.stack.pop();
             onCurrentDirectoryChanged(ANIM_UP);
-        } else if (size == 1 && !isRootsDrawerOpen()) {
-
-            if (null != mParentRoot) {
-                onRootPicked(mParentRoot, true);
-                mParentRoot = null;
+        } else if (size <= 1 && !isRootsDrawerOpen()) {
+            if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+                getSupportFragmentManager().popBackStack();
                 return;
             }
 
-            final RootInfo current = getCurrentRoot();
-            if (current != null && !current.isHome()) {
-                onRootPicked(mRoots.getHomeRoot(), true);
-                return;
+            if (size == 1) {
+                if (null != mParentRoot) {
+                    onRootPicked(mParentRoot, true);
+                    mParentRoot = null;
+                    return;
+                }
+
+                final RootInfo current = getCurrentRoot();
+                if (current != null && !current.isHome()) {
+                    onRootPicked(mRoots.getHomeRoot(), true);
+                    return;
+                }
             }
 
             super.onBackPressed();
@@ -1592,10 +1698,18 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
     }
 
     public void onRootPicked(RootInfo root, boolean closeDrawer) {
+        onRootPicked(root, closeDrawer, true);
+    }
+
+    public void onRootPicked(RootInfo root, boolean closeDrawer, boolean clearBackStack) {
         if (mActionMode || isNavigationLocked()) {
             return;
         }
         try {
+            if (clearBackStack) {
+                getSupportFragmentManager().popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+            }
+
             if (null == root) {
                 return;
             }
@@ -1806,7 +1920,34 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
                                     CastUtils.buildMediaInfo(doc, getRoots().getPrimaryRoot()));
                             invalidateMenu();
                         } else {
-                            startActivity(view);
+                            // Internal Viewer Routing
+                            String mimeType = doc.mimeType;
+                            Uri dataUri = view.getData();
+
+                            if (mimeType.startsWith("video/") || mimeType.startsWith("audio/")) {
+                                Intent intent = new Intent(this, com.nextguidance.filesexplorer.filemanager.smartfiles.activities.VideoPlayerActivity.class);
+                                intent.setData(dataUri);
+                                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                startActivity(intent);
+                            } else if (mimeType.startsWith("image/")) {
+                                Intent intent = new Intent(this, com.nextguidance.filesexplorer.filemanager.smartfiles.activities.ImageViewerActivity.class);
+                                intent.setData(dataUri);
+                                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                startActivity(intent);
+                            } else if (mimeType.startsWith("application/pdf") || 
+                                     mimeType.contains("msword") || 
+                                     mimeType.contains("officedocument") || 
+                                     mimeType.contains("ms-excel") || 
+                                     mimeType.contains("ms-powerpoint") ||
+                                     mimeType.equals("text/plain")) {
+                                
+                                Intent intent = new Intent(this, com.nextguidance.filesexplorer.filemanager.smartfiles.activities.DocumentViewerActivity.class);
+                                intent.setData(dataUri);
+                                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                startActivity(intent);
+                            } else {
+                                startActivity(view);
+                            }
                         }
                     } catch (Exception e) {
                         CrashReportingManager.logException(e);
@@ -1869,6 +2010,18 @@ public class DocumentsActivity extends BaseActivity implements MenuItem.OnMenuIt
             if (mClipboardDocs != null) mClipboardDocs.clear();
             if (mPasteBar != null) mPasteBar.setVisibility(View.GONE);
             if (mBottomNav != null) mBottomNav.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void executePasteCreate() {
+        FragmentManager fm = getSupportFragmentManager();
+        Fragment fragment = fm.findFragmentByTag(AnalysisDetailFragment.TAG);
+        if (fragment == null) {
+            fragment = fm.findFragmentById(R.id.container_directory);
+        }
+        
+        if (fragment instanceof AnalysisDetailFragment) {
+            ((AnalysisDetailFragment) fragment).createNewFolder();
         }
     }
 

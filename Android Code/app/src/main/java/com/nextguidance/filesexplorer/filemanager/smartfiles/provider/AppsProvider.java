@@ -35,8 +35,8 @@ import android.os.ParcelFileDescriptor;
 import android.text.TextUtils;
 import android.util.SparseArray;
 
-import com.jaredrummler.android.processes.AndroidProcesses;
-import com.jaredrummler.android.processes.models.AndroidAppProcess;
+// import com.jaredrummler.android.processes.AndroidProcesses;
+// import com.jaredrummler.android.processes.models.AndroidAppProcess;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -288,10 +288,10 @@ public class AppsProvider extends DocumentsProvider {
 					}
 				}
 				else if (Utils.hasLollipopMR1()) {
-					List<AndroidAppProcess> runningAppProcesses = AndroidProcesses.getRunningAppProcesses();
-					for (AndroidAppProcess process : runningAppProcesses) {
-						includeAppFromProcess(result, docId, process, null);
-					}
+// List<AndroidAppProcess> runningAppProcesses = AndroidProcesses.getRunningAppProcesses();
+// for (AndroidAppProcess process : runningAppProcesses) {
+// 	includeAppFromProcess(result, docId, process, null);
+// }
 				} else {
 					List<RunningAppProcessInfo> runningProcessesList = activityManager.getRunningAppProcesses();
 					for (RunningAppProcessInfo processInfo : runningProcessesList) {
@@ -422,6 +422,7 @@ public class AppsProvider extends DocumentsProvider {
 		}
     }
 
+/*
 	private void includeAppFromProcess(MatrixCursor result, String docId, AndroidAppProcess processInfo, String query ) {
 
 		String process = processInfo.name;
@@ -467,6 +468,7 @@ public class AppsProvider extends DocumentsProvider {
 		row.add(Document.COLUMN_PATH, path);
 		row.add(Document.COLUMN_FLAGS, flags);
 	}
+*/
 
 	private void includeAppFromService(MatrixCursor result, String docId, RunningServiceInfo processInfo, String query ) {
 
@@ -614,6 +616,7 @@ public class AppsProvider extends DocumentsProvider {
 				}
 			}
 			return appProcessInfos;
+/*
 		} else if (Utils.hasLollipopMR1()) {
 			List<AndroidAppProcess> runningAppProcesses = AndroidProcesses.getRunningAppProcesses();
 			for (AndroidAppProcess process : runningAppProcesses) {
@@ -626,6 +629,7 @@ public class AppsProvider extends DocumentsProvider {
 				appProcessInfos.add(info);
 			}
 			return appProcessInfos;
+*/
 		}
 		return am.getRunningAppProcesses();
 	}

@@ -67,6 +67,7 @@ public class ServerFragment extends BaseFragment implements View.OnClickListener
         fragment.setArguments(args);
         final FragmentTransaction ft = fm.beginTransaction();
         ft.replace(R.id.container_directory, fragment, TAG);
+        ft.addToBackStack(null);
         ft.commitAllowingStateLoss();
     }
 
@@ -111,6 +112,11 @@ public class ServerFragment extends BaseFragment implements View.OnClickListener
         NetworkConnection connection = NetworkConnection.fromRootInfo(getActivity(), root);
         connection_id = connection.id;
         showData(connection);
+        
+        // Update action bar to show proper title and back arrow
+        if (getActivity() instanceof com.nextguidance.filesexplorer.filemanager.smartfiles.DocumentsActivity) {
+            ((com.nextguidance.filesexplorer.filemanager.smartfiles.DocumentsActivity) getActivity()).updateActionBar();
+        }
     }
 
     private void showData(NetworkConnection connection) {

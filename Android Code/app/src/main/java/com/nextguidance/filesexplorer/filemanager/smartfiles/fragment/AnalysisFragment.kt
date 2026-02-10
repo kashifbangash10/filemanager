@@ -148,12 +148,14 @@ class AnalysisFragment : Fragment() {
                             }
                         }
 
-                        cache.allFiles.add(FileItem().apply {
+                        // No longer storing all files to save memory
+                        /*cache.allFiles.add(FileItem().apply {
                             this.name = name
                             this.path = File(path).parent ?: ""
                             this.size = size
                             this.fullPath = path
-                        })
+                        })*/
+
 
                         if (size > 50 * 1024) {
                             sizeMap.getOrPut(size) { mutableListOf() }.add(path)
@@ -199,15 +201,19 @@ class AnalysisFragment : Fragment() {
             try {
                 val pm = ctx.packageManager
                 val pkgs = pm.getInstalledPackages(0)
+                val addedPackageNames = mutableSetOf<String>()
                 pkgs.forEach { pkg ->
                     pkg.applicationInfo?.let { appInfo ->
-                        val appItem = AppItem().apply {
-                            name = pm.getApplicationLabel(appInfo).toString()
-                            packageName = pkg.packageName
-                            val apk = File(appInfo.sourceDir)
-                            size = if (apk.exists()) apk.length() else 0
+                        if (!addedPackageNames.contains(pkg.packageName)) {
+                            val appItem = AppItem().apply {
+                                name = pm.getApplicationLabel(appInfo).toString()
+                                packageName = pkg.packageName
+                                val apk = File(appInfo.sourceDir)
+                                size = if (apk.exists()) apk.length() else 0
+                            }
+                            cache.apps.add(appItem)
+                            addedPackageNames.add(pkg.packageName)
                         }
-                        cache.apps.add(appItem)
                     }
                 }
                 cache.apps.sortByDescending { it.size }
@@ -495,12 +501,13 @@ class AnalysisFragment : Fragment() {
                         }
 
                         // Store all files for detail view
-                        cachedData?.allFiles?.add(FileItem().apply {
+                        /*cachedData?.allFiles?.add(FileItem().apply {
                             this.name = name
                             this.path = try { File(path).parent ?: "" } catch(e: Exception) { "" }
                             this.size = size
                             this.fullPath = path
-                        })
+                        })*/
+
 
                         // Duplicates (size-based candidate)
                         if (size > 50 * 1024) {
@@ -545,14 +552,45 @@ class AnalysisFragment : Fragment() {
             var duplicateCount = 0
             sizeMap.forEach { (size, paths) ->
                 if (paths.size > 1) {
-                    totalWasted += size * (paths.size - 1)
-                    duplicateCount += (paths.size - 1)
-                    cachedData?.duplicateGroups?.add(DuplicateGroup().apply {
-                        fileName = try { File(paths[0]).name } catch (e: Exception) { "Unknown" }
-                        this.size = size
-                        count = paths.size
-                        filePaths.addAll(paths)
-                    })
+                    // Hash verification for true duplicates
+                     val hashMap = mutableMapOf<String, MutableList<String>>()
+                     paths.forEach { path ->
+                          try {
+                              val file = File(path)
+                              if (file.exists()) {
+                                  // Simple hash for speed (MD5 or SHA-1 is faster than SHA-256)
+                                  // Using a small buffer verification first could be faster, but let's do full hash
+                                  val digest = java.security.MessageDigest.getInstance("MD5")
+                                  val fis = java.io.FileInputStream(file)
+                                  val buffer = ByteArray(8192)
+                                  var bytesRead: Int
+                                  while (fis.read(buffer).also { bytesRead = it } != -1) {
+                                      digest.update(buffer, 0, bytesRead)
+                                  }
+                                  fis.close()
+                                  val bytes = digest.digest()
+                                  val sb = StringBuilder()
+                                  for (b in bytes) {
+                                      sb.append(String.format("%02x", b))
+                                  }
+                                  val hash = sb.toString()
+                                  hashMap.getOrPut(hash) { mutableListOf() }.add(path)
+                              }
+                          } catch(e: Exception) {}
+                     }
+                     
+                     hashMap.forEach { (_, hashPaths) ->
+                         if (hashPaths.size > 1) {
+                             totalWasted += size * (hashPaths.size - 1)
+                             duplicateCount += (hashPaths.size - 1)
+                             cachedData?.duplicateGroups?.add(DuplicateGroup().apply {
+                                 fileName = try { File(hashPaths[0]).name } catch (e: Exception) { "Unknown" }
+                                 this.size = size
+                                 count = hashPaths.size
+                                 filePaths.addAll(hashPaths)
+                             })
+                         }
+                     }
                 }
             }
             cachedData?.duplicateGroups?.sortByDescending { it.size * (it.count - 1) }
@@ -576,18 +614,22 @@ class AnalysisFragment : Fragment() {
                 val pkgs = pm.getInstalledPackages(0)
                 var totalAppSize = 0L
                 cachedData?.apps?.clear()
+                val addedPackageNames = mutableSetOf<String>()
                 pkgs.forEach { pkg ->
                     yield()
                     try {
                         pkg.applicationInfo?.let { appInfo ->
-                            val appItem = AppItem().apply {
-                                name = pm.getApplicationLabel(appInfo).toString()
-                                packageName = pkg.packageName
-                                val apk = File(appInfo.sourceDir)
-                                size = if (apk.exists()) apk.length() else 0
+                            if (!addedPackageNames.contains(pkg.packageName)) {
+                                val appItem = AppItem().apply {
+                                    name = pm.getApplicationLabel(appInfo).toString()
+                                    packageName = pkg.packageName
+                                    val apk = File(appInfo.sourceDir)
+                                    size = if (apk.exists()) apk.length() else 0
+                                }
+                                totalAppSize += appItem.size
+                                cachedData?.apps?.add(appItem)
+                                addedPackageNames.add(pkg.packageName)
                             }
-                            totalAppSize += appItem.size
-                            cachedData?.apps?.add(appItem)
                         }
                     } catch (e: Exception) {
                         // Skip individual app error
@@ -854,7 +896,7 @@ class AnalysisFragment : Fragment() {
         when(type) {
             AnalysisItem.TYPE_STORAGE -> cachedData?.let { AnalysisDetailFragment.show(fm, "Internal Storage", it.storageFolders, null, null, null) }
             AnalysisItem.TYPE_DUPLICATE -> cachedData?.let { AnalysisDetailFragment.show(fm, "Duplicate Files", null, it.duplicateGroups, null, null) }
-            AnalysisItem.TYPE_LARGE_FILES -> cachedData?.let { AnalysisDetailFragment.show(fm, "Large Files", null, null, it.largeFiles, null) }
+            AnalysisItem.TYPE_LARGE_FILES -> LargeFilesFragment.show(fm)
             AnalysisItem.TYPE_APP_MANAGER -> cachedData?.let { AnalysisDetailFragment.show(fm, "App Manager", null, null, null, it.apps) }
         }
     }
@@ -893,8 +935,9 @@ class AnalysisFragment : Fragment() {
     class AnalysisCache {
         @JvmField val storageFolders = mutableListOf<FolderItem>()
         @JvmField val allFoldersMap = mutableMapOf<String, FolderItem>()
-        @JvmField val allFiles = mutableListOf<FileItem>()
+        // @JvmField val allFiles = mutableListOf<FileItem>()
         @JvmField val duplicateGroups = mutableListOf<DuplicateGroup>()
+
         @JvmField val largeFiles = mutableListOf<FileItem>()
         @JvmField val apps = mutableListOf<AppItem>()
         private var timestamp = 0L
@@ -910,8 +953,9 @@ class AnalysisFragment : Fragment() {
         fun clear() {
             storageFolders.clear()
             allFoldersMap.clear()
-            allFiles.clear()
+            // allFiles.clear()
             duplicateGroups.clear()
+
             largeFiles.clear()
             apps.clear()
             totalVideoSize = 0

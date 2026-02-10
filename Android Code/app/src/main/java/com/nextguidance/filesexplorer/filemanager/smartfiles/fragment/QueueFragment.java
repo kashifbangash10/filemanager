@@ -9,6 +9,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.PopupMenu;
+import androidx.appcompat.view.ContextThemeWrapper;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -45,6 +46,7 @@ public class QueueFragment extends RecyclerFragment implements OnItemClickListen
         final QueueFragment fragment = new QueueFragment();
         final FragmentTransaction ft = fm.beginTransaction();
         ft.replace(R.id.container_directory, fragment, TAG);
+        ft.addToBackStack(null);
         ft.commitAllowingStateLoss();
     }
 
@@ -111,6 +113,11 @@ public class QueueFragment extends RecyclerFragment implements OnItemClickListen
         mAdapter = new QueueAdapter(casty.getMediaQueue(), iconHelper);
         mAdapter.setOnItemClickListener(this);
         setListAdapter(mAdapter);
+        
+        // Update action bar to show proper title and back arrow
+        if (getActivity() instanceof com.nextguidance.filesexplorer.filemanager.smartfiles.DocumentsActivity) {
+            ((com.nextguidance.filesexplorer.filemanager.smartfiles.DocumentsActivity) getActivity()).updateActionBar();
+        }
     }
 
     @Override
@@ -180,7 +187,8 @@ public class QueueFragment extends RecyclerFragment implements OnItemClickListen
     };
 
     void onPopupMenuClick(final View view, final int position) {
-        final PopupMenu popup = new PopupMenu(view.getContext(), view);
+        ContextThemeWrapper wrapper = new ContextThemeWrapper(view.getContext(), R.style.CustomPopupMenuDark);
+        final PopupMenu popup = new PopupMenu(wrapper, view);
         popup.inflate(R.menu.queue_context);
         popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
             @Override

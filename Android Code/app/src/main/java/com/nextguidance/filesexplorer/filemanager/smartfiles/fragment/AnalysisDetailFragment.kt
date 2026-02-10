@@ -158,10 +158,7 @@ class AnalysisDetailFragment : Fragment() {
     private var title: String? = null
     private var adapter: DetailAdapter? = null
 
-    private var bottomBar: View? = null
-    private var cleanupButton: Button? = null
     private var summaryText: TextView? = null
-    private var selectAllButton: ImageView? = null
 
     private var cleanerBottomBar: View? = null
     private var storageInfoText: TextView? = null
@@ -181,13 +178,7 @@ class AnalysisDetailFragment : Fragment() {
         recyclerView.layoutManager = LinearLayoutManager(context)
 
         try {
-            bottomBar = view.findViewById(R.id.bottom_bar)
-            cleanupButton = view.findViewById(R.id.btn_cleanup)
             summaryText = view.findViewById(R.id.summary_text)
-            selectAllButton = view.findViewById(R.id.btn_select_all)
-
-            cleanupButton?.setOnClickListener { performCleanup() }
-            selectAllButton?.setOnClickListener { toggleSelectAll() }
 
             cleanerBottomBar = view.findViewById(R.id.cleaner_bottom_bar)
             storageInfoText = view.findViewById(R.id.storage_info_text)
@@ -206,9 +197,21 @@ class AnalysisDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         title = arguments?.getString(ARG_TITLE)
-        isCleanerMode = arguments?.getBoolean(ARG_IS_CLEANER, false) == true
         
-        if (isCleanerMode) {
+        // Enable cleaner UI for Duplicates and Large Files automatically
+        isCleanerMode = arguments?.getBoolean(ARG_IS_CLEANER, false) == true || 
+                       title.equals("Duplicate files", ignoreCase = true) || 
+                       title.equals("Large files", ignoreCase = true)
+                       
+        setHasOptionsMenu(title.equals("Duplicate files", ignoreCase = true))
+        
+        updateToolbarTitle()
+        loadData()
+
+        val act = activity as? DocumentsActivity
+        val isInPasteMode = act != null && act.mClipboardFiles.isNotEmpty()
+
+        if (isCleanerMode && !isInPasteMode) {
              val path = Environment.getExternalStorageDirectory()
              try {
                 val stat = android.os.StatFs(path.path)
@@ -219,26 +222,51 @@ class AnalysisDetailFragment : Fragment() {
                 storageInfoText?.text = "Available: --   Total: --"
              }
              cleanerBottomBar?.visibility = View.VISIBLE
-             bottomBar?.visibility = View.GONE
         } else {
              cleanerBottomBar?.visibility = View.GONE
-             // bottomBar handled by existing logic
         }
-
-        updateToolbarTitle()
-        loadData()
 
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : androidx.activity.OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (!this@AnalysisDetailFragment.handleBackPressed()) {
-                    fragmentManager?.popBackStack()
+                    parentFragmentManager.popBackStack()
                 }
             }
         })
     }
 
     private fun updateToolbarTitle() {
-        (activity as? DocumentsActivity)?.setAnalysisMode(true, title)
+        var displayTitle = title
+        val act = activity as? DocumentsActivity
+        val isInPasteMode = act != null && act.mClipboardFiles.isNotEmpty()
+        
+        if (isInPasteMode) {
+            displayTitle = "Paste to"
+            view?.findViewById<View>(R.id.path_indicator_container)?.visibility = View.VISIBLE
+            
+            // Update path name
+            val currentFolder = if (isInFolderNavigation && folderStack.isNotEmpty()) folderStack.peek() else Environment.getExternalStorageDirectory()
+            val rootPath = Environment.getExternalStorageDirectory().absolutePath
+            view?.findViewById<TextView>(R.id.tv_path_name)?.text = if (currentFolder.absolutePath == rootPath) "Internal storage" else currentFolder.name
+            
+            // Update storage percentage
+            val percent = getStorageUsagePercent()
+            view?.findViewById<TextView>(R.id.tv_storage_percent)?.text = "$percent%"
+        } else {
+            view?.findViewById<View>(R.id.path_indicator_container)?.visibility = View.GONE
+        }
+        
+        act?.setAnalysisMode(true, displayTitle)
+    }
+
+    private fun getStorageUsagePercent(): Int {
+        return try {
+            val stat = android.os.StatFs(Environment.getExternalStorageDirectory().path)
+            val total = stat.blockCountLong * stat.blockSizeLong
+            val available = stat.availableBlocksLong * stat.blockSizeLong
+            val used = total - available
+            if (total > 0) ((used * 100) / total).toInt() else 0
+        } catch (e: Exception) { 0 }
     }
 
     override fun onResume() {
@@ -250,8 +278,49 @@ class AnalysisDetailFragment : Fragment() {
         if (isSelectionMode) {
             (activity as? DocumentsActivity)?.setActionMode(false)
         }
-        (activity as? DocumentsActivity)?.setAnalysisMode(false)
+        (activity as? DocumentsActivity)?.let { act ->
+            act.setAnalysisMode(false)
+            if (act.mClipboardFiles.isNotEmpty()) {
+                act.setPasteMode(false, null, null, false)
+            }
+        }
         super.onDestroy()
+    }
+
+    override fun onCreateOptionsMenu(menu: android.view.Menu, inflater: android.view.MenuInflater) {
+        if (title == "Duplicate files") {
+            inflater.inflate(R.menu.menu_analysis_duplicate, menu)
+        }
+        super.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
+        if (item.itemId == R.id.action_smart_select) {
+            performSmartSelect()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
+    private fun performSmartSelect() {
+        val adapter = adapter ?: return
+        val items = adapter.getAllItems()
+        val selectedIndices = mutableSetOf<Int>()
+        
+        // Group items by name and size to identify duplicates in the current list
+        val groups = items.withIndex().groupBy { "${it.value.name}_${it.value.sizeBytes}" }
+        
+        groups.forEach { (_, groupItems) ->
+            if (groupItems.size > 1) {
+                // Keep the first one unselected, select all others in the group
+                for (i in 1 until groupItems.size) {
+                    selectedIndices.add(groupItems[i].index)
+                }
+            }
+        }
+        
+        adapter.setSelectedPositions(selectedIndices)
+        Toast.makeText(context, "Smart selected ${selectedIndices.size} duplicates", Toast.LENGTH_SHORT).show()
     }
 
     private fun handleBackPressed(): Boolean {
@@ -347,7 +416,7 @@ class AnalysisDetailFragment : Fragment() {
                                             path = getShortPath(filePath)
                                             sizeBytes = group.size
                                             size = try { Formatter.formatFileSize(context, group.size) } catch(e: Exception) { "0 B" }
-                                            subtitle = getFileDate(f)
+                                            subtitle = filePath // Show full path in subtitle as requested
                                             file = f
                                             isFolder = false
                                             isSelectable = true
@@ -358,8 +427,8 @@ class AnalysisDetailFragment : Fragment() {
                                 } catch (e: Exception) {}
                             }
                         }
-                        bottomBar?.visibility = View.VISIBLE
                         summaryText?.text = "Duplicate files: $totalDuplicates  Size: ${try { Formatter.formatFileSize(context, totalSize) } catch(e: Exception) { "" }}"
+                        summaryText?.parent?.let { (it as? View)?.visibility = View.VISIBLE }
                     }
                 }
                 args.containsKey(ARG_LARGE_FILES) -> {
@@ -427,7 +496,7 @@ class AnalysisDetailFragment : Fragment() {
                                 })
                             }
                         }
-                        bottomBar?.visibility = View.GONE
+                        // Header handled by existing logic
                     } else {
                         // Quick load to avoid blank screen (Image 1 behavior)
                         val root = Environment.getExternalStorageDirectory()
@@ -486,8 +555,8 @@ class AnalysisDetailFragment : Fragment() {
                             } catch (e: Exception) {}
                         }
                     }
-                    bottomBar?.visibility = View.VISIBLE
                     summaryText?.text = "Duplicate files: $totalDuplicates  Size: ${try { Formatter.formatFileSize(context, totalSize) } catch(e: Exception) { "" }}"
+                    summaryText?.parent?.let { (it as? View)?.visibility = View.VISIBLE }
                 } else {
                     startAnalysisScan()
                 }
@@ -547,21 +616,25 @@ class AnalysisDetailFragment : Fragment() {
             }
         }
 
+        val act = activity as? DocumentsActivity
+        val isInPasteMode = act != null && act.mClipboardFiles.isNotEmpty()
+        val shouldShowSelection = !isInPasteMode && (isSelectionMode || isCleanerMode || title == "Duplicate files" || title == "Large files")
+        
         val currentAdapter = adapter
         if (currentAdapter != null) {
             currentAdapter.updateItems(items)
-            currentAdapter.setSelectionMode(isSelectionMode || isCleanerMode)
-            if (isSelectionMode) {
+            currentAdapter.setSelectionMode(shouldShowSelection)
+            if (isSelectionMode && !isInPasteMode) {
                 currentAdapter.setSelectedItems(selectedItems)
             }
         } else {
-            adapter = DetailAdapter(items, isSelectionMode || isCleanerMode, lifecycleScope,
+            adapter = DetailAdapter(items, shouldShowSelection, lifecycleScope,
                 this::handleItemClick, this::handleSelectionChanged, this::handleItemLongClick, isCleanerMode)
             recyclerView.adapter = adapter
         }
         
         if (isCleanerMode && items.isNotEmpty()) {
-             handleSelectionChanged(0, 0, emptySet())
+             handleSelectionChanged(0, 0)
         }
     } catch (e: Exception) {
         android.util.Log.e(TAG, "Error loading data", e)
@@ -591,23 +664,22 @@ private fun startAnalysisScan() {
     }
 }
     private fun handleItemClick(item: DetailAdapter.DetailItem) {
-        if (isCleanerMode) {
-            adapter?.toggleSelection(item)
-            return
-        }
+        // If selection mode is active, the adapter handles it internally.
+        // We only handle opening files/apps here when not selecting.
+
         item.packageName?.let { openAppInfo(it) } ?: run {
             if (item.isFolder) {
-                openFolderInternally(item.file)
-            } else if (item.file != null && !item.isSelectable) {
+                if (item.file != null) openFolderInternally(item.file!!)
+            } else if (item.file != null) {
                 openFileDirect(item.file!!)
             }
         }
     }
 
     private fun handleItemLongClick(item: DetailAdapter.DetailItem) {
-        if (isCleanerMode) {
+        if (isCleanerMode || isSelectionMode) {
             adapter?.toggleSelection(item)
-        } else if (!isSelectionMode) {
+        } else {
             startSelectionMode(item)
         }
     }
@@ -844,42 +916,45 @@ private fun startAnalysisScan() {
         val selected = adapter?.getSelectedItemsList() ?: return
         if (selected.isEmpty()) return
 
-        if (isCleanerMode) {
-             android.app.AlertDialog.Builder(context)
-                .setTitle("Clean up")
-                .setMessage("Clean up files from device?")
-                .setPositiveButton("Clean up") { _, _ ->
-                     val paths = ArrayList<String>()
-                     var totalSelectedSize = 0L
-                     selected.forEach { 
-                         it.file?.absolutePath?.let { p -> paths.add(p) }
-                         totalSelectedSize += it.sizeBytes
-                     }
-                     
-                     val sizeDisplay = Formatter.formatFileSize(context, totalSelectedSize)
-                     
-                     // Remove from adapter immediately to update UI underneath
-                     val itemsToDelete = selected.toSet()
-                     adapter?.removeItems(itemsToDelete)
-                     exitSelectionMode()
-
-                     CleanerResultFragment.show(fragmentManager, paths, sizeDisplay, title)
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
-             return
-        }
+        val title = if (isCleanerMode) "Clean up" else "Delete"
+        val message = if (isCleanerMode) "Clean up files from device?" else "Delete ${selected.size} items?"
+        val buttonText = if (isCleanerMode) "Clean up" else "Delete"
 
         android.app.AlertDialog.Builder(context)
-            .setTitle("Delete")
-            .setMessage("Delete ${selected.size} items?")
-            .setPositiveButton("Delete") { _, _ ->
-                 val itemsToDelete = selected.toSet()
-                 adapter?.removeItems(itemsToDelete)
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton(buttonText) { _, _ ->
+                 // Show Loading Overlay
+                 val loadingOverlay = view?.findViewById<View>(R.id.loading_overlay)
+                 loadingOverlay?.visibility = View.VISIBLE
+
                  lifecycleScope.launch(Dispatchers.IO) {
-                     itemsToDelete.forEach { it.file?.deleteRecursively() }
+                     var deletedCount = 0
+                     // Copy list to avoid concurrent modification issues during iteration
+                     val filesToDelete = ArrayList(selected)
+                     
+                     filesToDelete.forEach { item ->
+                         try {
+                             if (item.file != null && item.file!!.exists()) {
+                                 if (item.file!!.deleteRecursively()) {
+                                     deletedCount++
+                                 }
+                             }
+                         } catch (e: Exception) {}
+                     }
+                     
                      withContext(Dispatchers.Main) {
+                         loadingOverlay?.visibility = View.GONE
+                         
+                         // Update Adapter
+                         val itemsToDelete = selected.toSet()
+                         adapter?.removeItems(itemsToDelete)
                          exitSelectionMode()
+                         
+                         // Clear analysis group cache if needed so it rescans later
+                         // AnalysisFragment.setCache(null) 
+                         
+                         Toast.makeText(context, "$deletedCount files deleted", Toast.LENGTH_SHORT).show()
                      }
                  }
             }
@@ -899,12 +974,17 @@ private fun startAnalysisScan() {
         loadData(resetNavigation = false)
     }
 
-    private fun handleSelectionChanged(selectedCount: Int, totalSize: Long, items: Set<DetailAdapter.DetailItem>) {
-        // Update local tracking
-        selectedItems.clear()
-        selectedItems.addAll(items)
+    private fun handleSelectionChanged(selectedCount: Int, totalSize: Long) {
+        if (!isAdded) return
+        val contextSafe = context ?: return
         
-        // Update title to show count
+        // Update Title
+        val activityTitle = if (selectedCount > 0) "$selectedCount Selected" else title
+        (activity as? DocumentsActivity)?.let { act ->
+             act.toolbar?.title = activityTitle
+        }
+
+        // Update Title to show count in ActionMode if active
         if (isSelectionMode) {
             updateSelectionTitle(selectedCount)
             
@@ -916,36 +996,24 @@ private fun startAnalysisScan() {
             } else {
                  selectAllItem?.icon?.alpha = 130
             }
-        } else {
-            if (isCleanerMode) {
-                 btnCleanerAction?.let { btn ->
-                      if (selectedCount > 0) {
-                           btn.text = "Clean up ${Formatter.formatFileSize(context, totalSize)}"
-                           btn.isEnabled = true
-                            btn.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2196F3.toInt())
-                            btn.setTextColor(0xFFFFFFFF.toInt())
-                      } else {
-                           btn.text = "Clean up 0 B"
-                           btn.isEnabled = false
-                           btn.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFE0E0E0.toInt())
-                           btn.setTextColor(0xFF757575.toInt())
-                      }
-                 }
-            } else {
-                summaryText?.let { summary ->
-                    cleanupButton?.let { cleanup ->
-                        if (selectedCount > 0) {
-                            summary.text = "$selectedCount selected"
-                            cleanup.text = "Clean up ${Formatter.formatFileSize(context, totalSize)}"
-                            cleanup.isEnabled = true
-                            cleanup.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2196F3.toInt())
-                            cleanup.setTextColor(0xFFFFFFFF.toInt())
-                        } else {
-                            cleanup.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFE0E0E0.toInt())
-                            cleanup.setTextColor(0xFF757575.toInt())
-                            cleanup.isEnabled = false
-                        }
+        }
+        
+        if (isCleanerMode || title.equals("Duplicate files", ignoreCase = true) || title.equals("Large files", ignoreCase = true)) {
+            btnCleanerAction?.let { btn ->
+                if (selectedCount > 0) {
+                    try {
+                        btn.text = "Clean up ${Formatter.formatFileSize(contextSafe, totalSize)}"
+                    } catch (e: Exception) {
+                        btn.text = "Clean up"
                     }
+                    btn.isEnabled = true
+                    btn.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2196F3.toInt())
+                    btn.setTextColor(0xFFFFFFFF.toInt())
+                } else {
+                    btn.text = "Clean up 0 B"
+                    btn.isEnabled = false
+                    btn.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFE0E0E0.toInt())
+                    btn.setTextColor(0xFF757575.toInt())
                 }
             }
         }
@@ -1017,9 +1085,14 @@ private fun startAnalysisScan() {
                     val items = withContext(Dispatchers.IO) {
                         val result = mutableListOf<DetailAdapter.DetailItem>()
                         
+                        val act = activity as? DocumentsActivity
+                        val isInPasteMode = act != null && act.mClipboardFiles.isNotEmpty()
+                        
                         // Direct file system access - FAST!
                         folder.listFiles()?.filter { !it.name.startsWith(".") }?.forEach { file ->
                             try {
+                                if (isInPasteMode && !file.isDirectory) return@forEach
+                                
                                 val absPath = file.absolutePath
                                 result.add(DetailAdapter.DetailItem().apply {
                                     name = file.name
@@ -1027,18 +1100,25 @@ private fun startAnalysisScan() {
                                     this.file = file
                                     if (file.isDirectory) {
                                         isFolder = true
-                                        icon = R.drawable.ic_root_folder
+                                        icon = getFolderIcon(name ?: "")
                                         iconColor = getFolderIconColor(name ?: "")
-                                        // Try to get cached size, otherwise quick estimate
-                                        val cachedFolder = cache?.allFoldersMap?.get(absPath)
-                                        if (cachedFolder != null) {
-                                            size = Formatter.formatFileSize(context, cachedFolder.size)
-                                            subtitle = "${cachedFolder.itemCount} items"
+                                        
+                                        if (isInPasteMode) {
+                                            subtitle = getFileDate(file)
+                                            val count = file.listFiles()?.size ?: 0
+                                            size = if (count == 1) "1 item" else "$count items"
                                         } else {
-                                            // Quick count without deep scan
-                                            val fileCount = file.listFiles()?.size ?: 0
-                                            subtitle = "$fileCount items"
-                                            size = "" // Don't calculate size for speed
+                                            // Try to get cached size, otherwise quick estimate
+                                            val cachedFolder = cache?.allFoldersMap?.get(absPath)
+                                            if (cachedFolder != null) {
+                                                size = Formatter.formatFileSize(context, cachedFolder.size)
+                                                subtitle = "${cachedFolder.itemCount} items"
+                                            } else {
+                                                // Quick count without deep scan
+                                                val fileCount = file.listFiles()?.size ?: 0
+                                                subtitle = "$fileCount items"
+                                                size = "" // Don't calculate size for speed
+                                            }
                                         }
                                     } else {
                                         isFolder = false
@@ -1062,9 +1142,12 @@ private fun startAnalysisScan() {
                         val rootPath = Environment.getExternalStorageDirectory().absolutePath
                         title = if (folder.absolutePath == rootPath) "Internal Storage" else folder.name
                         updateToolbarTitle()
-                        bottomBar?.visibility = View.GONE
+                        summaryText?.parent?.let { (it as? View)?.visibility = View.GONE }
                         
-                        adapter = DetailAdapter(items, isSelectionMode, lifecycleScope, this@AnalysisDetailFragment::handleItemClick, this@AnalysisDetailFragment::handleSelectionChanged, this@AnalysisDetailFragment::handleItemLongClick)
+                        val act = activity as? DocumentsActivity
+                        val isInPasteMode = act != null && act.mClipboardFiles.isNotEmpty()
+                        val shouldShowSelection = !isInPasteMode && (isSelectionMode || isCleanerMode || title == "Duplicate files" || title == "Large files")
+                        adapter = DetailAdapter(items, shouldShowSelection, lifecycleScope, this@AnalysisDetailFragment::handleItemClick, this@AnalysisDetailFragment::handleSelectionChanged, this@AnalysisDetailFragment::handleItemLongClick)
                         recyclerView.adapter = adapter
                     }
                 } catch (e: Exception) {
@@ -1077,8 +1160,9 @@ private fun startAnalysisScan() {
     }
 
     private fun openFileDirect(file: File) {
+        val contextSafe = context ?: return
         if (!file.exists()) {
-            Toast.makeText(context, "File not found", Toast.LENGTH_SHORT).show()
+            Toast.makeText(contextSafe, "File not found", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -1087,8 +1171,21 @@ private fun startAnalysisScan() {
             val uri = getFileUri(file)
             val fileName = file.name.lowercase()
 
-            if (isVideoFile(fileName)) {
-                openVideoDirectly(uri, file)
+            // Internal Video/Audio Player
+            if (isVideoFile(fileName) || fileName.endsWith(".mp3") || fileName.endsWith(".wav") || fileName.endsWith(".m4a")) {
+                val intent = Intent(contextSafe, com.nextguidance.filesexplorer.filemanager.smartfiles.activities.VideoPlayerActivity::class.java)
+                intent.data = uri
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                startActivity(intent)
+                return
+            }
+
+            // Internal Image Viewer
+            if (mimeType.startsWith("image/")) {
+                val intent = Intent(contextSafe, com.nextguidance.filesexplorer.filemanager.smartfiles.activities.ImageViewerActivity::class.java)
+                intent.data = uri
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                startActivity(intent)
                 return
             }
 
@@ -1103,8 +1200,18 @@ private fun startAnalysisScan() {
             val resolveInfo = pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
 
             if (resolveInfo?.activityInfo != null) {
-                intent.component = ComponentName(resolveInfo.activityInfo.packageName, resolveInfo.activityInfo.name)
-                startActivity(intent)
+                val pkgName = resolveInfo.activityInfo.packageName
+                val clsName = resolveInfo.activityInfo.name
+                
+                // Avoid recursive call to self if it's StandaloneActivity or NoteActivity
+                if (pkgName == requireContext().packageName && 
+                   (clsName.contains("StandaloneActivity") || clsName.contains("NoteActivity"))) {
+                    // It's ourselves, let's try fallback or show error if we can't handle it
+                    Toast.makeText(context, "Cannot open this file internally", Toast.LENGTH_SHORT).show()
+                } else {
+                    intent.component = ComponentName(pkgName, clsName)
+                    startActivity(intent)
+                }
             } else {
                 val fallback = Intent(Intent.ACTION_VIEW).apply {
                     setDataAndType(uri, mimeType)
@@ -1119,7 +1226,7 @@ private fun startAnalysisScan() {
         } catch (e: ActivityNotFoundException) {
             Toast.makeText(context, "No app found to open: ${file.name}", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            Toast.makeText(context, "Cannot open: ${file.name}", Toast.LENGTH_SHORT).show()
+            contextSafe.let { Toast.makeText(it, "Cannot open: ${file.name}", Toast.LENGTH_SHORT).show() }
         }
     }
 
@@ -1203,6 +1310,38 @@ private fun startAnalysisScan() {
         }
     }
 
+    fun createNewFolder() {
+        val currentFolder = if (isInFolderNavigation && folderStack.isNotEmpty()) folderStack.peek() else Environment.getExternalStorageDirectory()
+        val context = context ?: return
+        
+        val input = EditText(context)
+        input.hint = "Folder name"
+        
+        android.app.AlertDialog.Builder(context)
+            .setTitle("Create New Folder")
+            .setView(input)
+            .setPositiveButton("Create") { _, _ ->
+                val name = input.text.toString().trim()
+                if (name.isNotEmpty()) {
+                    val newFolder = File(currentFolder, name)
+                    if (newFolder.exists()) {
+                        Toast.makeText(context, "Folder already exists", Toast.LENGTH_SHORT).show()
+                    } else if (newFolder.mkdirs()) {
+                        Toast.makeText(context, "Folder created", Toast.LENGTH_SHORT).show()
+                        if (isInFolderNavigation) {
+                            openFolderInternally(currentFolder)
+                        } else {
+                            loadData(resetNavigation = false)
+                        }
+                    } else {
+                        Toast.makeText(context, "Failed to create folder", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
     private fun getShortPath(fullPath: String?): String? {
         if (fullPath == null) return null
         return if (fullPath.contains("/storage/emulated/0/")) fullPath.replace("/storage/emulated/0/", "/") else fullPath
@@ -1229,6 +1368,19 @@ private fun startAnalysisScan() {
             name.endsWith(".pdf") || name.endsWith(".doc") || name.endsWith(".docx") || name.endsWith(".txt") || name.endsWith(".xls") || name.endsWith(".xlsx") -> R.drawable.ic_root_document
             name.endsWith(".apk") -> R.drawable.ic_root_apps
             else -> R.drawable.ic_root_document
+        }
+    }
+
+    private fun getFolderIcon(folderName: String): Int {
+        val name = folderName.lowercase()
+        return when {
+            name == "android" -> R.drawable.ic_menu_settings
+            name == "dcim" || name == "pictures" || name == "camera" -> R.drawable.ic_root_image
+            name == "downloads" || name == "download" -> R.drawable.ic_root_download
+            name == "documents" -> R.drawable.ic_root_document
+            name == "music" || name == "audio" -> R.drawable.ic_root_audio
+            name == "movies" || name == "video" || name == "movies" -> R.drawable.ic_root_video
+            else -> R.drawable.ic_root_folder
         }
     }
 
@@ -1282,10 +1434,14 @@ private fun startAnalysisScan() {
             name.endsWith(".m4a") -> "audio/mp4"
             name.endsWith(".pdf") -> "application/pdf"
             name.endsWith(".zip") -> "application/zip"
+            name.endsWith(".7z") -> "application/x-7z-compressed"
+            name.endsWith(".rar") -> "application/x-rar-compressed"
+            name.endsWith(".tar") -> "application/x-tar"
             name.endsWith(".apk") -> "application/vnd.android.package-archive"
             name.endsWith(".txt") -> "text/plain"
             name.endsWith(".doc") || name.endsWith(".docx") -> "application/msword"
             name.endsWith(".xls") || name.endsWith(".xlsx") -> "application/vnd.ms-excel"
+            name.endsWith(".ppt") || name.endsWith(".pptx") -> "application/vnd.ms-powerpoint"
             else -> "*/*"
         }
     }
@@ -1295,11 +1451,12 @@ private fun startAnalysisScan() {
         private var showCheckboxes: Boolean,
         private val scope: CoroutineScope,
         private val clickListener: (DetailItem) -> Unit,
-        private val selectionListener: (Int, Long, Set<DetailItem>) -> Unit,
+        private val selectionListener: (Int, Long) -> Unit,
         private val longClickListener: (DetailItem) -> Unit,
         private val isCleanerMode: Boolean = false
     ) : RecyclerView.Adapter<DetailAdapter.ViewHolder>() {
         private var itemsList = items.toMutableList()
+        private var totalSelectedSize: Long = 0L
         private val selectedPositions = mutableSetOf<Int>()
         private val totalStorage: Long = File(Environment.getExternalStorageDirectory().absolutePath).totalSpace.coerceAtLeast(1L)
         
@@ -1307,28 +1464,64 @@ private fun startAnalysisScan() {
             this.itemsList = newItems.toMutableList()
             this.items = newItems
             notifyDataSetChanged()
+            updateSelection()
         }
 
         fun removeItems(itemsToRemove: Set<DetailItem>) {
             itemsList.removeAll(itemsToRemove)
             items = itemsList.toList()
             selectedPositions.clear()
+            totalSelectedSize = 0L
             notifyDataSetChanged()
+            updateSelection()
         }
         
         fun setSelectionMode(show: Boolean) {
             showCheckboxes = show
-            if (!show) selectedPositions.clear()
+            if (!show) {
+                selectedPositions.clear()
+                totalSelectedSize = 0L
+            }
             notifyDataSetChanged()
+            updateSelection()
+        }
+        
+        fun getAllItems(): List<DetailItem> = itemsList
+        
+        fun setSelectedPositions(indices: Set<Int>) {
+            selectedPositions.clear()
+            selectedPositions.addAll(indices)
+            
+            // Recalculate total selected size
+            totalSelectedSize = 0L
+            selectedPositions.forEach { pos ->
+                if (pos < itemsList.size) {
+                    totalSelectedSize += itemsList[pos].sizeBytes
+                }
+            }
+            
+            notifyDataSetChanged()
+            updateSelection()
+        }
+        
+        fun toggleSelection(position: Int) {
+            if (position < 0 || position >= itemsList.size) return
+            val item = itemsList[position]
+            if (selectedPositions.contains(position)) {
+                selectedPositions.remove(position)
+                totalSelectedSize -= item.sizeBytes
+            } else {
+                selectedPositions.add(position)
+                totalSelectedSize += item.sizeBytes
+            }
+            notifyItemChanged(position)
+            updateSelection()
         }
         
         fun toggleSelection(item: DetailItem) {
              val index = itemsList.indexOf(item)
              if (index != -1) {
-                 if (selectedPositions.contains(index)) selectedPositions.remove(index)
-                 else selectedPositions.add(index)
-                 notifyItemChanged(index)
-                 updateSelection()
+                 toggleSelection(index)
              }
         }
         
@@ -1342,8 +1535,12 @@ private fun startAnalysisScan() {
              updateSelection()
         }
         
+        fun getSelectedItemsSet(): Set<DetailItem> {
+             return selectedPositions.mapNotNull { if (it < itemsList.size) itemsList[it] else null }.toSet()
+        }
+        
         fun getSelectedItemsList(): List<DetailItem> {
-             return itemsList.filterIndexed { index, _ -> selectedPositions.contains(index) }
+             return selectedPositions.mapNotNull { if (it < itemsList.size) itemsList[it] else null }
         }
 
         inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -1481,29 +1678,27 @@ private fun startAnalysisScan() {
             val isChecked = selectedPositions.contains(position)
             holder.bind(item, showCheckboxes, isChecked, scope)
 
-            if (!showCheckboxes) {
-                holder.itemView.setOnClickListener { clickListener(item) }
-                holder.itemView.setOnLongClickListener { 
-                    longClickListener(item)
-                    true
+            // Handle click behavior based on selection mode
+            holder.itemView.setOnClickListener { 
+                if (showCheckboxes) {
+                    toggleSelection(position)
+                } else {
+                    clickListener(item)
                 }
-            } else {
-                // Remove old listener first to prevent double firing
-                holder.checkbox?.setOnCheckedChangeListener(null)
-                
-                holder.checkbox?.setOnCheckedChangeListener { _, checked ->
-                    val currentPosition = holder.adapterPosition
-                    if (currentPosition != RecyclerView.NO_POSITION) {
-                        if (checked) {
-                            selectedPositions.add(currentPosition)
-                        } else {
-                            selectedPositions.remove(currentPosition)
-                        }
-                        updateSelection()
-                    }
-                }
-                holder.itemView.setOnClickListener { 
-                    holder.checkbox?.let { cb -> cb.isChecked = !cb.isChecked }
+            }
+            
+            // Long click always toggles selection
+            holder.itemView.setOnLongClickListener { 
+                longClickListener(item)
+                true
+            }
+
+            if (showCheckboxes) {
+                // In cleaner/selection mode, checkbox click specifically toggles selection
+                // Use setOnClickListener on RadioButton/CheckBox instead of onCheckedChangeListener 
+                // to avoid loops and unexpected behavior during recycling
+                holder.checkbox?.setOnClickListener {
+                    toggleSelection(item)
                 }
             }
         }
@@ -1511,23 +1706,20 @@ private fun startAnalysisScan() {
         override fun getItemCount() = itemsList.size
 
         private fun updateSelection() {
-            var totalSize = 0L
-            val selectedBytes = mutableSetOf<DetailItem>()
-            selectedPositions.forEach { pos ->
-                if (pos < itemsList.size) {
-                    val itm = itemsList[pos]
-                    selectedBytes.add(itm)
-                    totalSize += itm.sizeBytes
-                }
-            }
-            selectionListener(selectedPositions.size, totalSize, selectedBytes)
+            selectionListener(selectedPositions.size, totalSelectedSize)
         }
 
         fun toggleSelectAll() {
-            if (selectedPositions.size == itemsList.size) selectedPositions.clear()
-            else {
+            if (selectedPositions.size == itemsList.size) {
                 selectedPositions.clear()
-                for (i in itemsList.indices) selectedPositions.add(i)
+                totalSelectedSize = 0L
+            } else {
+                selectedPositions.clear()
+                totalSelectedSize = 0L
+                for (i in itemsList.indices) {
+                    selectedPositions.add(i)
+                    totalSelectedSize += itemsList[i].sizeBytes
+                }
             }
             notifyDataSetChanged()
             updateSelection()

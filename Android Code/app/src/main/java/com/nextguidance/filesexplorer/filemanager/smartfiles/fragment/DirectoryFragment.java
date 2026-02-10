@@ -72,6 +72,7 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import androidx.appcompat.view.ActionMode;
+import androidx.appcompat.view.ContextThemeWrapper;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -349,7 +350,7 @@ public class DirectoryFragment extends DirectoryFragmentFlavour implements MenuI
                     if (showData) {
                         showData(result);
                     } else {
-                        loadNativeAds(result);
+                        showData(result);
                     }
                 } catch (Exception e) {
                     Log.e(TAG, "Error in onLoadFinished", e);
@@ -798,7 +799,8 @@ public class DirectoryFragment extends DirectoryFragmentFlavour implements MenuI
     }
 
     private void showMoreMenu(View anchor){
-         PopupMenu popup = new PopupMenu(getActivity(), anchor);
+         ContextThemeWrapper wrapper = new ContextThemeWrapper(getActivity(), R.style.CustomPopupMenuDark);
+         PopupMenu popup = new PopupMenu(wrapper, anchor);
          popup.getMenu().add(0, R.id.menu_select_all, 0, "Select All");
          popup.getMenu().add(0, R.id.menu_share, 1, "Share");
          popup.getMenu().add(0, R.id.menu_info, 2, "Properties");
@@ -1229,7 +1231,8 @@ public class DirectoryFragment extends DirectoryFragmentFlavour implements MenuI
     }
 
     private void showPopupMenu(View view, final int position) {
-        PopupMenu popup = new PopupMenu(getActivity(), view);
+        ContextThemeWrapper wrapper = new ContextThemeWrapper(getActivity(), R.style.CustomPopupMenuDark);
+        PopupMenu popup = new PopupMenu(wrapper, view);
 
         int menuId = R.menu.popup_simple_directory;
         if (isApp) {

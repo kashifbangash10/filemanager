@@ -86,6 +86,7 @@
                     android:layout_gravity="center_vertical"
                     android:textAlignment="viewStart"
                     android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
+                    android:includeFontPadding="false"
                     android:textColor="?android:attr/textColorPrimary" />
 
                 <TextView
@@ -99,6 +100,7 @@
                     android:layout_gravity="center_vertical"
                     android:textAlignment="viewEnd"
                     android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                    android:includeFontPadding="false"
                     android:textColor="?android:attr/textColorSecondary" />
 
                 <ImageView
@@ -133,6 +135,7 @@
                     android:layout_gravity="start"
                     android:textAlignment="viewStart"
                     android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                    android:includeFontPadding="false"
                     android:textColor="?android:attr/textColorSecondary" />
 
                 <TextView
@@ -152,10 +155,10 @@
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="end"
-        android:drawableBottom="@drawable/ic_menu_moreoverflow_dark"
-        android:paddingRight="10dp"
+        android:gravity="center"
+        android:drawableEnd="@drawable/ic_menu_moreoverflow_dark"
         android:paddingEnd="10dp"
-        android:paddingBottom="10dp"
+        android:paddingRight="10dp"
         android:contentDescription="@string/abc_action_menu_overflow_description"/>
 
 </FrameLayout>
